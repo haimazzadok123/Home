@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois } from './api/pois'
 import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
+import { FavoritesMenu } from './components/FavoritesMenu'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
@@ -202,6 +203,7 @@ function App() {
     <div className="app">
       <header className="topbar">
         <h1>מטיילים עם דוד חיים</h1>
+        <FavoritesMenu savedRoutes={savedRoutes} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute} />
         <div className="route-form">
           <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />
           <SearchBox label="נקודת יעד" placeholder="עיר או מקום יעד" value={end} onChange={setEnd} />
@@ -225,9 +227,6 @@ function App() {
           onCorridorChange={handleCorridorChange}
           onSelectPoi={setFocusedPoiId}
           routeSummary={routeSummary}
-          savedRoutes={savedRoutes}
-          onLoadRoute={handleLoadRoute}
-          onDeleteRoute={handleDeleteRoute}
           onSaveRoute={handleSaveRoute}
           onShare={handleShare}
           shareStatus={shareStatus}

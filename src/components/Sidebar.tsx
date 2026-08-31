@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import type { FoodFilterTag, FuelFilterTag, Poi, PoiCategory } from '../types'
-import type { SavedRoute } from '../utils/savedRoutes'
 import {
   CATEGORY_EMOJI,
   FOOD_FILTER_LABEL,
@@ -24,9 +23,6 @@ interface SidebarProps {
   onCorridorChange: (km: number) => void
   onSelectPoi: (id: string) => void
   routeSummary: { distanceKm: number; durationMin: number } | null
-  savedRoutes: SavedRoute[]
-  onLoadRoute: (route: SavedRoute) => void
-  onDeleteRoute: (id: string) => void
   onSaveRoute: () => void
   onShare: () => void
   shareStatus: string | null
@@ -89,9 +85,6 @@ export function Sidebar({
   onCorridorChange,
   onSelectPoi,
   routeSummary,
-  savedRoutes,
-  onLoadRoute,
-  onDeleteRoute,
   onSaveRoute,
   onShare,
   shareStatus,
@@ -110,29 +103,6 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      {savedRoutes.length > 0 && (
-        <div className="saved-routes">
-          <div className="saved-routes-title">מסלולים שמורים</div>
-          <ul className="saved-routes-list">
-            {savedRoutes.map((saved) => (
-              <li key={saved.id} className="saved-route">
-                <button type="button" className="saved-route-name" onClick={() => onLoadRoute(saved)}>
-                  {saved.name}
-                </button>
-                <button
-                  type="button"
-                  className="saved-route-delete"
-                  onClick={() => onDeleteRoute(saved.id)}
-                  aria-label={`מחק את ${saved.name}`}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {routeSummary && (
         <div className="route-summary">
           <span>

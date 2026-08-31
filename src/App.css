@@ -123,15 +123,39 @@
   overflow-y: auto;
 }
 
-.saved-routes {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+.favorites-menu {
+  position: relative;
 }
 
-.saved-routes-title {
-  font-size: 12px;
+.favorites-button {
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.favorites-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 1000;
+  min-width: 240px;
+  max-width: 320px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+}
+
+.favorites-empty {
+  padding: 8px;
+  font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 6px;
 }
 
 .saved-routes-list {
@@ -364,6 +388,10 @@
 
   .topbar h1 {
     text-align: center;
+  }
+
+  .favorites-menu {
+    align-self: center;
   }
 
   .route-form {
