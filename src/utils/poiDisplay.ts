@@ -4,6 +4,7 @@ export const CATEGORY_EMOJI: Record<PoiCategory, string> = {
   viewpoint: '🏞️',
   'kosher-food': '🍽️',
   fuel: '⛽',
+  camping: '⛺',
 }
 
 /** Singular label for a single point, e.g. shown under its name in a popup. */
@@ -11,6 +12,7 @@ export const CATEGORY_LABEL: Record<PoiCategory, string> = {
   viewpoint: 'נקודת תצפייה',
   'kosher-food': 'אוכל כשר',
   fuel: 'תחנת דלק',
+  camping: 'לינה (קק"ל / רשות הטבע)',
 }
 
 export const FOOD_FILTER_TAGS: FoodFilterTag[] = ['meat', 'dairy', 'restaurant', 'fast-food']

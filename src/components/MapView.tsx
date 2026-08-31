@@ -9,6 +9,7 @@ const POI_COLOR: Record<Poi['category'], string> = {
   viewpoint: 'var(--green-deep, #1e7a4d)',
   'kosher-food': 'var(--sky-deep, #0288b7)',
   fuel: '#e65100',
+  camping: '#5d4037',
 }
 
 function poiIcon(category: Poi['category']) {

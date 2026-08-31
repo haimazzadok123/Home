@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois } from './api/pois'
 import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
@@ -7,6 +7,8 @@ import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
 import type { FoodFilterTag, FuelFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
 import { matchesActiveFilters } from './utils/poiDisplay'
+import { addSavedRoute, loadSavedRoutes, removeSavedRoute, type SavedRoute } from './utils/savedRoutes'
+import { buildShareUrl, parseShareUrl } from './utils/shareLink'
 import './App.css'
 
 const DEFAULT_CORRIDOR_KM = 5
@@ -20,6 +22,12 @@ function toggleInSet<T>(setter: (updater: (prev: Set<T>) => Set<T>) => void, val
   })
 }
 
+interface RouteOverride {
+  start?: Place
+  end?: Place
+  corridor?: number
+}
+
 function App() {
   const [start, setStart] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
@@ -28,7 +36,7 @@ function App() {
   const [pois, setPois] = useState<Poi[]>([])
   const [corridorKm, setCorridorKm] = useState(DEFAULT_CORRIDOR_KM)
   const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(
-    new Set(['viewpoint', 'kosher-food', 'fuel']),
+    new Set(['viewpoint', 'kosher-food', 'fuel', 'camping']),
   )
   const [activeFoodTags, setActiveFoodTags] = useState<Set<FoodFilterTag>>(new Set())
   const [activeFuelTags, setActiveFuelTags] = useState<Set<FuelFilterTag>>(new Set())
@@ -36,9 +44,15 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focusedPoiId, setFocusedPoiId] = useState<string | null>(null)
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => loadSavedRoutes())
+  const [shareStatus, setShareStatus] = useState<string | null>(null)
 
-  async function planRoute(corridor = corridorKm) {
-    if (!start || !end) {
+  async function planRoute(override?: RouteOverride) {
+    const effectiveStart = override?.start ?? start
+    const effectiveEnd = override?.end ?? end
+    const corridor = override?.corridor ?? corridorKm
+
+    if (!effectiveStart || !effectiveEnd) {
       setError('בחרו קודם נקודת יציאה ונקודת יעד.')
       return
     }
@@ -48,7 +62,7 @@ function App() {
     setFocusedPoiId(null)
 
     try {
-      const result = await fetchRoute(start, end)
+      const result = await fetchRoute(effectiveStart, effectiveEnd)
       setRoute(result.coordinates)
       setRouteSummary({ distanceKm: result.distanceKm, durationMin: result.durationMin })
 
@@ -74,6 +88,22 @@ function App() {
     }
   }
 
+  // Restore a shared route from the URL, if this page was opened from a share link.
+  useEffect(() => {
+    const shared = parseShareUrl()
+    if (!shared) return
+
+    setStart(shared.start)
+    setEnd(shared.end)
+    setCorridorKm(shared.corridorKm)
+    setActiveFilters(shared.filters)
+    setActiveFoodTags(shared.foodTags)
+    setActiveFuelTags(shared.fuelTags)
+    setActiveFuelBrands(shared.fuelBrands)
+    void planRoute({ start: shared.start, end: shared.end, corridor: shared.corridorKm })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function toggleFilter(category: PoiCategory) {
     toggleInSet(setActiveFilters, category)
   }
@@ -92,7 +122,75 @@ function App() {
 
   function handleCorridorChange(km: number) {
     setCorridorKm(km)
-    if (route) void planRoute(km)
+    if (route) void planRoute({ corridor: km })
+  }
+
+  function handleSaveRoute() {
+    if (!start || !end) return
+    const defaultName = `${start.label.split(',')[0]} → ${end.label.split(',')[0]}`
+    const name = window.prompt('שם למסלול השמור:', defaultName)
+    if (!name) return
+
+    setSavedRoutes(
+      addSavedRoute({
+        id: crypto.randomUUID(),
+        name,
+        start,
+        end,
+        corridorKm,
+        filters: [...activeFilters],
+        foodTags: [...activeFoodTags],
+        fuelTags: [...activeFuelTags],
+        fuelBrands: [...activeFuelBrands],
+        savedAt: Date.now(),
+      }),
+    )
+  }
+
+  function handleLoadRoute(saved: SavedRoute) {
+    setStart(saved.start)
+    setEnd(saved.end)
+    setCorridorKm(saved.corridorKm)
+    setActiveFilters(new Set(saved.filters))
+    setActiveFoodTags(new Set(saved.foodTags))
+    setActiveFuelTags(new Set(saved.fuelTags))
+    setActiveFuelBrands(new Set(saved.fuelBrands))
+    void planRoute({ start: saved.start, end: saved.end, corridor: saved.corridorKm })
+  }
+
+  function handleDeleteRoute(id: string) {
+    setSavedRoutes(removeSavedRoute(id))
+  }
+
+  async function handleShare() {
+    if (!start || !end) return
+    const url = buildShareUrl({
+      start,
+      end,
+      corridorKm,
+      filters: activeFilters,
+      foodTags: activeFoodTags,
+      fuelTags: activeFuelTags,
+      fuelBrands: activeFuelBrands,
+    })
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'מסלול טיול - מטיילים עם דוד חיים', url })
+      } catch {
+        // user closed the native share sheet without picking anything
+      }
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareStatus('הקישור הועתק!')
+    } catch {
+      window.prompt('העתק את הקישור:', url)
+      return
+    }
+    setTimeout(() => setShareStatus(null), 2500)
   }
 
   const filterState = {
@@ -129,6 +227,12 @@ function App() {
           onCorridorChange={handleCorridorChange}
           onSelectPoi={setFocusedPoiId}
           routeSummary={routeSummary}
+          savedRoutes={savedRoutes}
+          onLoadRoute={handleLoadRoute}
+          onDeleteRoute={handleDeleteRoute}
+          onSaveRoute={handleSaveRoute}
+          onShare={handleShare}
+          shareStatus={shareStatus}
         />
         <MapView
           start={start}

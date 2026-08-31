@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FoodFilterTag, FuelFilterTag, Poi, PoiCategory } from '../types'
+import type { SavedRoute } from '../utils/savedRoutes'
 import {
   CATEGORY_EMOJI,
   FOOD_FILTER_LABEL,
@@ -23,12 +24,19 @@ interface SidebarProps {
   onCorridorChange: (km: number) => void
   onSelectPoi: (id: string) => void
   routeSummary: { distanceKm: number; durationMin: number } | null
+  savedRoutes: SavedRoute[]
+  onLoadRoute: (route: SavedRoute) => void
+  onDeleteRoute: (id: string) => void
+  onSaveRoute: () => void
+  onShare: () => void
+  shareStatus: string | null
 }
 
 const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = [
   { category: 'viewpoint', label: 'נקודות תצפייה', emoji: '🏞️' },
   { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
   { category: 'fuel', label: 'תחנות דלק', emoji: '⛽' },
+  { category: 'camping', label: 'לינה (קק"ל / רשות הטבע)', emoji: '⛺' },
 ]
 
 function formatDuration(min: number): string {
@@ -81,6 +89,12 @@ export function Sidebar({
   onCorridorChange,
   onSelectPoi,
   routeSummary,
+  savedRoutes,
+  onLoadRoute,
+  onDeleteRoute,
+  onSaveRoute,
+  onShare,
+  shareStatus,
 }: SidebarProps) {
   const fuelBrands = useMemo(() => {
     const brands = new Set<string>()
@@ -96,11 +110,45 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      {routeSummary && (
-        <div className="route-summary">
-          <strong>{routeSummary.distanceKm.toFixed(0)} ק"מ</strong> · {formatDuration(routeSummary.durationMin)}
+      {savedRoutes.length > 0 && (
+        <div className="saved-routes">
+          <div className="saved-routes-title">מסלולים שמורים</div>
+          <ul className="saved-routes-list">
+            {savedRoutes.map((saved) => (
+              <li key={saved.id} className="saved-route">
+                <button type="button" className="saved-route-name" onClick={() => onLoadRoute(saved)}>
+                  {saved.name}
+                </button>
+                <button
+                  type="button"
+                  className="saved-route-delete"
+                  onClick={() => onDeleteRoute(saved.id)}
+                  aria-label={`מחק את ${saved.name}`}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      {routeSummary && (
+        <div className="route-summary">
+          <span>
+            <strong>{routeSummary.distanceKm.toFixed(0)} ק"מ</strong> · {formatDuration(routeSummary.durationMin)}
+          </span>
+          <span className="route-summary-actions">
+            <button type="button" className="text-button" onClick={onSaveRoute}>
+              💾 שמור מסלול
+            </button>
+            <button type="button" className="text-button" onClick={onShare}>
+              🔗 שיתוף
+            </button>
+          </span>
+        </div>
+      )}
+      {shareStatus && <div className="status-message">{shareStatus}</div>}
 
       <div className="filters">
         {FILTERS.map((f) => (

@@ -22,9 +22,25 @@ function buildQuery(bboxStr: string): string {
       way["shop"="kosher"](${bboxStr});
       node["amenity"="fuel"](${bboxStr});
       way["amenity"="fuel"](${bboxStr});
+      node["tourism"="camp_site"](${bboxStr});
+      way["tourism"="camp_site"](${bboxStr});
     );
     out center tags;
   `
+}
+
+/**
+ * Lodging is scoped to KKL (Jewish National Fund) and Nature and Parks Authority sites
+ * only — no hotels or guesthouses. There's no dedicated OSM tag for "run by KKL/the
+ * Nature Authority", so this checks the operator (and, as a fallback, the name) for
+ * either body's common Hebrew/English spellings.
+ */
+const KKL_KEYWORDS = ['קק"ל', 'קק״ל', 'קרן קיימת', 'kkl', 'jnf']
+const NATURE_AUTHORITY_KEYWORDS = ['רשות הטבע', 'רט"ג', 'רט״ג', 'nature and parks authority', 'inpa']
+
+function isKklOrNatureAuthoritySite(tags: Record<string, string>): boolean {
+  const haystack = `${tags.operator ?? ''} ${tags.name ?? ''}`.toLowerCase()
+  return [...KKL_KEYWORDS, ...NATURE_AUTHORITY_KEYWORDS].some((keyword) => haystack.includes(keyword.toLowerCase()))
 }
 
 interface OverpassElement {
@@ -42,6 +58,7 @@ function categorize(tags: Record<string, string>): Poi['category'] | null {
   if (tags.cuisine?.toLowerCase().includes('kosher')) return 'kosher-food'
   if (tags.shop === 'kosher') return 'kosher-food'
   if (tags.amenity === 'fuel') return 'fuel'
+  if (tags.tourism === 'camp_site' && isKklOrNatureAuthoritySite(tags)) return 'camping'
   return null
 }
 
@@ -138,7 +155,7 @@ export interface RawPoi {
   tags: Record<string, string>
 }
 
-/** Queries Overpass for scenic viewpoints, kosher food and fuel stations within a bounding box. */
+/** Queries Overpass for scenic viewpoints, kosher food, fuel stations and KKL/Nature Authority camping within a bounding box. */
 export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPoi[]> {
   const [south, west, north, east] = bbox
   const bboxStr = `${south},${west},${north},${east}`
