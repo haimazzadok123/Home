@@ -1,4 +1,5 @@
 import type { Poi, PoiCategory } from '../types'
+import { CATEGORY_EMOJI } from '../utils/poiDisplay'
 
 interface SidebarProps {
   pois: Poi[]
@@ -15,6 +16,7 @@ interface SidebarProps {
 const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = [
   { category: 'viewpoint', label: 'נקודות תצפייה', emoji: '🏞️' },
   { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
+  { category: 'coffee', label: 'עגלות קפה', emoji: '☕' },
 ]
 
 function formatDuration(min: number): string {
@@ -80,7 +82,7 @@ export function Sidebar({
       <ul className="poi-list">
         {visible.map((poi) => (
           <li key={poi.id} onClick={() => onSelectPoi(poi.id)}>
-            <span className="poi-emoji">{poi.category === 'viewpoint' ? '🏞️' : '🍽️'}</span>
+            <span className="poi-emoji">{CATEGORY_EMOJI[poi.category]}</span>
             <span className="poi-details">
               <span className="poi-name">{poi.name}</span>
               <span className="poi-meta">

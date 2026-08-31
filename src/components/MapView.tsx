@@ -3,13 +3,18 @@ import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LatLng, Place, Poi } from '../types'
+import { CATEGORY_EMOJI, CATEGORY_LABEL } from '../utils/poiDisplay'
+
+const POI_COLOR: Record<Poi['category'], string> = {
+  viewpoint: 'var(--green-deep, #1e7a4d)',
+  'kosher-food': 'var(--sky-deep, #0288b7)',
+  coffee: '#8d5524',
+}
 
 function poiIcon(category: Poi['category']) {
-  const color = category === 'viewpoint' ? 'var(--green-deep, #1e7a4d)' : 'var(--sky-deep, #0288b7)'
-  const emoji = category === 'viewpoint' ? '🏞️' : '🍽️'
   return L.divIcon({
     className: 'poi-marker',
-    html: `<span style="background:${color}" class="poi-marker-dot">${emoji}</span>`,
+    html: `<span style="background:${POI_COLOR[category]}" class="poi-marker-dot">${CATEGORY_EMOJI[category]}</span>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14],
@@ -101,9 +106,27 @@ export function MapView({ start, end, route, pois, focusedPoiId }: MapViewProps)
           <Popup>
             <strong>{poi.name}</strong>
             <br />
-            {poi.category === 'viewpoint' ? 'נקודת תצפייה' : 'אוכל כשר'}
+            {CATEGORY_LABEL[poi.category]}
             <br />
             כ-{poi.distanceFromRoute.toFixed(1)} ק"מ מהמסלול
+            {poi.address && (
+              <>
+                <br />
+                {poi.address}
+              </>
+            )}
+            {poi.openingHours && (
+              <>
+                <br />
+                שעות פעילות: {poi.openingHours}
+              </>
+            )}
+            {poi.phone && (
+              <>
+                <br />
+                טלפון: <a href={`tel:${poi.phone}`}>{poi.phone}</a>
+              </>
+            )}
           </Popup>
         </Marker>
       ))}

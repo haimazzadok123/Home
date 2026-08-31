@@ -8,6 +8,7 @@ type BBox = [number, number, number, number]
 /**
  * Kosher food places aren't consistently tagged in OpenStreetMap, so we cast a wide net:
  * explicit diet:kosher=yes/only, cuisine=kosher, and shop=kosher (kosher grocers/bakeries).
+ * Coffee spots match cafes, coffee shops, and coffee-cart-style vendors.
  */
 function buildQuery(bboxStr: string): string {
   return `
@@ -20,6 +21,10 @@ function buildQuery(bboxStr: string): string {
       way["cuisine"~"kosher"](${bboxStr});
       node["shop"="kosher"](${bboxStr});
       way["shop"="kosher"](${bboxStr});
+      node["amenity"="cafe"](${bboxStr});
+      way["amenity"="cafe"](${bboxStr});
+      node["shop"="coffee"](${bboxStr});
+      node["cuisine"~"coffee_shop"](${bboxStr});
     );
     out center tags;
   `
@@ -39,18 +44,38 @@ function categorize(tags: Record<string, string>): Poi['category'] | null {
   if (tags['diet:kosher'] === 'yes' || tags['diet:kosher'] === 'only') return 'kosher-food'
   if (tags.cuisine?.toLowerCase().includes('kosher')) return 'kosher-food'
   if (tags.shop === 'kosher') return 'kosher-food'
+  if (tags.amenity === 'cafe' || tags.shop === 'coffee' || tags.cuisine?.toLowerCase().includes('coffee')) return 'coffee'
   return null
 }
 
-function nameFor(tags: Record<string, string>, category: Poi['category']): string {
-  if (tags.name) return tags.name
-  return category === 'viewpoint' ? 'נקודת תצפייה' : 'אוכל כשר'
+function phoneFor(tags: Record<string, string>): string | undefined {
+  return tags.phone || tags['contact:phone'] || tags.mobile || tags['contact:mobile']
 }
 
-/** Queries Overpass for scenic viewpoints and kosher food within a bounding box. */
-export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<
-  Array<{ id: string; category: Poi['category']; name: string; lat: number; lng: number; tags: Record<string, string> }>
-> {
+function addressFor(tags: Record<string, string>): string | undefined {
+  const street = tags['addr:street']
+  const houseNumber = tags['addr:housenumber']
+  const city = tags['addr:city'] || tags['addr:place']
+  const parts: string[] = []
+  if (street) parts.push(houseNumber ? `${street} ${houseNumber}` : street)
+  if (city) parts.push(city)
+  return parts.length ? parts.join(', ') : undefined
+}
+
+interface RawPoi {
+  id: string
+  category: Poi['category']
+  name: string
+  lat: number
+  lng: number
+  phone?: string
+  openingHours?: string
+  address?: string
+  tags: Record<string, string>
+}
+
+/** Queries Overpass for scenic viewpoints, kosher food and coffee spots within a bounding box. */
+export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPoi[]> {
   const [south, west, north, east] = bbox
   const bboxStr = `${south},${west},${north},${east}`
   const query = buildQuery(bboxStr)
@@ -65,19 +90,13 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<
 
   const data: { elements: OverpassElement[] } = await res.json()
 
-  const results: Array<{
-    id: string
-    category: Poi['category']
-    name: string
-    lat: number
-    lng: number
-    tags: Record<string, string>
-  }> = []
+  const results: RawPoi[] = []
 
   for (const el of data.elements) {
     const tags = el.tags ?? {}
     const category = categorize(tags)
-    if (!category) continue
+    // Skip unnamed places — a generic category label isn't a useful name to show.
+    if (!category || !tags.name) continue
 
     const lat = el.lat ?? el.center?.lat
     const lng = el.lon ?? el.center?.lon
@@ -86,9 +105,12 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<
     results.push({
       id: `${el.type}/${el.id}`,
       category,
-      name: nameFor(tags, category),
+      name: tags.name,
       lat,
       lng,
+      phone: phoneFor(tags),
+      openingHours: tags.opening_hours,
+      address: addressFor(tags),
       tags,
     })
   }

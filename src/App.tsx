@@ -18,7 +18,7 @@ function App() {
   const [pois, setPois] = useState<Poi[]>([])
   const [corridorKm, setCorridorKm] = useState(DEFAULT_CORRIDOR_KM)
   const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(
-    new Set(['viewpoint', 'kosher-food']),
+    new Set(['viewpoint', 'kosher-food', 'coffee']),
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

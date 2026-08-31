@@ -7,7 +7,7 @@ export interface Place extends LatLng {
   label: string
 }
 
-export type PoiCategory = 'viewpoint' | 'kosher-food'
+export type PoiCategory = 'viewpoint' | 'kosher-food' | 'coffee'
 
 export interface Poi {
   id: string
@@ -19,6 +19,9 @@ export interface Poi {
   distanceFromRoute: number
   /** distance in km travelled along the route to the nearest point */
   distanceAlongRoute: number
+  phone?: string
+  openingHours?: string
+  address?: string
   tags: Record<string, string>
 }
 
