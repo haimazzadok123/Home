@@ -2,7 +2,8 @@
 
 סקריפט Node שבודק אוטומטית זמינות לחושות (לינת לילה) בגן הלאומי אכזיב עבור
 סופי השבוע הקרובים (ברירת מחדל: 8 שבועות קדימה, כניסה בשישי ליומיים), ומדפיס
-את התוצאות ללוג ההרצה.
+את התוצאות ללוג ההרצה. אם מוגדר SMTP (ראו "התראות במייל" למטה), נשלח גם מייל
+— אך ורק כשנמצאה זמינות אפשרית, כדי לא להציף בתיבה בכל הרצה יומית ריקה.
 
 ## הרצה אוטומטית
 
@@ -24,6 +25,33 @@ npm start
 
 ```bash
 ACHZIV_WEEKS_AHEAD=4 npm start
+```
+
+## התראות במייל
+
+שליחת מייל מתבצעת רק אם מוגדרים ב-repo (Settings → Secrets and variables →
+Actions → New repository secret) הסודות הבאים; אם חסר אחד מהם, שליחת המייל
+פשוט מדולגת (הלוג ימשיך לעבוד כרגיל):
+
+| Secret | תיאור |
+| --- | --- |
+| `SMTP_HOST` | שרת ה-SMTP השולח, למשל `smtp.gmail.com` |
+| `SMTP_PORT` | פורט (ברירת מחדל 465, SSL) |
+| `SMTP_USER` | שם המשתמש/מייל השולח |
+| `SMTP_PASS` | סיסמה / App Password |
+| `ALERT_EMAIL_TO` | כתובת המייל שאליה יישלחו ההתראות |
+| `ALERT_EMAIL_FROM` | כתובת "מאת" (אופציונלי — ברירת מחדל: `SMTP_USER`) |
+
+**עם Gmail:** אי אפשר להשתמש בסיסמת Gmail הרגילה — יש ליצור "App Password"
+ב-[myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+(דורש אימות דו-שלבי מופעל בחשבון), ולהשתמש בו כ-`SMTP_PASS` עם
+`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=<כתובת ה-Gmail>`.
+
+להרצה מקומית עם מייל, אפשר להעביר את אותם משתני סביבה ידנית:
+
+```bash
+SMTP_HOST=smtp.gmail.com SMTP_PORT=465 SMTP_USER=you@gmail.com SMTP_PASS=xxxx \
+  ALERT_EMAIL_TO=you@gmail.com npm start
 ```
 
 ## מגבלה ידועה — כיול נדרש

@@ -30,6 +30,13 @@ jobs:
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - run: npm start
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
       - name: העלאת תוצרי כיול (צילומי מסך / HTML / דוח)
         if: always()
         uses: actions/upload-artifact@v4

@@ -10,7 +10,7 @@ async function main() {
   const weekends = upcomingWeekends();
   const results = await checkAvailability(weekends);
 
-  notify(results);
+  await notify(results);
 
   await mkdir(REPORTS_DIR, { recursive: true });
   await writeFile(

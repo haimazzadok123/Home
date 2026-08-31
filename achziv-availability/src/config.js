@@ -19,5 +19,20 @@ export const WEEKEND_NIGHTS = 2;
 
 export const TIMEZONE = "Asia/Jerusalem";
 
+// הגדרות שליחת מייל (אופציונלי) — כולן דרך משתני סביבה / secrets, לא מוגדרות בקוד.
+// כשחסרים SMTP_HOST/SMTP_USER/SMTP_PASS/ALERT_EMAIL_TO, שליחת המייל פשוט מדולגת.
+export const EMAIL_CONFIG = {
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT ?? 465),
+  user: process.env.SMTP_USER,
+  pass: process.env.SMTP_PASS,
+  to: process.env.ALERT_EMAIL_TO,
+  from: process.env.ALERT_EMAIL_FROM || process.env.SMTP_USER,
+};
+
+export const isEmailConfigured = Boolean(
+  EMAIL_CONFIG.host && EMAIL_CONFIG.user && EMAIL_CONFIG.pass && EMAIL_CONFIG.to,
+);
+
 export const DEBUG_DIR = new URL("../debug/", import.meta.url).pathname;
 export const REPORTS_DIR = new URL("../reports/", import.meta.url).pathname;
