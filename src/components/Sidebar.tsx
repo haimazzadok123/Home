@@ -35,6 +35,9 @@ const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = 
   { category: 'camping', label: 'לינה (קק"ל / רשות הטבע)', emoji: '⛺' },
 ]
 
+/** Excludes English-only brand tags from the "by company" filter — Hebrew names only. */
+const HEBREW_LETTER = /[\u0590-\u05FF]/
+
 function formatDuration(min: number): string {
   const h = Math.floor(min / 60)
   const m = Math.round(min % 60)
@@ -92,7 +95,7 @@ export function Sidebar({
   const fuelBrands = useMemo(() => {
     const brands = new Set<string>()
     for (const poi of pois) {
-      if (poi.category === 'fuel' && poi.brand) brands.add(poi.brand)
+      if (poi.category === 'fuel' && poi.brand && HEBREW_LETTER.test(poi.brand)) brands.add(poi.brand)
     }
     return [...brands].sort((a, b) => a.localeCompare(b, 'he'))
   }, [pois])
