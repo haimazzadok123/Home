@@ -60,6 +60,11 @@ function App() {
     setLoading(true)
     setError(null)
     setFocusedPoiId(null)
+    // Clear the previous route's data up front, so a failure partway through (e.g. the
+    // route loads but the POI search fails) can never leave stale markers on screen.
+    setRoute(null)
+    setRouteSummary(null)
+    setPois([])
 
     try {
       const result = await fetchRoute(effectiveStart, effectiveEnd)
@@ -162,6 +167,16 @@ function App() {
     setSavedRoutes(removeSavedRoute(id))
   }
 
+  function handleClearRoute() {
+    setStart(null)
+    setEnd(null)
+    setRoute(null)
+    setRouteSummary(null)
+    setPois([])
+    setError(null)
+    setFocusedPoiId(null)
+  }
+
   async function handleShare() {
     if (!start || !end) return
     const url = buildShareUrl({
@@ -226,17 +241,24 @@ function App() {
           <div className="route-form">
             <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />
             <SearchBox label="נקודת יעד" placeholder="עיר או מקום יעד" value={end} onChange={setEnd} />
-            <button
-              type="button"
-              className="plan-button"
-              onClick={() => {
-                void planRoute()
-                setMobileMenuOpen(false)
-              }}
-              disabled={loading}
-            >
-              {loading ? 'מתכנן…' : 'תכנון מסלול'}
-            </button>
+            <div className="route-form-buttons">
+              <button
+                type="button"
+                className="plan-button"
+                onClick={() => {
+                  void planRoute()
+                  setMobileMenuOpen(false)
+                }}
+                disabled={loading}
+              >
+                {loading ? 'מתכנן…' : 'תכנון מסלול'}
+              </button>
+              {(start || end || route) && (
+                <button type="button" className="clear-button" onClick={handleClearRoute} disabled={loading}>
+                  🗑️ נקה
+                </button>
+              )}
+            </div>
           </div>
           <Sidebar
             pois={pois}

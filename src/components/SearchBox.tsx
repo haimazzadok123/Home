@@ -15,8 +15,15 @@ export function SearchBox({ label, placeholder, value, onChange }: SearchBoxProp
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  // Typing clears `value` to null (it no longer matches any selected place), which would
+  // otherwise re-trigger the sync effect below and wipe the query text the user just typed.
+  const skipNextSyncRef = useRef(false)
 
   useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false
+      return
+    }
     setQuery(value?.label ?? '')
   }, [value])
 
@@ -63,6 +70,7 @@ export function SearchBox({ label, placeholder, value, onChange }: SearchBoxProp
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)
+          skipNextSyncRef.current = true
           onChange(null)
         }}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
