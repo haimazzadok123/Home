@@ -45,6 +45,7 @@ function App() {
   const [focusedPoiId, setFocusedPoiId] = useState<string | null>(null)
   const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => loadSavedRoutes())
   const [shareStatus, setShareStatus] = useState<string | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   async function planRoute(override?: RouteOverride) {
     const effectiveStart = override?.start ?? start
@@ -203,34 +204,61 @@ function App() {
     <div className="app">
       <header className="topbar">
         <h1>מטיילים עם דוד חיים</h1>
-        <FavoritesMenu savedRoutes={savedRoutes} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute} />
-        <div className="route-form">
-          <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />
-          <SearchBox label="נקודת יעד" placeholder="עיר או מקום יעד" value={end} onChange={setEnd} />
-          <button type="button" className="plan-button" onClick={() => planRoute()} disabled={loading}>
-            {loading ? 'מתכנן…' : 'תכנון מסלול'}
+        <div className="topbar-actions">
+          <FavoritesMenu savedRoutes={savedRoutes} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute} />
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label="תפריט חיפוש וסינון"
+            aria-expanded={mobileMenuOpen}
+          >
+            ☰
           </button>
         </div>
       </header>
 
-      <div className="body">
-        <Sidebar
-          pois={pois}
-          loading={loading}
-          error={error}
-          filterState={filterState}
-          onToggleFilter={toggleFilter}
-          onToggleFoodTag={toggleFoodTag}
-          onToggleFuelTag={toggleFuelTag}
-          onToggleFuelBrand={toggleFuelBrand}
-          corridorKm={corridorKm}
-          onCorridorChange={handleCorridorChange}
-          onSelectPoi={setFocusedPoiId}
-          routeSummary={routeSummary}
-          onSaveRoute={handleSaveRoute}
-          onShare={handleShare}
-          shareStatus={shareStatus}
-        />
+      <div className={mobileMenuOpen ? 'body menu-open' : 'body'}>
+        <div className="controls-panel">
+          <button type="button" className="controls-panel-close" onClick={() => setMobileMenuOpen(false)}>
+            ✕ סגור
+          </button>
+          <div className="route-form">
+            <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />
+            <SearchBox label="נקודת יעד" placeholder="עיר או מקום יעד" value={end} onChange={setEnd} />
+            <button
+              type="button"
+              className="plan-button"
+              onClick={() => {
+                void planRoute()
+                setMobileMenuOpen(false)
+              }}
+              disabled={loading}
+            >
+              {loading ? 'מתכנן…' : 'תכנון מסלול'}
+            </button>
+          </div>
+          <Sidebar
+            pois={pois}
+            loading={loading}
+            error={error}
+            filterState={filterState}
+            onToggleFilter={toggleFilter}
+            onToggleFoodTag={toggleFoodTag}
+            onToggleFuelTag={toggleFuelTag}
+            onToggleFuelBrand={toggleFuelBrand}
+            corridorKm={corridorKm}
+            onCorridorChange={handleCorridorChange}
+            onSelectPoi={(id) => {
+              setFocusedPoiId(id)
+              setMobileMenuOpen(false)
+            }}
+            routeSummary={routeSummary}
+            onSaveRoute={handleSaveRoute}
+            onShare={handleShare}
+            shareStatus={shareStatus}
+          />
+        </div>
         <MapView
           start={start}
           end={end}
