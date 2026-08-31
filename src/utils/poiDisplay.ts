@@ -24,12 +24,11 @@ export const FOOD_FILTER_LABEL: Record<FoodFilterTag, string> = {
   'fast-food': 'מזון מהיר',
 }
 
-export const FUEL_FILTER_TAGS: FuelFilterTag[] = ['car-wash', 'convenience-store', 'fuel-card', 'shabbat-closed']
+export const FUEL_FILTER_TAGS: FuelFilterTag[] = ['car-wash', 'convenience-store', 'shabbat-closed']
 
 export const FUEL_FILTER_LABEL: Record<FuelFilterTag, string> = {
   'car-wash': 'שטיפת רכב',
   'convenience-store': 'חנות נוחות',
-  'fuel-card': 'מקבלת דלקן',
   'shabbat-closed': 'סגורה בשבת',
 }
 

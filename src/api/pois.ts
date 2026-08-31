@@ -102,19 +102,25 @@ function foodTagsFor(tags: Record<string, string>): FoodFilterTag[] {
 }
 
 /**
- * Car wash and a convenience store are each reasonably well tagged in OpenStreetMap.
- * Fuel-card acceptance has no standard tag, so this checks a couple of known variants —
- * expect most stations to simply be untagged for it. "Closed for Shabbat" is inferred
- * from opening_hours: true when the schedule lists specific weekdays but never lists
- * Saturday as open — a heuristic, not a real tag, so it under-detects more than it
- * over-detects.
+ * Convenience store is reasonably well tagged in OpenStreetMap. Car wash is tagged more
+ * loosely — beyond car_wash=yes, some mappers use a non-"yes" truthy value or a
+ * service:vehicle:car_wash tag, and some only mention it in the station's name — so this
+ * also catches "שטיפה"/"שטיפת רכב"/"car wash" in the name or brand. "Closed for Shabbat"
+ * is inferred from opening_hours: true when the schedule lists specific weekdays but
+ * never lists Saturday as open — a heuristic, not a real tag, so it under-detects more
+ * than it over-detects.
  */
 function fuelTagsFor(tags: Record<string, string>): FuelFilterTag[] {
   const result: FuelFilterTag[] = []
+  const nameAndBrand = `${tags.name ?? ''} ${tags.brand ?? ''}`
 
-  if (tags.car_wash === 'yes') result.push('car-wash')
+  const hasCarWash =
+    (tags.car_wash && tags.car_wash !== 'no') ||
+    tags['service:vehicle:car_wash'] === 'yes' ||
+    /שטיפ|car\s*wash/i.test(nameAndBrand)
+  if (hasCarWash) result.push('car-wash')
+
   if (tags.shop === 'convenience' || tags.convenience_store === 'yes') result.push('convenience-store')
-  if (tags.fuel_card === 'yes' || tags['payment:fuel_card'] === 'yes') result.push('fuel-card')
   if (isClosedForShabbat(tags.opening_hours)) result.push('shabbat-closed')
 
   return result

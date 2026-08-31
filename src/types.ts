@@ -13,7 +13,7 @@ export type PoiCategory = 'viewpoint' | 'kosher-food' | 'fuel' | 'camping'
 export type FoodFilterTag = 'meat' | 'dairy' | 'restaurant' | 'fast-food'
 
 /** Sub-filters for fuel-station POIs. */
-export type FuelFilterTag = 'car-wash' | 'convenience-store' | 'fuel-card' | 'shabbat-closed'
+export type FuelFilterTag = 'car-wash' | 'convenience-store' | 'shabbat-closed'
 
 export interface Poi {
   id: string
