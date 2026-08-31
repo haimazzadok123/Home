@@ -5,7 +5,8 @@ import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
-import type { LatLng, Place, Poi, PoiCategory } from './types'
+import type { FoodFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
+import { matchesActiveFilters } from './utils/poiDisplay'
 import './App.css'
 
 const DEFAULT_CORRIDOR_KM = 5
@@ -20,6 +21,7 @@ function App() {
   const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(
     new Set(['viewpoint', 'kosher-food', 'coffee']),
   )
+  const [activeFoodTags, setActiveFoodTags] = useState<Set<FoodFilterTag>>(new Set())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focusedPoiId, setFocusedPoiId] = useState<string | null>(null)
@@ -70,6 +72,15 @@ function App() {
     })
   }
 
+  function toggleFoodTag(tag: FoodFilterTag) {
+    setActiveFoodTags((prev) => {
+      const next = new Set(prev)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
+      return next
+    })
+  }
+
   function handleCorridorChange(km: number) {
     setCorridorKm(km)
     if (route) void planRoute(km)
@@ -95,6 +106,8 @@ function App() {
           error={error}
           activeFilters={activeFilters}
           onToggleFilter={toggleFilter}
+          activeFoodTags={activeFoodTags}
+          onToggleFoodTag={toggleFoodTag}
           corridorKm={corridorKm}
           onCorridorChange={handleCorridorChange}
           onSelectPoi={setFocusedPoiId}
@@ -104,7 +117,7 @@ function App() {
           start={start}
           end={end}
           route={route}
-          pois={pois.filter((p) => activeFilters.has(p.category))}
+          pois={pois.filter((p) => matchesActiveFilters(p, activeFilters, activeFoodTags))}
           focusedPoiId={focusedPoiId}
         />
       </div>

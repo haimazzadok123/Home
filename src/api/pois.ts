@@ -1,4 +1,4 @@
-import type { Poi } from '../types'
+import type { FoodFilterTag, Poi } from '../types'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 
@@ -48,6 +48,36 @@ function categorize(tags: Record<string, string>): Poi['category'] | null {
   return null
 }
 
+/**
+ * Meat/dairy is tagged even less consistently than kosher itself, so this is a
+ * best-effort guess from a few known tag variants plus Hebrew/English keywords
+ * in the cuisine and name fields. Restaurant/fast-food is reliable — it's the
+ * standard OSM `amenity` value.
+ */
+function foodTagsFor(tags: Record<string, string>): FoodFilterTag[] {
+  const cuisine = tags.cuisine?.toLowerCase() ?? ''
+  const name = tags.name?.toLowerCase() ?? ''
+  const result: FoodFilterTag[] = []
+
+  const isMeat =
+    tags['diet:kosher_meat'] === 'yes' ||
+    tags['kosher:type'] === 'meat' ||
+    cuisine.includes('meat') ||
+    name.includes('בשרי')
+  const isDairy =
+    tags['diet:kosher_dairy'] === 'yes' ||
+    tags['kosher:type'] === 'dairy' ||
+    cuisine.includes('dairy') ||
+    name.includes('חלבי')
+
+  if (isMeat) result.push('meat')
+  if (isDairy) result.push('dairy')
+  if (tags.amenity === 'restaurant') result.push('restaurant')
+  if (tags.amenity === 'fast_food') result.push('fast-food')
+
+  return result
+}
+
 function phoneFor(tags: Record<string, string>): string | undefined {
   return tags.phone || tags['contact:phone'] || tags.mobile || tags['contact:mobile']
 }
@@ -71,6 +101,7 @@ interface RawPoi {
   phone?: string
   openingHours?: string
   address?: string
+  foodTags?: FoodFilterTag[]
   tags: Record<string, string>
 }
 
@@ -111,6 +142,7 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPo
       phone: phoneFor(tags),
       openingHours: tags.opening_hours,
       address: addressFor(tags),
+      foodTags: category === 'kosher-food' ? foodTagsFor(tags) : undefined,
       tags,
     })
   }

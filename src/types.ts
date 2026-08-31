@@ -9,6 +9,9 @@ export interface Place extends LatLng {
 
 export type PoiCategory = 'viewpoint' | 'kosher-food' | 'coffee'
 
+/** Sub-filters for kosher-food POIs: diet (meat/dairy) and place type (restaurant/fast-food). */
+export type FoodFilterTag = 'meat' | 'dairy' | 'restaurant' | 'fast-food'
+
 export interface Poi {
   id: string
   category: PoiCategory
@@ -22,6 +25,8 @@ export interface Poi {
   phone?: string
   openingHours?: string
   address?: string
+  /** only set for category 'kosher-food'; best-effort, may be empty if untagged */
+  foodTags?: FoodFilterTag[]
   tags: Record<string, string>
 }
 
