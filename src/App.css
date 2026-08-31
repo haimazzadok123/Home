@@ -11,7 +11,7 @@
   flex-wrap: wrap;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--sky) 0%, var(--green) 100%);
+  background: var(--sky-deep);
 }
 
 .topbar h1 {
