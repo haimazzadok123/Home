@@ -8,7 +8,7 @@ type BBox = [number, number, number, number]
 /**
  * Kosher food places aren't consistently tagged in OpenStreetMap, so we cast a wide net:
  * explicit diet:kosher=yes/only, cuisine=kosher, and shop=kosher (kosher grocers/bakeries).
- * Coffee spots match cafes, coffee shops, and coffee-cart-style vendors.
+ * Coffee carts are not sourced from here — see src/data/coffeeCarts.ts.
  */
 function buildQuery(bboxStr: string): string {
   return `
@@ -21,10 +21,6 @@ function buildQuery(bboxStr: string): string {
       way["cuisine"~"kosher"](${bboxStr});
       node["shop"="kosher"](${bboxStr});
       way["shop"="kosher"](${bboxStr});
-      node["amenity"="cafe"](${bboxStr});
-      way["amenity"="cafe"](${bboxStr});
-      node["shop"="coffee"](${bboxStr});
-      node["cuisine"~"coffee_shop"](${bboxStr});
     );
     out center tags;
   `
@@ -44,7 +40,6 @@ function categorize(tags: Record<string, string>): Poi['category'] | null {
   if (tags['diet:kosher'] === 'yes' || tags['diet:kosher'] === 'only') return 'kosher-food'
   if (tags.cuisine?.toLowerCase().includes('kosher')) return 'kosher-food'
   if (tags.shop === 'kosher') return 'kosher-food'
-  if (tags.amenity === 'cafe' || tags.shop === 'coffee' || tags.cuisine?.toLowerCase().includes('coffee')) return 'coffee'
   return null
 }
 
@@ -62,7 +57,7 @@ function addressFor(tags: Record<string, string>): string | undefined {
   return parts.length ? parts.join(', ') : undefined
 }
 
-interface RawPoi {
+export interface RawPoi {
   id: string
   category: Poi['category']
   name: string
