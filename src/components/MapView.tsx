@@ -3,7 +3,7 @@ import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LatLng, Place, Poi } from '../types'
-import { CATEGORY_EMOJI, CATEGORY_LABEL, FOOD_FILTER_LABEL } from '../utils/poiDisplay'
+import { CATEGORY_EMOJI, CATEGORY_LABEL, FOOD_FILTER_LABEL, FUEL_FILTER_LABEL } from '../utils/poiDisplay'
 
 const POI_COLOR: Record<Poi['category'], string> = {
   viewpoint: 'var(--green-deep, #1e7a4d)',
@@ -107,7 +107,9 @@ export function MapView({ start, end, route, pois, focusedPoiId }: MapViewProps)
             <strong>{poi.name}</strong>
             <br />
             {CATEGORY_LABEL[poi.category]}
+            {poi.brand && ` (${poi.brand})`}
             {poi.foodTags && poi.foodTags.length > 0 && ` · ${poi.foodTags.map((t) => FOOD_FILTER_LABEL[t]).join(' · ')}`}
+            {poi.fuelTags && poi.fuelTags.length > 0 && ` · ${poi.fuelTags.map((t) => FUEL_FILTER_LABEL[t]).join(' · ')}`}
             <br />
             כ-{poi.distanceFromRoute.toFixed(1)} ק"מ מהמסלול
             {poi.address && (

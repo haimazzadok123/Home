@@ -152,11 +152,11 @@
   color: var(--text);
 }
 
-.food-subfilter {
+.subfilter {
   padding: 0 16px 12px;
 }
 
-.food-subfilter-toggle {
+.subfilter-toggle {
   padding: 0;
   border: none;
   background: none;
@@ -166,14 +166,14 @@
   text-decoration: underline;
 }
 
-.food-subfilter-options {
+.subfilter-options {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
   margin-top: 8px;
 }
 
-.food-subfilter-option {
+.subfilter-option {
   display: flex;
   align-items: center;
   gap: 4px;

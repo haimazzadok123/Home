@@ -12,6 +12,9 @@ export type PoiCategory = 'viewpoint' | 'kosher-food' | 'fuel'
 /** Sub-filters for kosher-food POIs: diet (meat/dairy) and place type (restaurant/fast-food). */
 export type FoodFilterTag = 'meat' | 'dairy' | 'restaurant' | 'fast-food'
 
+/** Sub-filters for fuel-station POIs. */
+export type FuelFilterTag = 'car-wash' | 'convenience-store' | 'fuel-card' | 'shabbat-closed'
+
 export interface Poi {
   id: string
   category: PoiCategory
@@ -27,6 +30,10 @@ export interface Poi {
   address?: string
   /** only set for category 'kosher-food'; best-effort, may be empty if untagged */
   foodTags?: FoodFilterTag[]
+  /** only set for category 'fuel' */
+  brand?: string
+  /** only set for category 'fuel'; best-effort, may be empty if untagged */
+  fuelTags?: FuelFilterTag[]
   tags: Record<string, string>
 }
 

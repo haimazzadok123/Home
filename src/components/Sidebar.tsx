@@ -1,15 +1,24 @@
-import { useState } from 'react'
-import type { FoodFilterTag, Poi, PoiCategory } from '../types'
-import { CATEGORY_EMOJI, FOOD_FILTER_LABEL, FOOD_FILTER_TAGS, matchesActiveFilters } from '../utils/poiDisplay'
+import { useMemo, useState } from 'react'
+import type { FoodFilterTag, FuelFilterTag, Poi, PoiCategory } from '../types'
+import {
+  CATEGORY_EMOJI,
+  FOOD_FILTER_LABEL,
+  FOOD_FILTER_TAGS,
+  FUEL_FILTER_LABEL,
+  FUEL_FILTER_TAGS,
+  matchesActiveFilters,
+  type ActiveFilterState,
+} from '../utils/poiDisplay'
 
 interface SidebarProps {
   pois: Poi[]
   loading: boolean
   error: string | null
-  activeFilters: Set<PoiCategory>
+  filterState: ActiveFilterState
   onToggleFilter: (category: PoiCategory) => void
-  activeFoodTags: Set<FoodFilterTag>
   onToggleFoodTag: (tag: FoodFilterTag) => void
+  onToggleFuelTag: (tag: FuelFilterTag) => void
+  onToggleFuelBrand: (brand: string) => void
   corridorKm: number
   onCorridorChange: (km: number) => void
   onSelectPoi: (id: string) => void
@@ -28,23 +37,61 @@ function formatDuration(min: number): string {
   return h > 0 ? `${h} ש' ${m} ד'` : `${m} ד'`
 }
 
+interface SubfilterGroupProps<T extends string> {
+  title: string
+  options: T[]
+  labelFor: (option: T) => string
+  active: Set<T>
+  onToggle: (option: T) => void
+}
+
+function SubfilterGroup<T extends string>({ title, options, labelFor, active, onToggle }: SubfilterGroupProps<T>) {
+  const [open, setOpen] = useState(false)
+  if (options.length === 0) return null
+
+  return (
+    <div className="subfilter">
+      <button type="button" className="subfilter-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        {title} {open ? '▲' : '▾'}
+      </button>
+      {open && (
+        <div className="subfilter-options">
+          {options.map((option) => (
+            <label key={option} className="subfilter-option">
+              <input type="checkbox" checked={active.has(option)} onChange={() => onToggle(option)} />
+              {labelFor(option)}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Sidebar({
   pois,
   loading,
   error,
-  activeFilters,
+  filterState,
   onToggleFilter,
-  activeFoodTags,
   onToggleFoodTag,
+  onToggleFuelTag,
+  onToggleFuelBrand,
   corridorKm,
   onCorridorChange,
   onSelectPoi,
   routeSummary,
 }: SidebarProps) {
-  const [foodFiltersOpen, setFoodFiltersOpen] = useState(false)
+  const fuelBrands = useMemo(() => {
+    const brands = new Set<string>()
+    for (const poi of pois) {
+      if (poi.category === 'fuel' && poi.brand) brands.add(poi.brand)
+    }
+    return [...brands].sort((a, b) => a.localeCompare(b, 'he'))
+  }, [pois])
 
   const visible = pois
-    .filter((p) => matchesActiveFilters(p, activeFilters, activeFoodTags))
+    .filter((p) => matchesActiveFilters(p, filterState))
     .sort((a, b) => a.distanceAlongRoute - b.distanceAlongRoute)
 
   return (
@@ -60,7 +107,7 @@ export function Sidebar({
           <button
             key={f.category}
             type="button"
-            className={activeFilters.has(f.category) ? 'filter active' : 'filter'}
+            className={filterState.categories.has(f.category) ? 'filter active' : 'filter'}
             onClick={() => onToggleFilter(f.category)}
           >
             {f.emoji} {f.label}
@@ -68,30 +115,29 @@ export function Sidebar({
         ))}
       </div>
 
-      <div className="food-subfilter">
-        <button
-          type="button"
-          className="food-subfilter-toggle"
-          onClick={() => setFoodFiltersOpen((open) => !open)}
-          aria-expanded={foodFiltersOpen}
-        >
-          סינון אוכל כשר לפי סוג {foodFiltersOpen ? '▲' : '▾'}
-        </button>
-        {foodFiltersOpen && (
-          <div className="food-subfilter-options">
-            {FOOD_FILTER_TAGS.map((tag) => (
-              <label key={tag} className="food-subfilter-option">
-                <input
-                  type="checkbox"
-                  checked={activeFoodTags.has(tag)}
-                  onChange={() => onToggleFoodTag(tag)}
-                />
-                {FOOD_FILTER_LABEL[tag]}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+      <SubfilterGroup
+        title="סינון אוכל כשר לפי סוג"
+        options={FOOD_FILTER_TAGS}
+        labelFor={(tag) => FOOD_FILTER_LABEL[tag]}
+        active={filterState.foodTags}
+        onToggle={onToggleFoodTag}
+      />
+
+      <SubfilterGroup
+        title="סינון תחנות דלק לפי סוג"
+        options={FUEL_FILTER_TAGS}
+        labelFor={(tag) => FUEL_FILTER_LABEL[tag]}
+        active={filterState.fuelTags}
+        onToggle={onToggleFuelTag}
+      />
+
+      <SubfilterGroup
+        title="סינון תחנות דלק לפי חברה"
+        options={fuelBrands}
+        labelFor={(brand) => brand}
+        active={filterState.fuelBrands}
+        onToggle={onToggleFuelBrand}
+      />
 
       <div className="corridor-control">
         <label htmlFor="corridor">חיפוש עד {corridorKm} ק"מ מהמסלול</label>

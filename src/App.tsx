@@ -5,11 +5,20 @@ import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
-import type { FoodFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
+import type { FoodFilterTag, FuelFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
 import { matchesActiveFilters } from './utils/poiDisplay'
 import './App.css'
 
 const DEFAULT_CORRIDOR_KM = 5
+
+function toggleInSet<T>(setter: (updater: (prev: Set<T>) => Set<T>) => void, value: T) {
+  setter((prev) => {
+    const next = new Set(prev)
+    if (next.has(value)) next.delete(value)
+    else next.add(value)
+    return next
+  })
+}
 
 function App() {
   const [start, setStart] = useState<Place | null>(null)
@@ -22,6 +31,8 @@ function App() {
     new Set(['viewpoint', 'kosher-food', 'fuel']),
   )
   const [activeFoodTags, setActiveFoodTags] = useState<Set<FoodFilterTag>>(new Set())
+  const [activeFuelTags, setActiveFuelTags] = useState<Set<FuelFilterTag>>(new Set())
+  const [activeFuelBrands, setActiveFuelBrands] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focusedPoiId, setFocusedPoiId] = useState<string | null>(null)
@@ -64,26 +75,31 @@ function App() {
   }
 
   function toggleFilter(category: PoiCategory) {
-    setActiveFilters((prev) => {
-      const next = new Set(prev)
-      if (next.has(category)) next.delete(category)
-      else next.add(category)
-      return next
-    })
+    toggleInSet(setActiveFilters, category)
   }
 
   function toggleFoodTag(tag: FoodFilterTag) {
-    setActiveFoodTags((prev) => {
-      const next = new Set(prev)
-      if (next.has(tag)) next.delete(tag)
-      else next.add(tag)
-      return next
-    })
+    toggleInSet(setActiveFoodTags, tag)
+  }
+
+  function toggleFuelTag(tag: FuelFilterTag) {
+    toggleInSet(setActiveFuelTags, tag)
+  }
+
+  function toggleFuelBrand(brand: string) {
+    toggleInSet(setActiveFuelBrands, brand)
   }
 
   function handleCorridorChange(km: number) {
     setCorridorKm(km)
     if (route) void planRoute(km)
+  }
+
+  const filterState = {
+    categories: activeFilters,
+    foodTags: activeFoodTags,
+    fuelTags: activeFuelTags,
+    fuelBrands: activeFuelBrands,
   }
 
   return (
@@ -104,10 +120,11 @@ function App() {
           pois={pois}
           loading={loading}
           error={error}
-          activeFilters={activeFilters}
+          filterState={filterState}
           onToggleFilter={toggleFilter}
-          activeFoodTags={activeFoodTags}
           onToggleFoodTag={toggleFoodTag}
+          onToggleFuelTag={toggleFuelTag}
+          onToggleFuelBrand={toggleFuelBrand}
           corridorKm={corridorKm}
           onCorridorChange={handleCorridorChange}
           onSelectPoi={setFocusedPoiId}
@@ -117,7 +134,7 @@ function App() {
           start={start}
           end={end}
           route={route}
-          pois={pois.filter((p) => matchesActiveFilters(p, activeFilters, activeFoodTags))}
+          pois={pois.filter((p) => matchesActiveFilters(p, filterState))}
           focusedPoiId={focusedPoiId}
         />
       </div>

@@ -1,4 +1,4 @@
-import type { FoodFilterTag, Poi } from '../types'
+import type { FoodFilterTag, FuelFilterTag, Poi } from '../types'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 
@@ -80,6 +80,35 @@ function foodTagsFor(tags: Record<string, string>): FoodFilterTag[] {
   return result
 }
 
+/**
+ * Car wash and a convenience store are each reasonably well tagged in OpenStreetMap.
+ * Fuel-card acceptance has no standard tag, so this checks a couple of known variants —
+ * expect most stations to simply be untagged for it. "Closed for Shabbat" is inferred
+ * from opening_hours: true when the schedule lists specific weekdays but never lists
+ * Saturday as open — a heuristic, not a real tag, so it under-detects more than it
+ * over-detects.
+ */
+function fuelTagsFor(tags: Record<string, string>): FuelFilterTag[] {
+  const result: FuelFilterTag[] = []
+
+  if (tags.car_wash === 'yes') result.push('car-wash')
+  if (tags.shop === 'convenience' || tags.convenience_store === 'yes') result.push('convenience-store')
+  if (tags.fuel_card === 'yes' || tags['payment:fuel_card'] === 'yes') result.push('fuel-card')
+  if (isClosedForShabbat(tags.opening_hours)) result.push('shabbat-closed')
+
+  return result
+}
+
+function isClosedForShabbat(openingHours: string | undefined): boolean {
+  if (!openingHours) return false
+  if (/\bSa\s+off\b/i.test(openingHours)) return true
+
+  const withoutSaOff = openingHours.replace(/\bSa\s+off\b/gi, '')
+  const mentionsSaturdayOpen = /\bSa\b/i.test(withoutSaOff)
+  const mentionsOtherWeekdays = /\b(Su|Mo|Tu|We|Th|Fr)\b/i.test(openingHours)
+  return mentionsOtherWeekdays && !mentionsSaturdayOpen
+}
+
 function phoneFor(tags: Record<string, string>): string | undefined {
   return tags.phone || tags['contact:phone'] || tags.mobile || tags['contact:mobile']
 }
@@ -104,6 +133,8 @@ export interface RawPoi {
   openingHours?: string
   address?: string
   foodTags?: FoodFilterTag[]
+  brand?: string
+  fuelTags?: FuelFilterTag[]
   tags: Record<string, string>
 }
 
@@ -146,6 +177,8 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPo
       openingHours: tags.opening_hours,
       address: addressFor(tags),
       foodTags: category === 'kosher-food' ? foodTagsFor(tags) : undefined,
+      brand: category === 'fuel' ? tags.brand : undefined,
+      fuelTags: category === 'fuel' ? fuelTagsFor(tags) : undefined,
       tags,
     })
   }
