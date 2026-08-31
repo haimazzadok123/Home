@@ -54,6 +54,19 @@ SMTP_HOST=smtp.gmail.com SMTP_PORT=465 SMTP_USER=you@gmail.com SMTP_PASS=xxxx \
   ALERT_EMAIL_TO=you@gmail.com npm start
 ```
 
+### בדיקה שהמייל באמת מגיע
+
+אחרי שהוגדרו ה-secrets, אפשר לוודא שהם תקינים בלי לחכות לזמינות אמיתית
+(ובלי צורך ב-Playwright בכלל):
+
+- **ב-GitHub Actions:** לשונית Actions → workflow "בדיקת שליחת מייל - סוכן
+  אכזיב" → "Run workflow". תוך דקה אמור להגיע מייל בדיקה לכתובת
+  שהוגדרה ב-`ALERT_EMAIL_TO`.
+- **לוקאלית:** `SMTP_HOST=... SMTP_USER=... SMTP_PASS=... ALERT_EMAIL_TO=... npm run test-email`
+  מתוך `achziv-availability/`.
+
+אם ה-secrets לא הוגדרו, הפקודה נכשלת עם שגיאה ברורה במקום לשלוח בשקט "כאילו".
+
 ## מגבלה ידועה — כיול נדרש
 
 דף ההזמנות הרשמי (parks.org.il) לא היה נגיש לגלישה מסביבת הפיתוח שבה נכתב

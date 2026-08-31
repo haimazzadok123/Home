@@ -21,13 +21,34 @@ export async function notify(results) {
       `\n🎉 נמצאה זמינות אפשרית ב-${available.length} סוף/י שבוע: ` +
         available.map((r) => r.label).join(", "),
     );
-    await sendAvailabilityEmail(available);
+    try {
+      await sendEmail(available, { isTest: false });
+    } catch (error) {
+      console.warn("שליחת מייל ההתראה נכשלה:", error.message);
+    }
   } else {
     console.log("\nלא נמצאה זמינות ודאית בסופי השבוע שנבדקו.");
   }
 }
 
-async function sendAvailabilityEmail(available) {
+/**
+ * שולח מייל בדיקה מיידי עם תאריך לדוגמה, כדי לוודא שהגדרות ה-SMTP תקינות מבלי
+ * להמתין לזמינות אמיתית (ובלי להריץ בכלל את הבדיקה מול האתר/Playwright).
+ */
+export async function sendTestEmail() {
+  console.log("שולח מייל בדיקה...");
+  if (!isEmailConfigured) {
+    throw new Error(
+      "לא ניתן לשלוח מייל בדיקה — חסרים SMTP_HOST/SMTP_USER/SMTP_PASS/ALERT_EMAIL_TO (ראו README).",
+    );
+  }
+  await sendEmail(
+    [{ label: "2026-01-01 → 2026-01-03 (דוגמה)", status: "available" }],
+    { isTest: true },
+  );
+}
+
+async function sendEmail(available, { isTest }) {
   if (!isEmailConfigured) {
     console.log(
       "(שליחת מייל מדולגת — SMTP_HOST/SMTP_USER/SMTP_PASS/ALERT_EMAIL_TO לא מוגדרים, ראו README)",
@@ -43,16 +64,18 @@ async function sendAvailabilityEmail(available) {
   });
 
   const list = available.map((r) => `<li>${r.label}</li>`).join("");
+  const subject = isTest
+    ? `מייל בדיקה — סוכן הזמינות של ${PARK_NAME} ✅`
+    : `נמצאה זמינות אפשרית ב${PARK_NAME} 🎉`;
+  const intro = isTest
+    ? `זהו מייל בדיקה מהסוכן שבודק זמינות ב${PARK_NAME}. אם קיבלת אותו, הגדרות ה-SMTP תקינות. הדוגמה למטה אינה זמינות אמיתית:`
+    : `נמצאה זמינות אפשרית לחושה ב${PARK_NAME} בסופי השבוע הבאים:`;
 
-  try {
-    await transporter.sendMail({
-      from: EMAIL_CONFIG.from,
-      to: EMAIL_CONFIG.to,
-      subject: `נמצאה זמינות אפשרית ב${PARK_NAME} 🎉`,
-      html: `<p>נמצאה זמינות אפשרית לחושה ב${PARK_NAME} בסופי השבוע הבאים:</p><ul>${list}</ul>`,
-    });
-    console.log(`נשלח מייל התראה אל ${EMAIL_CONFIG.to}`);
-  } catch (error) {
-    console.warn("שליחת מייל ההתראה נכשלה:", error.message);
-  }
+  await transporter.sendMail({
+    from: EMAIL_CONFIG.from,
+    to: EMAIL_CONFIG.to,
+    subject,
+    html: `<p>${intro}</p><ul>${list}</ul>`,
+  });
+  console.log(`נשלח מייל ${isTest ? "בדיקה " : ""}אל ${EMAIL_CONFIG.to}`);
 }

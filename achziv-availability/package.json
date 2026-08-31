@@ -5,7 +5,8 @@
   "type": "module",
   "description": "בודק זמינות אוטומטי לחושות (לינת לילה) בגן הלאומי אכזיב בסופי שבוע",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test-email": "node src/testEmail.js"
   },
   "dependencies": {
     "nodemailer": "^9.1.0",
