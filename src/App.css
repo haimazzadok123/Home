@@ -284,3 +284,47 @@
 .endpoint-marker-dot.end {
   background: var(--sky-deep, #0288b7);
 }
+
+@media (max-width: 700px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .topbar h1 {
+    text-align: center;
+  }
+
+  .route-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    min-width: 0;
+  }
+
+  .plan-button {
+    width: 100%;
+  }
+
+  .body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* Map first, then the filterable list — matches how most map apps lay out on a phone. */
+  .map {
+    order: -1;
+    flex: none;
+    height: 300px;
+  }
+
+  .sidebar {
+    width: 100%;
+    overflow-y: visible;
+    border-inline-end: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
