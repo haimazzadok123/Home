@@ -35,9 +35,7 @@ function App() {
   const [routeSummary, setRouteSummary] = useState<{ distanceKm: number; durationMin: number } | null>(null)
   const [pois, setPois] = useState<Poi[]>([])
   const [corridorKm, setCorridorKm] = useState(DEFAULT_CORRIDOR_KM)
-  const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(
-    new Set(['viewpoint', 'kosher-food', 'fuel', 'camping']),
-  )
+  const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(new Set())
   const [activeFoodTags, setActiveFoodTags] = useState<Set<FoodFilterTag>>(new Set())
   const [activeFuelTags, setActiveFuelTags] = useState<Set<FuelFilterTag>>(new Set())
   const [activeFuelBrands, setActiveFuelBrands] = useState<Set<string>>(new Set())

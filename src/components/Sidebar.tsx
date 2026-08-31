@@ -204,6 +204,9 @@ export function Sidebar({
       {!loading && !error && pois.length === 0 && (
         <div className="status-message">תכננו מסלול כדי לראות מקומות מעניינים בדרך.</div>
       )}
+      {!loading && !error && pois.length > 0 && filterState.categories.size === 0 && (
+        <div className="status-message">בחרו קטגוריה אחת לפחות למעלה כדי לראות מקומות.</div>
+      )}
 
       <ul className="poi-list">
         {visible.map((poi) => (

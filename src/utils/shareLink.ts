@@ -10,8 +10,6 @@ export interface ShareState {
   fuelBrands: Set<string>
 }
 
-const ALL_CATEGORIES: PoiCategory[] = ['viewpoint', 'kosher-food', 'fuel', 'camping']
-
 /** Builds a URL that reopens this app with the same route and filters preselected. */
 export function buildShareUrl(state: ShareState): string {
   const params = new URLSearchParams()
@@ -43,13 +41,11 @@ export function parseShareUrl(): ShareState | null {
   const elabel = params.get('elabel')
   if (!slat || !slng || !slabel || !elat || !elng || !elabel) return null
 
-  const filters = params.get('filters')?.split(',').filter(Boolean) as PoiCategory[] | undefined
-
   return {
     start: { lat: Number(slat), lng: Number(slng), label: slabel },
     end: { lat: Number(elat), lng: Number(elng), label: elabel },
     corridorKm: Number(params.get('corridor')) || 5,
-    filters: new Set(filters && filters.length > 0 ? filters : ALL_CATEGORIES),
+    filters: new Set((params.get('filters')?.split(',').filter(Boolean) ?? []) as PoiCategory[]),
     foodTags: new Set((params.get('food')?.split(',').filter(Boolean) ?? []) as FoodFilterTag[]),
     fuelTags: new Set((params.get('fuel')?.split(',').filter(Boolean) ?? []) as FuelFilterTag[]),
     fuelBrands: new Set(params.get('brands')?.split(',').filter(Boolean) ?? []),
