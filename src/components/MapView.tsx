@@ -8,7 +8,7 @@ import { CATEGORY_EMOJI, CATEGORY_LABEL } from '../utils/poiDisplay'
 const POI_COLOR: Record<Poi['category'], string> = {
   viewpoint: 'var(--green-deep, #1e7a4d)',
   'kosher-food': 'var(--sky-deep, #0288b7)',
-  coffee: '#8d5524',
+  fuel: '#e65100',
 }
 
 function poiIcon(category: Poi['category']) {

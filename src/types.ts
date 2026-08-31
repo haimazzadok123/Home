@@ -7,7 +7,7 @@ export interface Place extends LatLng {
   label: string
 }
 
-export type PoiCategory = 'viewpoint' | 'kosher-food' | 'coffee'
+export type PoiCategory = 'viewpoint' | 'kosher-food' | 'fuel'
 
 export interface Poi {
   id: string

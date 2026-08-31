@@ -8,7 +8,6 @@ type BBox = [number, number, number, number]
 /**
  * Kosher food places aren't consistently tagged in OpenStreetMap, so we cast a wide net:
  * explicit diet:kosher=yes/only, cuisine=kosher, and shop=kosher (kosher grocers/bakeries).
- * Coffee carts are not sourced from here — see src/data/coffeeCarts.ts.
  */
 function buildQuery(bboxStr: string): string {
   return `
@@ -21,6 +20,8 @@ function buildQuery(bboxStr: string): string {
       way["cuisine"~"kosher"](${bboxStr});
       node["shop"="kosher"](${bboxStr});
       way["shop"="kosher"](${bboxStr});
+      node["amenity"="fuel"](${bboxStr});
+      way["amenity"="fuel"](${bboxStr});
     );
     out center tags;
   `
@@ -40,7 +41,13 @@ function categorize(tags: Record<string, string>): Poi['category'] | null {
   if (tags['diet:kosher'] === 'yes' || tags['diet:kosher'] === 'only') return 'kosher-food'
   if (tags.cuisine?.toLowerCase().includes('kosher')) return 'kosher-food'
   if (tags.shop === 'kosher') return 'kosher-food'
+  if (tags.amenity === 'fuel') return 'fuel'
   return null
+}
+
+/** Prefer the place's own name, falling back to its brand/operator (e.g. a fuel station chain). */
+function displayNameFor(tags: Record<string, string>): string | undefined {
+  return tags.name || tags.brand || tags.operator
 }
 
 function phoneFor(tags: Record<string, string>): string | undefined {
@@ -69,7 +76,7 @@ export interface RawPoi {
   tags: Record<string, string>
 }
 
-/** Queries Overpass for scenic viewpoints, kosher food and coffee spots within a bounding box. */
+/** Queries Overpass for scenic viewpoints, kosher food and fuel stations within a bounding box. */
 export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPoi[]> {
   const [south, west, north, east] = bbox
   const bboxStr = `${south},${west},${north},${east}`
@@ -90,8 +97,9 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPo
   for (const el of data.elements) {
     const tags = el.tags ?? {}
     const category = categorize(tags)
+    const name = displayNameFor(tags)
     // Skip unnamed places — a generic category label isn't a useful name to show.
-    if (!category || !tags.name) continue
+    if (!category || !name) continue
 
     const lat = el.lat ?? el.center?.lat
     const lng = el.lon ?? el.center?.lon
@@ -100,7 +108,7 @@ export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPo
     results.push({
       id: `${el.type}/${el.id}`,
       category,
-      name: tags.name,
+      name,
       lat,
       lng,
       phone: phoneFor(tags),

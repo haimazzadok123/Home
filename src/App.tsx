@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois } from './api/pois'
-import { coffeeCartsAsPoiInput } from './data/coffeeCarts'
 import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
@@ -19,7 +18,7 @@ function App() {
   const [pois, setPois] = useState<Poi[]>([])
   const [corridorKm, setCorridorKm] = useState(DEFAULT_CORRIDOR_KM)
   const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(
-    new Set(['viewpoint', 'kosher-food', 'coffee']),
+    new Set(['viewpoint', 'kosher-food', 'fuel']),
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +41,7 @@ function App() {
 
       const routeLine = toRouteLine(result.coordinates)
       const bbox = routeSearchBBox(routeLine, corridor)
-      const rawPois = [...(await fetchPois(bbox)), ...coffeeCartsAsPoiInput()]
+      const rawPois = await fetchPois(bbox)
 
       const withDistance: Poi[] = rawPois
         .map((p) => {

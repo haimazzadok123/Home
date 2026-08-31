@@ -16,7 +16,7 @@ interface SidebarProps {
 const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = [
   { category: 'viewpoint', label: 'נקודות תצפייה', emoji: '🏞️' },
   { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
-  { category: 'coffee', label: 'עגלות קפה', emoji: '☕' },
+  { category: 'fuel', label: 'תחנות דלק', emoji: '⛽' },
 ]
 
 function formatDuration(min: number): string {
