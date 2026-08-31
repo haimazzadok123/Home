@@ -203,9 +203,7 @@ function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <h1>מטיילים עם דוד חיים</h1>
-        <div className="topbar-actions">
-          <FavoritesMenu savedRoutes={savedRoutes} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute} />
+        <div className="topbar-start">
           <button
             type="button"
             className="mobile-menu-toggle"
@@ -215,7 +213,9 @@ function App() {
           >
             ☰
           </button>
+          <h1>מטיילים עם דוד חיים</h1>
         </div>
+        <FavoritesMenu savedRoutes={savedRoutes} onLoadRoute={handleLoadRoute} onDeleteRoute={handleDeleteRoute} />
       </header>
 
       <div className={mobileMenuOpen ? 'body menu-open' : 'body'}>

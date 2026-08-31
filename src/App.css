@@ -15,7 +15,7 @@
   background: var(--sky-deep);
 }
 
-.topbar-actions {
+.topbar-start {
   display: flex;
   align-items: center;
   gap: 12px;
