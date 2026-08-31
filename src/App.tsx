@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois } from './api/pois'
+import { coffeeCartsAsPoiInput } from './data/coffeeCarts'
 import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
@@ -43,7 +44,7 @@ function App() {
 
       const routeLine = toRouteLine(result.coordinates)
       const bbox = routeSearchBBox(routeLine, corridor)
-      const rawPois = await fetchPois(bbox)
+      const rawPois = [...(await fetchPois(bbox)), ...coffeeCartsAsPoiInput()]
 
       const withDistance: Poi[] = rawPois
         .map((p) => {
