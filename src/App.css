@@ -152,6 +152,36 @@
   color: var(--text);
 }
 
+.food-subfilter {
+  padding: 0 16px 12px;
+}
+
+.food-subfilter-toggle {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.food-subfilter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+
+.food-subfilter-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
 .corridor-control {
   padding: 0 16px 12px;
   display: flex;

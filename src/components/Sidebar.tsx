@@ -1,5 +1,6 @@
-import type { Poi, PoiCategory } from '../types'
-import { CATEGORY_EMOJI } from '../utils/poiDisplay'
+import { useState } from 'react'
+import type { FoodFilterTag, Poi, PoiCategory } from '../types'
+import { CATEGORY_EMOJI, FOOD_FILTER_LABEL, FOOD_FILTER_TAGS, matchesActiveFilters } from '../utils/poiDisplay'
 
 interface SidebarProps {
   pois: Poi[]
@@ -7,6 +8,8 @@ interface SidebarProps {
   error: string | null
   activeFilters: Set<PoiCategory>
   onToggleFilter: (category: PoiCategory) => void
+  activeFoodTags: Set<FoodFilterTag>
+  onToggleFoodTag: (tag: FoodFilterTag) => void
   corridorKm: number
   onCorridorChange: (km: number) => void
   onSelectPoi: (id: string) => void
@@ -31,13 +34,17 @@ export function Sidebar({
   error,
   activeFilters,
   onToggleFilter,
+  activeFoodTags,
+  onToggleFoodTag,
   corridorKm,
   onCorridorChange,
   onSelectPoi,
   routeSummary,
 }: SidebarProps) {
+  const [foodFiltersOpen, setFoodFiltersOpen] = useState(false)
+
   const visible = pois
-    .filter((p) => activeFilters.has(p.category))
+    .filter((p) => matchesActiveFilters(p, activeFilters, activeFoodTags))
     .sort((a, b) => a.distanceAlongRoute - b.distanceAlongRoute)
 
   return (
@@ -59,6 +66,31 @@ export function Sidebar({
             {f.emoji} {f.label}
           </button>
         ))}
+      </div>
+
+      <div className="food-subfilter">
+        <button
+          type="button"
+          className="food-subfilter-toggle"
+          onClick={() => setFoodFiltersOpen((open) => !open)}
+          aria-expanded={foodFiltersOpen}
+        >
+          סינון אוכל כשר לפי סוג {foodFiltersOpen ? '▲' : '▾'}
+        </button>
+        {foodFiltersOpen && (
+          <div className="food-subfilter-options">
+            {FOOD_FILTER_TAGS.map((tag) => (
+              <label key={tag} className="food-subfilter-option">
+                <input
+                  type="checkbox"
+                  checked={activeFoodTags.has(tag)}
+                  onChange={() => onToggleFoodTag(tag)}
+                />
+                {FOOD_FILTER_LABEL[tag]}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="corridor-control">
