@@ -1,6 +1,10 @@
 import type { FoodFilterTag, FuelFilterTag, Poi } from '../types'
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
+/**
+ * The public overpass-api.de instance is prone to 504s under load, so fall back to a
+ * mirror on failure rather than surfacing a dead end to the user.
+ */
+const OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']
 
 /** south, west, north, east */
 type BBox = [number, number, number, number]
@@ -155,21 +159,39 @@ export interface RawPoi {
   tags: Record<string, string>
 }
 
+/** Tries each Overpass mirror in turn — the public instances routinely 504 under load. */
+async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
+  let lastError: unknown
+
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: `data=${encodeURIComponent(query)}`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        signal,
+      })
+      if (!res.ok) {
+        lastError = new Error(`חיפוש נקודות העניין נכשל (שגיאה ${res.status})`)
+        continue
+      }
+      return await res.json()
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err
+      lastError = err
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('חיפוש נקודות העניין נכשל.')
+}
+
 /** Queries Overpass for scenic viewpoints, kosher food, fuel stations and KKL/Nature Authority camping within a bounding box. */
 export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPoi[]> {
   const [south, west, north, east] = bbox
   const bboxStr = `${south},${west},${north},${east}`
   const query = buildQuery(bboxStr)
 
-  const res = await fetch(OVERPASS_URL, {
-    method: 'POST',
-    body: `data=${encodeURIComponent(query)}`,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    signal,
-  })
-  if (!res.ok) throw new Error(`חיפוש נקודות העניין נכשל (שגיאה ${res.status})`)
-
-  const data: { elements: OverpassElement[] } = await res.json()
+  const data = await queryOverpass(query, signal)
 
   const results: RawPoi[] = []
 
