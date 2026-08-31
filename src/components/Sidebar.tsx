@@ -1,0 +1,95 @@
+import type { Poi, PoiCategory } from '../types'
+
+interface SidebarProps {
+  pois: Poi[]
+  loading: boolean
+  error: string | null
+  activeFilters: Set<PoiCategory>
+  onToggleFilter: (category: PoiCategory) => void
+  corridorKm: number
+  onCorridorChange: (km: number) => void
+  onSelectPoi: (id: string) => void
+  routeSummary: { distanceKm: number; durationMin: number } | null
+}
+
+const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = [
+  { category: 'viewpoint', label: 'נקודות תצפייה', emoji: '🏞️' },
+  { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
+]
+
+function formatDuration(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = Math.round(min % 60)
+  return h > 0 ? `${h} ש' ${m} ד'` : `${m} ד'`
+}
+
+export function Sidebar({
+  pois,
+  loading,
+  error,
+  activeFilters,
+  onToggleFilter,
+  corridorKm,
+  onCorridorChange,
+  onSelectPoi,
+  routeSummary,
+}: SidebarProps) {
+  const visible = pois
+    .filter((p) => activeFilters.has(p.category))
+    .sort((a, b) => a.distanceAlongRoute - b.distanceAlongRoute)
+
+  return (
+    <aside className="sidebar">
+      {routeSummary && (
+        <div className="route-summary">
+          <strong>{routeSummary.distanceKm.toFixed(0)} ק"מ</strong> · {formatDuration(routeSummary.durationMin)}
+        </div>
+      )}
+
+      <div className="filters">
+        {FILTERS.map((f) => (
+          <button
+            key={f.category}
+            type="button"
+            className={activeFilters.has(f.category) ? 'filter active' : 'filter'}
+            onClick={() => onToggleFilter(f.category)}
+          >
+            {f.emoji} {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="corridor-control">
+        <label htmlFor="corridor">חיפוש עד {corridorKm} ק"מ מהמסלול</label>
+        <input
+          id="corridor"
+          type="range"
+          min={1}
+          max={20}
+          value={corridorKm}
+          onChange={(e) => onCorridorChange(Number(e.target.value))}
+        />
+      </div>
+
+      {loading && <div className="status-message">מחפש מקומות לאורך המסלול…</div>}
+      {error && <div className="status-message error">{error}</div>}
+      {!loading && !error && pois.length === 0 && (
+        <div className="status-message">תכננו מסלול כדי לראות מקומות מעניינים בדרך.</div>
+      )}
+
+      <ul className="poi-list">
+        {visible.map((poi) => (
+          <li key={poi.id} onClick={() => onSelectPoi(poi.id)}>
+            <span className="poi-emoji">{poi.category === 'viewpoint' ? '🏞️' : '🍽️'}</span>
+            <span className="poi-details">
+              <span className="poi-name">{poi.name}</span>
+              <span className="poi-meta">
+                {poi.distanceAlongRoute.toFixed(0)} ק"מ מההתחלה · {poi.distanceFromRoute.toFixed(1)} ק"מ מהמסלול
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}
