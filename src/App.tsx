@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchRoute } from './api/routing'
-import { fetchPois } from './api/pois'
+import { fetchPois, type RawPoi } from './api/pois'
+import { fetchHikingPois } from './api/hikingPois'
 import { distanceToRoute, routeSearchBBox, toRouteLine } from './utils/corridor'
 import { FavoritesMenu } from './components/FavoritesMenu'
 import { MapView } from './components/MapView'
@@ -29,6 +30,15 @@ interface RouteOverride {
   corridor?: number
 }
 
+function withRouteDistance(raw: RawPoi[], routeLine: ReturnType<typeof toRouteLine>, corridorKm: number): Poi[] {
+  return raw
+    .map((p) => {
+      const { distanceFromRoute, distanceAlongRoute } = distanceToRoute(routeLine, { lat: p.lat, lng: p.lng })
+      return { ...p, distanceFromRoute, distanceAlongRoute }
+    })
+    .filter((p) => p.distanceFromRoute <= corridorKm)
+}
+
 function App() {
   const [start, setStart] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
@@ -46,6 +56,9 @@ function App() {
   const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => loadSavedRoutes())
   const [shareStatus, setShareStatus] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  // Guards against a slow, previous plan's hiking-POI fetch resolving after a newer plan has
+  // already started (or the user hit "clear") and appending its results onto the wrong route.
+  const planRequestIdRef = useRef(0)
 
   async function planRoute(override?: RouteOverride) {
     const effectiveStart = override?.start ?? start
@@ -56,6 +69,8 @@ function App() {
       setError('בחרו קודם נקודת יציאה ונקודת יעד.')
       return
     }
+
+    const requestId = ++planRequestIdRef.current
 
     setLoading(true)
     setError(null)
@@ -74,22 +89,26 @@ function App() {
       const routeLine = toRouteLine(result.coordinates)
       const bbox = routeSearchBBox(routeLine, corridor)
       const rawPois = await fetchPois(bbox)
+      setPois(withRouteDistance(rawPois, routeLine, corridor))
 
-      const withDistance: Poi[] = rawPois
-        .map((p) => {
-          const { distanceFromRoute, distanceAlongRoute } = distanceToRoute(routeLine, {
-            lat: p.lat,
-            lng: p.lng,
-          })
-          return { ...p, distanceFromRoute, distanceAlongRoute }
+      // Hiking POIs come from a slower, best-effort source (sequential requests, no bounding-box
+      // search) — fetched in the background so it never delays the faster, primary POI results,
+      // and merged in whenever it resolves as long as this is still the current plan request.
+      fetchHikingPois(routeLine)
+        .then((rawHikingPois) => {
+          if (planRequestIdRef.current !== requestId) return
+          const hikingWithDistance = withRouteDistance(rawHikingPois, routeLine, corridor)
+          if (hikingWithDistance.length > 0) setPois((prev) => [...prev, ...hikingWithDistance])
         })
-        .filter((p) => p.distanceFromRoute <= corridor)
-
-      setPois(withDistance)
+        .catch(() => {
+          // Best-effort supplementary source — never surface its failures to the user.
+        })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'משהו השתבש בתכנון המסלול.')
+      if (planRequestIdRef.current === requestId) {
+        setError(err instanceof Error ? err.message : 'משהו השתבש בתכנון המסלול.')
+      }
     } finally {
-      setLoading(false)
+      if (planRequestIdRef.current === requestId) setLoading(false)
     }
   }
 

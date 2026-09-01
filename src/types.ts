@@ -7,7 +7,7 @@ export interface Place extends LatLng {
   label: string
 }
 
-export type PoiCategory = 'viewpoint' | 'kosher-food' | 'fuel' | 'camping'
+export type PoiCategory = 'viewpoint' | 'kosher-food' | 'fuel' | 'camping' | 'hiking'
 
 /** Sub-filters for kosher-food POIs: diet (meat/dairy) and place type (restaurant/fast-food). */
 export type FoodFilterTag = 'meat' | 'dairy' | 'restaurant' | 'fast-food'
