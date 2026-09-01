@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "israel-hiking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@skills-il/israel-hiking-mcp"
+      ]
+    },
+    "israel-nature": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@skills-il/israel-nature-mcp"
+      ]
+    }
+  }
+}
