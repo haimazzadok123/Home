@@ -2,10 +2,6 @@ name: בדיקת שליחת מייל - סוכן אכזיב
 
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/achziv-availability-agent-962ine]
-    paths:
-      - ".github/workflows/achziv-test-email.yml"
 
 permissions:
   contents: read
