@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>המדריך לפילדלפיה</title>
+    <meta
+      name="description"
+      content="כל האטרקציות השוות בפילדלפיה במקום אחד — עם מחירי כניסה וזמני הגעה מהעיר."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔔%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <h1>🔔 המדריך לפילדלפיה</h1>
+        <p>כל המקומות השווים לעשות בעיר — עם עלויות וזמני הגעה מהמרכז, כדי לתכנן את הביקור בקלות.</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="planner card">
+        <h2>⏱️ תכנון לפי נקודת יציאה</h2>
+        <p class="muted">
+          הזמנים המוצגים בכרטיסים הם הליכה / תחב״צ (SEPTA) מ-City Hall, מרכז העיר. יוצאים ממקום אחר?
+          לכל אתר יש כפתור ניווט שפותח מסלול חי מהמיקום שלכם.
+        </p>
+      </section>
+
+      <section class="controls card">
+        <input
+          id="search"
+          type="search"
+          placeholder="🔍 חיפוש אטרקציה..."
+          aria-label="חיפוש"
+        />
+        <div id="category-filters" class="chip-row" role="group" aria-label="סינון לפי קטגוריה"></div>
+        <div class="toggle-row">
+          <label><input type="checkbox" id="free-only" /> רק אתרים חינמיים</label>
+          <select id="sort-by" aria-label="מיין לפי">
+            <option value="default">מיון: מומלץ</option>
+            <option value="cost-asc">מיון: מהזול ליקר</option>
+            <option value="walk-asc">מיון: הכי קרוב להליכה</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="map-section card">
+        <div id="map"></div>
+      </section>
+
+      <section id="results-count" class="results-count"></section>
+
+      <section id="cards" class="cards"></section>
+
+      <section class="tips card">
+        <h2>💡 טיפים כלליים לתקציב ותחבורה</h2>
+        <ul>
+          <li><strong>תחבורה ציבורית (SEPTA):</strong> נסיעה בודדת ברכבת תחתית/טראם/אוטובוס עולה כ-$2.50 (כרטיס נייר) או כ-$2 עם כרטיס SEPTA Key. כרטיס יומי (Day Pass/Convenience Pass) עולה כ-$8-9 ומשתלם אם מתכננים כמה נסיעות ביום.</li>
+          <li><strong>מהשדה תעופה לעיר:</strong> רכבת Airport Line עולה כ-$6.75-8 ולוקחת כ-20 דקות עד Center City — האופציה הזולה והמהירה ביותר, זמינה כל יום מ-5 בבוקר עד חצות בערך.</li>
+          <li><strong>הנחה בכרטיסי כניסה:</strong> ה-CityPASS או Philadelphia Sightseeing Pass יכולים לחסוך משמעותית אם מתכננים לבקר ב-4 אתרים בתשלום ומעלה.</li>
+          <li><strong>כניסה חינם:</strong> כמעט כל האתרים ההיסטוריים המרכזיים סביב Independence National Historical Park (הליברטי בל, אינדפנדנס הול) חינמיים לגמרי.</li>
+          <li><strong>יום ראשון ראשון בחודש:</strong> מוזיאון האמנות של פילדלפיה מציע תרומה חופשית (Pay-What-You-Wish) — שווה לתכנן סביב זה אם הביקור גמיש בתאריך.</li>
+        </ul>
+        <p class="disclaimer">
+          * מחירי כניסה וזמני נסיעה הם הערכה בלבד ועשויים להשתנות — מומלץ לבדוק באתר הרשמי של כל אתר לפני הביקור.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>נבנה ביד עבור מטיילים סקרנים ❤️</p>
+    </footer>
+
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
