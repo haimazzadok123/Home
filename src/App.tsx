@@ -7,6 +7,7 @@ import { FavoritesMenu } from './components/FavoritesMenu'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
+import { TripWeather } from './components/TripWeather'
 import type { FoodFilterTag, FuelFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
 import { matchesActiveFilters } from './utils/poiDisplay'
 import { addSavedRoute, loadSavedRoutes, removeSavedRoute, type SavedRoute } from './utils/savedRoutes'
@@ -42,6 +43,8 @@ function withRouteDistance(raw: RawPoi[], routeLine: ReturnType<typeof toRouteLi
 function App() {
   const [start, setStart] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
+  const [departureDate, setDepartureDate] = useState('')
+  const [returnDate, setReturnDate] = useState('')
   const [route, setRoute] = useState<LatLng[] | null>(null)
   const [routeSummary, setRouteSummary] = useState<{ distanceKm: number; durationMin: number } | null>(null)
   const [pois, setPois] = useState<Poi[]>([])
@@ -129,6 +132,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function handleDepartureDateChange(date: string) {
+    setDepartureDate(date)
+    // A return date earlier than the new departure date is no longer valid.
+    if (returnDate && date && returnDate < date) setReturnDate('')
+  }
+
   function toggleFilter(category: PoiCategory) {
     toggleInSet(setActiveFilters, category)
   }
@@ -190,6 +199,8 @@ function App() {
   function handleClearRoute() {
     setStart(null)
     setEnd(null)
+    setDepartureDate('')
+    setReturnDate('')
     setRoute(null)
     setRouteSummary(null)
     setPois([])
@@ -261,6 +272,14 @@ function App() {
           <div className="route-form">
             <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />
             <SearchBox label="נקודת יעד" placeholder="עיר או מקום יעד" value={end} onChange={setEnd} />
+            <TripWeather
+              start={start}
+              end={end}
+              departureDate={departureDate}
+              returnDate={returnDate}
+              onDepartureDateChange={handleDepartureDateChange}
+              onReturnDateChange={setReturnDate}
+            />
             <div className="route-form-buttons">
               <button
                 type="button"
