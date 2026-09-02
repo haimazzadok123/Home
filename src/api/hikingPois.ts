@@ -14,6 +14,9 @@ const BASE_URL = 'https://israelhiking.osm.org.il'
  * ends up outside the corridor is dropped afterwards in App.tsx, same as the other categories.
  * The 500ms delay between requests matches the official MCP wrapper's own rate limiting, to be
  * respectful of the public, community-run server.
+ *
+ * This is a supplementary data source only, not a filterable category of its own: results are
+ * folded into 'viewpoint' so they enrich that list instead of adding another filter toggle.
  */
 const MIN_REQUEST_INTERVAL_MS = 500
 const SAMPLE_INTERVAL_KM = 20
@@ -57,7 +60,10 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Queries the Israel Hiking Map for the nearest hiking POI to each sampled point along the route. */
+/**
+ * Queries the Israel Hiking Map for the nearest hiking POI to each sampled point along the
+ * route, returned as 'viewpoint' POIs to enrich that category rather than as a separate one.
+ */
 export async function fetchHikingPois(routeLine: Feature<LineString>, signal?: AbortSignal): Promise<RawPoi[]> {
   const samples = sampleRoute(routeLine)
   const seen = new Set<string>()
@@ -86,7 +92,7 @@ export async function fetchHikingPois(routeLine: Feature<LineString>, signal?: A
             const [lng, lat] = coords
             results.push({
               id: `hiking/${id}`,
-              category: 'hiking',
+              category: 'viewpoint',
               name,
               lat,
               lng,
