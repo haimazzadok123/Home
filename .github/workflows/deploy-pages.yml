@@ -1,8 +1,16 @@
 name: Deploy to GitHub Pages
 
+# Combines two independent projects into one GitHub Pages site:
+#   /            -> the trip-planner React app (claude/travel-route-planner-poi-xs399b)
+#   /philadelphia -> the static Philadelphia attractions guide (claude/philadelphia-attractions-site-2xdu49)
+# This file must be kept identical on both branches so a push to either one
+# rebuilds and redeploys the combined site.
+
 on:
   push:
-    branches: [claude/travel-route-planner-poi-xs399b]
+    branches:
+      - claude/travel-route-planner-poi-xs399b
+      - claude/philadelphia-attractions-site-2xdu49
   workflow_dispatch:
 
 permissions:
@@ -18,19 +26,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout trip planner app
+        uses: actions/checkout@v4
+        with:
+          ref: claude/travel-route-planner-poi-xs399b
+          path: app
+
+      - name: Checkout Philadelphia guide
+        uses: actions/checkout@v4
+        with:
+          ref: claude/philadelphia-attractions-site-2xdu49
+          path: philadelphia-site
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run build
+          cache-dependency-path: app/package-lock.json
+
+      - name: Build trip planner app
+        working-directory: app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble combined site
+        run: |
+          mkdir -p combined
+          cp -r app/dist/. combined/
+          mkdir -p combined/philadelphia
+          cp -r philadelphia-site/philadelphia/. combined/philadelphia/
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./combined
 
   deploy:
     environment:
