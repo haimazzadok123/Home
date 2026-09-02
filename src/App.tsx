@@ -91,9 +91,10 @@ function App() {
       const rawPois = await fetchPois(bbox)
       setPois(withRouteDistance(rawPois, routeLine, corridor))
 
-      // Hiking POIs come from a slower, best-effort source (sequential requests, no bounding-box
-      // search) — fetched in the background so it never delays the faster, primary POI results,
-      // and merged in whenever it resolves as long as this is still the current plan request.
+      // The Israel Hiking Map is a slower, best-effort source (sequential requests, no
+      // bounding-box search) used to enrich the viewpoint category — fetched in the background
+      // so it never delays the faster, primary POI results, and merged in whenever it resolves
+      // as long as this is still the current plan request.
       fetchHikingPois(routeLine)
         .then((rawHikingPois) => {
           if (planRequestIdRef.current !== requestId) return

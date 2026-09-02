@@ -33,7 +33,6 @@ const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = 
   { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
   { category: 'fuel', label: 'תחנות דלק', emoji: '⛽' },
   { category: 'camping', label: 'לינה (קק"ל / רשות הטבע)', emoji: '⛺' },
-  { category: 'hiking', label: 'אתרי טיולים (מפת ישראל)', emoji: '🥾' },
 ]
 
 /** Excludes English-only brand tags from the "by company" filter — Hebrew names only. */
