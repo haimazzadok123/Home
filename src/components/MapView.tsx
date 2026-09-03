@@ -6,10 +6,10 @@ import type { LatLng, Place, Poi } from '../types'
 import { CATEGORY_EMOJI, CATEGORY_LABEL, FOOD_FILTER_LABEL, FUEL_FILTER_LABEL } from '../utils/poiDisplay'
 
 const POI_COLOR: Record<Poi['category'], string> = {
-  viewpoint: 'var(--green-deep, #1e7a4d)',
-  'kosher-food': 'var(--sky-deep, #0288b7)',
-  fuel: '#e65100',
-  camping: '#5d4037',
+  viewpoint: 'var(--cat-viewpoint, #e2711d)',
+  'kosher-food': 'var(--cat-food-badge, #7c4dff)',
+  fuel: 'var(--cat-fuel, #d32f2f)',
+  camping: 'var(--cat-camping, #1e3a8a)',
 }
 
 function poiIcon(category: Poi['category']) {
