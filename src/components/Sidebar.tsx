@@ -128,12 +128,14 @@ export function Sidebar({
           <button
             key={f.category}
             type="button"
-            className={filterState.categories.has(f.category) ? 'filter active' : 'filter'}
+            className={`filter filter--${f.category}${filterState.categories.has(f.category) ? ' active' : ''}`}
             onClick={() => onToggleFilter(f.category)}
           >
-            {f.emoji} {f.label}
+            <span className="filter-label">{f.label}</span>
+            <span className="filter-icon">{f.emoji}</span>
           </button>
         ))}
+        {pois.length > 0 && <span className="poi-count-badge">{visible.length} מקומות</span>}
       </div>
 
       <SubfilterGroup

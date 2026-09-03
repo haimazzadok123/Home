@@ -266,8 +266,13 @@ function App() {
 
       <div className={mobileMenuOpen ? 'body menu-open' : 'body'}>
         <div className="controls-panel">
-          <button type="button" className="controls-panel-close" onClick={() => setMobileMenuOpen(false)}>
-            ✕ סגור
+          <button
+            type="button"
+            className="controls-panel-close"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="סגור"
+          >
+            ✕
           </button>
           <div className="route-form">
             <SearchBox label="נקודת יציאה" placeholder="עיר או מקום יציאה" value={start} onChange={setStart} />

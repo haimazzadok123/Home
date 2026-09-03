@@ -10,6 +10,15 @@
   --border: #bfe6ef;
   --accent: var(--sky-deep);
   --accent-bg: rgba(41, 182, 232, 0.12);
+  --cat-viewpoint: #e2711d;
+  --cat-viewpoint-bg: rgba(226, 113, 29, 0.12);
+  --cat-food: #189a5b;
+  --cat-food-bg: rgba(24, 154, 91, 0.12);
+  --cat-food-badge: #7c4dff;
+  --cat-fuel: #d32f2f;
+  --cat-fuel-bg: rgba(211, 47, 47, 0.12);
+  --cat-camping: #1e3a8a;
+  --cat-camping-bg: rgba(30, 58, 138, 0.12);
   color-scheme: light dark;
   font: 15px/1.45 system-ui, 'Segoe UI', Arial, sans-serif;
   color: var(--text);
@@ -29,6 +38,15 @@
     --border: #1d4753;
     --accent: var(--sky);
     --accent-bg: rgba(77, 208, 240, 0.16);
+    --cat-viewpoint: #f0975a;
+    --cat-viewpoint-bg: rgba(240, 151, 90, 0.16);
+    --cat-food: #3fc98a;
+    --cat-food-bg: rgba(63, 201, 138, 0.16);
+    --cat-food-badge: #9d7bff;
+    --cat-fuel: #ef5350;
+    --cat-fuel-bg: rgba(239, 83, 80, 0.16);
+    --cat-camping: #5c7cd6;
+    --cat-camping-bg: rgba(92, 124, 214, 0.16);
   }
 }
 

@@ -12,7 +12,7 @@
   flex-wrap: wrap;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  background: var(--sky-deep);
+  background: var(--bg);
 }
 
 .topbar-start {
@@ -25,8 +25,8 @@
   font-size: 20px;
   margin: 0;
   white-space: nowrap;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: var(--green-deep);
+  font-weight: 700;
 }
 
 .route-form {
@@ -175,25 +175,26 @@
 }
 
 .plan-button {
-  padding: 9px 18px;
-  border: none;
-  border-radius: 6px;
+  padding: 10px 20px;
+  border: 2px solid var(--green-deep);
+  border-radius: 999px;
   background: var(--green-deep);
   color: white;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex: 1;
 }
 
 .clear-button {
-  padding: 9px 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
+  padding: 9px 18px;
+  border: 2px solid var(--green-deep);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--green-deep);
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -243,11 +244,12 @@
 
 .favorites-button {
   padding: 8px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid var(--green-deep);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: var(--accent-bg);
+  color: var(--green-deep);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -339,25 +341,85 @@
 
 .filters {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   padding: 12px 16px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .filter {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 5px 5px 14px;
+  border: 2px solid var(--border);
   border-radius: 999px;
   background: var(--bg);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.filter-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--border);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .filter.active {
-  background: var(--accent-bg);
-  border-color: var(--accent);
   color: var(--text);
+}
+
+.filter--viewpoint.active {
+  background: var(--cat-viewpoint-bg);
+  border-color: var(--cat-viewpoint);
+}
+.filter--viewpoint.active .filter-icon {
+  background: var(--cat-viewpoint);
+}
+
+.filter--kosher-food.active {
+  background: var(--cat-food-bg);
+  border-color: var(--cat-food);
+}
+.filter--kosher-food.active .filter-icon {
+  background: var(--cat-food-badge);
+}
+
+.filter--fuel.active {
+  background: var(--cat-fuel-bg);
+  border-color: var(--cat-fuel);
+}
+.filter--fuel.active .filter-icon {
+  background: var(--cat-fuel);
+}
+
+.filter--camping.active {
+  background: var(--cat-camping-bg);
+  border-color: var(--cat-camping);
+}
+.filter--camping.active .filter-icon {
+  background: var(--cat-camping);
+}
+
+.poi-count-badge {
+  padding: 7px 14px;
+  border: 2px solid var(--sky-deep);
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--sky-deep);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .subfilter {
@@ -400,6 +462,10 @@
 .corridor-control label {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.corridor-control input[type='range'] {
+  accent-color: var(--green-deep);
 }
 
 .status-message {
@@ -524,7 +590,7 @@
     flex-direction: column;
   }
 
-  /* Map fills the screen by default; the controls only appear as a drawer over it. */
+  /* Map fills the screen by default; the controls only appear as a bottom sheet over it. */
   .map {
     order: -1;
     flex: 1;
@@ -538,21 +604,56 @@
   .body.menu-open .controls-panel {
     display: flex;
     position: fixed;
-    inset: 0;
+    inset-inline: 0;
+    top: 10vh;
+    bottom: 0;
     z-index: 2000;
     width: 100%;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+    padding-top: 22px;
+    animation: sheet-up 0.2s ease-out;
+  }
+
+  .body.menu-open .controls-panel::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--border);
   }
 
   .controls-panel-close {
-    display: block;
-    align-self: flex-start;
-    margin: 12px 16px 0;
-    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 14px;
+    inset-inline-end: 14px;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 13px;
+    border-radius: 50%;
+    background: var(--panel-bg);
+    color: var(--text-muted);
+    font-size: 14px;
     cursor: pointer;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
   }
 }
