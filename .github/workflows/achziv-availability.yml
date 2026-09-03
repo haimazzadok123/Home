@@ -1,0 +1,49 @@
+name: בדיקת זמינות - גן לאומי אכזיב
+
+on:
+  schedule:
+    # 05:00 UTC ≈ 07:00/08:00 בישראל (בהתאם לשעון קיץ/חורף)
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+  push:
+    branches: [claude/achziv-availability-agent-962ine]
+    paths:
+      - "achziv-availability/**"
+      - ".github/workflows/achziv-availability.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check-availability:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: achziv-availability
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: achziv-availability/package-lock.json
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm start
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ secrets.ALERT_EMAIL_FROM }}
+      - name: העלאת תוצרי כיול (צילומי מסך / HTML / דוח)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: achziv-availability-${{ github.run_number }}
+          path: |
+            achziv-availability/debug/**
+            achziv-availability/reports/**
+          if-no-files-found: ignore
+          retention-days: 14
