@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>חיים עזצדוק · Haim Azzadok</title>
+  <meta name="description" content="האתר האישי של חיים עזצדוק — מסע בחלל בין פרויקטים, רעיונות וטיולים." />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="space" aria-hidden="true"></canvas>
+
+  <!-- Global nav, apple.com style -->
+  <header class="gnav" id="gnav">
+    <div class="gnav-inner">
+      <a href="#home" class="logo" aria-label="בית">🪐</a>
+      <nav class="gnav-links" aria-label="ניווט">
+        <a href="#about">אודות</a>
+        <a href="#numbers">במספרים</a>
+        <a href="#journey">המסע</a>
+        <a href="#projects">פרויקטים</a>
+        <a href="#skills">כישורים</a>
+      </nav>
+      <a href="#contact" class="pill pill-blue pill-sm">צור קשר</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO: sticky scroll scene -->
+    <section id="home" class="scene hero-scene">
+      <div class="sticky">
+        <div class="hero-copy" id="heroCopy">
+          <p class="kicker">Haim Azzadok</p>
+          <h1 class="display grad" id="heroName"></h1>
+          <p class="hero-sub" id="typed"></p>
+        </div>
+        <div class="planet-wrap" id="planetWrap">
+          <div class="ring"></div>
+          <div class="planet">
+            <div class="planet-surface"></div>
+            <div class="astronaut" aria-hidden="true">👨‍🚀</div>
+          </div>
+          <div class="satellite s1">🛰️</div>
+          <div class="satellite s2">☄️</div>
+        </div>
+        <p class="hero-outro" id="heroOutro">מסע של <b id="heroYears"></b> שנים בין הכוכבים.</p>
+      </div>
+    </section>
+
+    <!-- ABOUT: scroll-lit words -->
+    <section id="about" class="block">
+      <p class="eyebrow">אודות</p>
+      <p class="lit" id="lit"></p>
+    </section>
+
+    <!-- NUMBERS: bento grid -->
+    <section id="numbers" class="block">
+      <h2 class="headline reveal">החיים. <span class="grey">במספרים.</span></h2>
+      <div class="bento">
+        <div class="tile t-big reveal">
+          <p class="t-label">זמן במסלול</p>
+          <p class="t-huge grad" id="cYears">0</p>
+          <p class="t-caption">שנים סביב השמש, מאז 4.11.1980</p>
+        </div>
+        <div class="tile reveal">
+          <p class="t-label">ימים</p>
+          <p class="t-num" id="cDays">0</p>
+          <p class="t-caption">ממשיכים לספור</p>
+        </div>
+        <div class="tile reveal">
+          <p class="t-label">שניות</p>
+          <p class="t-num tick" id="cSecs">0</p>
+          <p class="t-caption">בזמן אמת</p>
+        </div>
+        <div class="tile t-wide reveal">
+          <p class="t-label">מרחק שכדור הארץ עבר איתי</p>
+          <p class="t-num grad-warm" id="cKm">0</p>
+          <p class="t-caption">קילומטרים, במהירות של כ-107,000 קמ״ש סביב השמש</p>
+        </div>
+        <div class="tile t-ring reveal">
+          <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="ring-bg" />
+            <circle cx="60" cy="60" r="52" class="ring-fg" id="bdayRing" />
+          </svg>
+          <div class="ring-center">
+            <p class="t-num" id="bdayDays">0</p>
+            <p class="t-caption">ימים ליום ההולדת ה-<span id="nextAge"></span> 🎂</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOURNEY: horizontal carousel -->
+    <section id="journey" class="block">
+      <h2 class="headline reveal">מסלול הטיסה.</h2>
+      <p class="sub reveal">התחנות שבדרך. גללו הצידה.</p>
+      <div class="carousel" id="carousel"></div>
+      <div class="carousel-ctrl">
+        <button class="circle-btn" id="carPrev" aria-label="הקודם">›</button>
+        <button class="circle-btn" id="carNext" aria-label="הבא">‹</button>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="projects" class="block">
+      <h2 class="headline reveal">תחנות חלל. <span class="grey">שבניתי.</span></h2>
+      <div class="projects" id="projectList"></div>
+    </section>
+
+    <!-- SKILLS -->
+    <section id="skills" class="block">
+      <h2 class="headline reveal">קבוצת כוכבים.</h2>
+      <p class="sub reveal">הזיזו את העכבר או האצבע כדי לחבר בין הכוכבים.</p>
+      <div class="tile constellation reveal"><canvas id="constellation"></canvas></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="block contact">
+      <h2 class="display grad reveal">בואו נדבר.</h2>
+      <p class="sub reveal">שאלה, רעיון או שיתוף פעולה — התחנה פתוחה לשידורים.</p>
+      <div class="contact-pills reveal">
+        <a class="pill pill-blue" id="mailLink">✉️ <span id="mailText"></span></a>
+        <a class="pill pill-ghost" id="phoneLink">📞 <span id="phoneText" dir="ltr"></span></a>
+        <a class="pill pill-ghost" id="waLink" target="_blank" rel="noopener">💬 וואטסאפ</a>
+      </div>
+      <div class="contact-links reveal">
+        <a id="liLink" target="_blank" rel="noopener">לינקדאין ›</a>
+        <a id="blogLink" target="_blank" rel="noopener">הבלוג ›</a>
+        <button type="button" class="linklike" data-copy="email">העתקת המייל ›</button>
+        <button type="button" class="linklike" data-copy="phone">העתקת הטלפון ›</button>
+      </div>
+
+      <form class="tile transmit reveal" id="transmit">
+        <div class="field"><input name="name" id="fName" placeholder=" " required autocomplete="name" /><label for="fName">שם</label></div>
+        <div class="field"><input name="subject" id="fSubj" placeholder=" " required /><label for="fSubj">נושא</label></div>
+        <div class="field"><textarea name="message" id="fMsg" rows="4" placeholder=" " required></textarea><label for="fMsg">הודעה</label></div>
+        <button class="pill pill-blue" type="submit">שליחה</button>
+        <p class="fine">הכפתור פותח את תוכנת המייל שלכם עם ההודעה מוכנה.</p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>© <span id="year"></span> חיים עזצדוק. כל הזכויות שמורות לחוקרי החלל.</p>
+      <a href="#home">חזרה למעלה ↑</a>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
