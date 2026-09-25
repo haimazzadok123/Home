@@ -8,7 +8,7 @@
   $('heroName').textContent = S.name + '.';
   $('year').textContent = new Date().getFullYear();
 
-  const litWords = new Set(['חלל', 'חוקר', 'רעיון', 'נתונים', 'טיול', 'טיולים', 'הבלוג', 'באמת']);
+  const litWords = new Set(['חלל', 'חוקר', 'BI', 'Tableau', 'לדשבורדים', 'בריאות', 'אבא', 'בדידות', 'טיולים']);
   const lit = $('lit');
   S.about.join(' ').split(/\s+/).forEach((w) => {
     const span = document.createElement('span');
@@ -25,6 +25,32 @@
         <h3>${j.title}</h3>
         <p>${j.text}</p>
       </article>`)
+    .join('');
+
+  $('missionList').innerHTML = S.missions
+    .map((m) => `<article class="tile mission reveal">
+        <div class="m-ico" aria-hidden="true">${m.icon}</div>
+        <p class="m-kicker">${m.kicker}</p>
+        <h3>${m.title}</h3>
+        <p class="m-text">${m.text}</p>
+        <ul>${m.points.map((p) => `<li>${p}</li>`).join('')}</ul>
+      </article>`)
+    .join('');
+
+  $('eduList').innerHTML = S.education
+    .map((e) => `<article class="tile edu-card reveal">
+        <div class="e-ico" aria-hidden="true">${e.icon}</div>
+        <h3>${e.title}</h3>
+        <p class="e-place">${e.place}</p>
+        <p class="e-note">${e.note}</p>
+      </article>`)
+    .join('');
+  $('cCareer').innerHTML = `<span dir="ltr">${new Date().getFullYear() - S.dataSince}+</span>`;
+
+  $('tabTitle').textContent = S.tableau.title;
+  $('tabSub').textContent = S.tableau.sub;
+  $('tabPoints').innerHTML = S.tableau.points
+    .map((p) => `<div class="tab-pt reveal"><span>${p.icon}</span><h3>${p.title}</h3><p>${p.text}</p></div>`)
     .join('');
 
   $('projectList').innerHTML = S.projects
@@ -266,6 +292,7 @@
       vx: (Math.random() - 0.5) * 0.35 * DPR,
       vy: (Math.random() - 0.5) * 0.35 * DPR,
       glow: 0,
+      star: label === 'Tableau',
     }));
   };
   initC();
@@ -309,14 +336,15 @@
     }
     cx.textAlign = 'center';
     for (const n of nodes) {
-      const r = (3 + n.glow * 4) * DPR;
+      const g = n.star ? Math.max(n.glow, 0.7) : n.glow;
+      const r = (3 + g * 4 + (n.star ? 2 : 0)) * DPR;
       cx.shadowColor = 'rgba(94,231,255,0.9)';
-      cx.shadowBlur = (8 + n.glow * 20) * DPR;
+      cx.shadowBlur = (8 + g * 20) * DPR;
       cx.fillStyle = '#fff';
       cx.beginPath(); cx.arc(n.x, n.y, r, 0, Math.PI * 2); cx.fill();
       cx.shadowBlur = 0;
-      cx.font = `${600} ${(14 + n.glow * 4) * DPR}px -apple-system, Heebo, sans-serif`;
-      cx.fillStyle = `rgba(245,245,247,${0.55 + n.glow * 0.45})`;
+      cx.font = `${n.star ? 800 : 600} ${(14 + g * 4 + (n.star ? 6 : 0)) * DPR}px -apple-system, Heebo, sans-serif`;
+      cx.fillStyle = n.star ? '#5ee7ff' : `rgba(245,245,247,${0.55 + g * 0.45})`;
       cx.fillText(n.label, n.x, n.y - 14 * DPR);
     }
     requestAnimationFrame(drawC);

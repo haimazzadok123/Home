@@ -21,8 +21,11 @@
       <a href="#home" class="logo" aria-label="בית">🪐</a>
       <nav class="gnav-links" aria-label="ניווט">
         <a href="#about">אודות</a>
+        <a href="#missions">משימות</a>
+        <a href="#tableau">Tableau</a>
         <a href="#numbers">במספרים</a>
         <a href="#journey">המסע</a>
+        <a href="#education">השכלה</a>
         <a href="#projects">פרויקטים</a>
         <a href="#skills">כישורים</a>
       </nav>
@@ -58,6 +61,36 @@
       <p class="lit" id="lit"></p>
     </section>
 
+    <!-- MISSIONS: feature tiles -->
+    <section id="missions" class="block">
+      <h2 class="headline reveal">משימות. <span class="grey">שמשנות.</span></h2>
+      <div class="missions" id="missionList"></div>
+    </section>
+
+    <!-- TABLEAU spotlight -->
+    <section id="tableau" class="block tableau">
+      <p class="eyebrow reveal">ההתמחות</p>
+      <h2 class="display grad-tab reveal" id="tabTitle"></h2>
+      <p class="sub reveal" id="tabSub"></p>
+      <div class="tile dash reveal" aria-hidden="true">
+        <div class="dash-top"><span></span><span></span><span></span><b>דשבורד · בריאות הציבור</b></div>
+        <div class="dash-grid">
+          <div class="kpi"><small>מדד א׳</small><b>92%</b></div>
+          <div class="kpi"><small>מדד ב׳</small><b>1.4K</b></div>
+          <div class="kpi"><small>מגמה</small><b>▲ 12%</b></div>
+          <div class="bars">
+            <i style="--h:45%"></i><i style="--h:70%"></i><i style="--h:55%"></i><i style="--h:88%"></i>
+            <i style="--h:62%"></i><i style="--h:95%"></i><i style="--h:74%"></i><i style="--h:81%"></i>
+          </div>
+          <svg class="line" viewBox="0 0 300 120" preserveAspectRatio="none">
+            <polyline points="0,100 40,80 80,88 120,52 160,60 200,30 240,40 300,12" />
+          </svg>
+          <div class="donut"><span></span></div>
+        </div>
+      </div>
+      <div class="tab-points" id="tabPoints"></div>
+    </section>
+
     <!-- NUMBERS: bento grid -->
     <section id="numbers" class="block">
       <h2 class="headline reveal">החיים. <span class="grey">במספרים.</span></h2>
@@ -82,15 +115,30 @@
           <p class="t-num grad-warm" id="cKm">0</p>
           <p class="t-caption">קילומטרים, במהירות של כ-107,000 קמ״ש סביב השמש</p>
         </div>
-        <div class="tile t-ring reveal">
-          <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
-            <circle cx="60" cy="60" r="52" class="ring-bg" />
-            <circle cx="60" cy="60" r="52" class="ring-fg" id="bdayRing" />
-          </svg>
-          <div class="ring-center">
-            <p class="t-num" id="bdayDays">0</p>
-            <p class="t-caption">ימים ליום ההולדת ה-<span id="nextAge"></span> 🎂</p>
+        <div class="tile reveal">
+          <p class="t-label">בעולם ה-BI</p>
+          <p class="t-num grad" id="cCareer">0</p>
+          <p class="t-caption">שנים של דוחות, דשבורדים והדרכות</p>
+        </div>
+        <div class="tile reveal">
+          <p class="t-label">משתמשים</p>
+          <p class="t-num"><span dir="ltr">400+</span></p>
+          <p class="t-caption">הודרכו בהטמעת Oracle BI בממשלה</p>
+        </div>
+        <div class="tile t-ring t-tall reveal">
+          <div class="ring-box">
+            <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" class="ring-bg" />
+              <circle cx="60" cy="60" r="52" class="ring-fg" id="bdayRing" />
+            </svg>
+            <p class="t-num ring-num" id="bdayDays">0</p>
           </div>
+          <p class="t-caption">ימים ליום ההולדת ה-<span id="nextAge"></span> 🎂</p>
+        </div>
+        <div class="tile t-wide reveal">
+          <p class="t-label">ארגז הכלים</p>
+          <p class="t-num">5 כלי BI</p>
+          <p class="t-caption">Tableau בראש, לצד QlikView, פנורמה, Oracle BI ו-BusinessObjects — ו-SQL מתחת לכולם</p>
         </div>
       </div>
     </section>
@@ -104,6 +152,12 @@
         <button class="circle-btn" id="carPrev" aria-label="הקודם">›</button>
         <button class="circle-btn" id="carNext" aria-label="הבא">‹</button>
       </div>
+    </section>
+
+    <!-- EDUCATION -->
+    <section id="education" class="block">
+      <h2 class="headline reveal">השכלה. <span class="grey">מ-AI ועד ניהול מוצר.</span></h2>
+      <div class="edu" id="eduList"></div>
     </section>
 
     <!-- PROJECTS -->
