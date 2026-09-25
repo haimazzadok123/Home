@@ -27,6 +27,44 @@
       </article>`)
     .join('');
 
+  const gal = $('galleryGrid');
+  gal.innerHTML = S.photos
+    .map((p, i) => `<figure class="tile g-item ${p.cls} reveal" data-i="${i}" tabindex="0">
+        <img src="${p.src}" alt="${p.caption}" loading="lazy" />
+        <figcaption>${p.caption}</figcaption>
+      </figure>`)
+    .join('');
+
+  const lb = $('lightbox');
+  let lbi = 0;
+  const showLb = (i) => {
+    lbi = (i + S.photos.length) % S.photos.length;
+    $('lbImg').src = S.photos[lbi].src;
+    $('lbImg').alt = S.photos[lbi].caption;
+    $('lbCap').textContent = S.photos[lbi].caption;
+    lb.hidden = false;
+    document.body.style.overflow = 'hidden';
+  };
+  const closeLb = () => { lb.hidden = true; document.body.style.overflow = ''; };
+  gal.addEventListener('click', (e) => {
+    const f = e.target.closest('.g-item');
+    if (f) showLb(Number(f.dataset.i));
+  });
+  gal.addEventListener('keydown', (e) => {
+    const f = e.target.closest('.g-item');
+    if (f && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showLb(Number(f.dataset.i)); }
+  });
+  $('lbClose').onclick = closeLb;
+  $('lbNext').onclick = () => showLb(lbi + 1);
+  $('lbPrev').onclick = () => showLb(lbi - 1);
+  lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
+  addEventListener('keydown', (e) => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') showLb(lbi + 1);
+    if (e.key === 'ArrowRight') showLb(lbi - 1);
+  });
+
   $('missionList').innerHTML = S.missions
     .map((m) => `<article class="tile mission reveal">
         <div class="m-ico" aria-hidden="true">${m.icon}</div>
@@ -57,7 +95,7 @@
     .map((p) => `<article class="tile proj reveal">
         <h3>${p.title}</h3>
         <p class="desc">${p.text}</p>
-        <div class="links"><a href="${p.url}">לכניסה ›</a></div>
+        <div class="links"><a href="${p.url}" target="_blank" rel="noopener">לכניסה ›</a></div>
         <div class="ico" aria-hidden="true">${p.icon}</div>
         <p class="tags">${p.tags.join(' · ')}</p>
       </article>`)

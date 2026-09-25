@@ -11,6 +11,14 @@ window.SITE = {
   linkedin: 'https://www.linkedin.com/in/haim-azzadok-08a44451',
   blog: 'http://haim-z.blogspot.com/',
 
+  photos: [
+    { src: 'photos/portrait.jpg', caption: 'בעבודה', cls: 'g-tall' },
+    { src: 'photos/pool.jpg', caption: 'רגע של שקט', cls: 'g-tall' },
+    { src: 'photos/office.jpg', caption: 'מאחורי הדשבורדים', cls: 'g-wide' },
+    { src: 'photos/desert.jpg', caption: 'במדבר', cls: '' },
+    { src: 'photos/sea.jpg', caption: 'ליד הים', cls: '' },
+  ],
+
   about: [
     'נולדתי ב-4 בנובמבר 1980, ומאז אני מסתובב במסלול הזה בסקרנות של חוקר חלל.',
     'מאז 2008 אני בעולם ה-BI: מפיתוח דוחות בפרטנר, דרך ביקורת מערכות מידע והטמעת Oracle BI במשרד האוצר, ועד היום — מיישם ומטמיע מערכות BI באגף טכנולוגיות דיגיטליות ודאטה של משרד הבריאות, והופך נתונים לדשבורדים שעוזרים לקבל החלטות על בריאות הציבור.',
@@ -72,28 +80,28 @@ window.SITE = {
     { icon: '📚', title: 'בגרות מלאה · מגמת מנהל', place: 'תיכון מקיף יהוד', note: 'עברית שפת אם · אנגלית טובה' },
   ],
 
-  // פרויקטים שכבר חיים באתר (נפרסים יחד ב-GitHub Pages)
+  // פרויקטים שכבר חיים באוויר (באתר haimazzadok123.github.io/Home)
   projects: [
     {
       icon: '🧭',
       title: 'מטיילים עם דוד חיים',
       text: 'מתכנן מסלולי טיול: מסלול על מפה, תצפיות, אוכל כשר, תחנות דלק, לינה ואתרי טיולים לאורך הדרך — עם תחזית מזג אוויר ושיתוף בקישור.',
       tags: ['React', 'מפות', 'OpenStreetMap'],
-      url: '../',
+      url: 'https://haimazzadok123.github.io/Home/',
     },
     {
       icon: '🗽',
       title: 'מדריך פילדלפיה',
       text: 'מדריך אטרקציות אינטראקטיבי לטיול בפילדלפיה.',
       tags: ['טיולים', 'מדריך'],
-      url: '../philadelphia/',
+      url: 'https://haimazzadok123.github.io/Home/philadelphia/',
     },
     {
       icon: '📊',
       title: 'לומדת פורטל BI',
       text: 'לומדה אינטראקטיבית שמלמדת לעבוד עם פורטל ה-BI, צעד אחר צעד.',
       tags: ['BI', 'הדרכה', 'נתונים'],
-      url: '../lomda/',
+      url: 'https://haimazzadok123.github.io/Home/lomda/',
     },
   ],
 

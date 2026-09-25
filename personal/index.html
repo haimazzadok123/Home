@@ -6,6 +6,9 @@
   <title>חיים עזצדוק · Haim Azzadok</title>
   <meta name="description" content="האתר האישי של חיים עזצדוק — מסע בחלל בין פרויקטים, רעיונות וטיולים." />
   <meta name="theme-color" content="#000000" />
+  <meta property="og:title" content="חיים עזצדוק · Haim Azzadok" />
+  <meta property="og:description" content="מומחה Tableau · מיישם ומטמיע BI במשרד הבריאות" />
+  <meta property="og:image" content="photos/portrait.jpg" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,6 +24,7 @@
       <a href="#home" class="logo" aria-label="בית">🪐</a>
       <nav class="gnav-links" aria-label="ניווט">
         <a href="#about">אודות</a>
+        <a href="#gallery">תמונות</a>
         <a href="#missions">משימות</a>
         <a href="#tableau">Tableau</a>
         <a href="#numbers">במספרים</a>
@@ -45,8 +49,7 @@
         <div class="planet-wrap" id="planetWrap">
           <div class="ring"></div>
           <div class="planet">
-            <div class="planet-surface"></div>
-            <div class="astronaut" aria-hidden="true">👨‍🚀</div>
+            <img class="planet-photo" src="photos/avatar.jpg" alt="חיים עזצדוק" width="640" height="640" />
           </div>
           <div class="satellite s1">🛰️</div>
           <div class="satellite s2">☄️</div>
@@ -59,6 +62,13 @@
     <section id="about" class="block">
       <p class="eyebrow">אודות</p>
       <p class="lit" id="lit"></p>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery" class="block">
+      <h2 class="headline reveal">תצלומים. <span class="grey">מהמסלול.</span></h2>
+      <p class="sub reveal">בעבודה, בדרכים ובין לבין. לחצו על תמונה להגדלה.</p>
+      <div class="gallery" id="galleryGrid"></div>
     </section>
 
     <!-- MISSIONS: feature tiles -->
@@ -205,6 +215,13 @@
       <a href="#home">חזרה למעלה ↑</a>
     </div>
   </footer>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lb-btn lb-close" id="lbClose" aria-label="סגירה">✕</button>
+    <button class="lb-btn lb-prev" id="lbPrev" aria-label="הקודמת">›</button>
+    <figure><img id="lbImg" alt="" /><figcaption id="lbCap"></figcaption></figure>
+    <button class="lb-btn lb-next" id="lbNext" aria-label="הבאה">‹</button>
+  </div>
 
   <div class="toast" id="toast" role="status"></div>
 
