@@ -155,6 +155,7 @@ const CHANNELS = [
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
+  { id: 'redbull', name: 'Red Bull TV',     url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
   { id: 'knesset', name: 'ערוץ הכנסת',      url: 'https://contact.gostreaming.tv/Knesset/myStream/playlist.m3u8' },
   { id: 'makan',   name: 'מכאן 33',         url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/makan/live.livx/playlist.m3u8' },
   { id: 'ch9',     name: 'ערוץ 9',          url: 'https://contact.gostreaming.tv/Con-11/index.m3u8' },
@@ -168,7 +169,7 @@ const store = {
 
 const channels = CHANNELS;
 let count = store.get('count', 4);
-let assign = store.get('assign4', CHANNELS.map(c => c.id));
+let assign = store.get('assign5', CHANNELS.map(c => c.id));
 let audioIdx = store.get('audio', 0);
 let volume = store.get('volume', 0.8);
 
@@ -286,7 +287,7 @@ function buildGrid() {
     t.select.addEventListener('click', e => e.stopPropagation());
     t.select.addEventListener('change', () => {
       assign[i] = t.select.value;
-      store.set('assign4', assign);
+      store.set('assign5', assign);
       load(i);
     });
     el.querySelector('.fs').addEventListener('click', e => { e.stopPropagation(); fullscreen(i); });
