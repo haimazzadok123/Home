@@ -1,11 +1,12 @@
 name: Deploy to GitHub Pages
 
-# Combines four independent projects into one GitHub Pages site:
-#   /            -> the trip-planner React app (claude/travel-route-planner-poi-xs399b)
-#   /philadelphia -> the static Philadelphia attractions guide (claude/philadelphia-attractions-site-2xdu49)
-#   /lomda        -> the BI portal interactive learning module (claude/lomda-portal-bi-rt3nh4)
-#   /tv           -> the Israeli TV multi-view page (claude/israel-tv-multiview)
-# This file must be kept identical on all four branches so a push to any one
+# Combines three independent projects into one GitHub Pages site:
+#   /       -> the trip-planner React app (claude/travel-route-planner-poi-xs399b)
+#   /tv     -> the Israeli TV multi-view page (claude/philadelphia-attractions-site-2xdu49;
+#              the branch name is historical - it used to hold a Philadelphia guide, and
+#              is kept because it is already allowed to deploy to the github-pages environment)
+#   /lomda  -> the BI portal interactive learning module (claude/lomda-portal-bi-rt3nh4)
+# This file must be kept identical on all three branches so a push to any one
 # rebuilds and redeploys the combined site.
 
 on:
@@ -14,7 +15,6 @@ on:
       - claude/travel-route-planner-poi-xs399b
       - claude/philadelphia-attractions-site-2xdu49
       - claude/lomda-portal-bi-rt3nh4
-      - claude/israel-tv-multiview
   workflow_dispatch:
 
 permissions:
@@ -36,12 +36,6 @@ jobs:
           ref: claude/travel-route-planner-poi-xs399b
           path: app
 
-      - name: Checkout Philadelphia guide
-        uses: actions/checkout@v4
-        with:
-          ref: claude/philadelphia-attractions-site-2xdu49
-          path: philadelphia-site
-
       - name: Checkout BI portal lomda
         uses: actions/checkout@v4
         with:
@@ -51,7 +45,7 @@ jobs:
       - name: Checkout Israeli TV multi-view
         uses: actions/checkout@v4
         with:
-          ref: claude/israel-tv-multiview
+          ref: claude/philadelphia-attractions-site-2xdu49
           path: tv-site
 
       - uses: actions/setup-node@v4
@@ -70,8 +64,6 @@ jobs:
         run: |
           mkdir -p combined
           cp -r app/dist/. combined/
-          mkdir -p combined/philadelphia
-          cp -r philadelphia-site/philadelphia/. combined/philadelphia/
           mkdir -p combined/lomda
           cp -r lomda-site/lomda/. combined/lomda/
           mkdir -p combined/tv
