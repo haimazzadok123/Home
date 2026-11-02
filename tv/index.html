@@ -84,8 +84,10 @@
   .bar {
     position: absolute; inset: 0 0 auto 0; display: flex; align-items: center; gap: 6px;
     padding: 6px 8px; background: linear-gradient(rgba(0,0,0,.75), transparent);
-    opacity: 0; transition: opacity .15s;
+    opacity: 0; transition: opacity .15s; z-index: 3;
   }
+  /* touch screens have no hover: always show the channel picker */
+  @media (hover: none) { .bar { opacity: 1; } }
   .tile:hover .bar, .tile.audio .bar, .tile:focus-within .bar { opacity: 1; }
   .bar select { max-width: 60%; padding: 3px 6px; background: rgba(20,22,30,.85); }
   .bar .num {
@@ -110,10 +112,12 @@
 
   @media (max-width: 700px) {
     .free-menu { position: fixed; top: 56px; inset-inline: 16px; width: auto; }
-    .grid { grid-template-columns: 1fr; grid-auto-rows: minmax(200px, auto); }
+    .grid { grid-template-columns: 1fr; grid-auto-rows: auto; height: auto; }
+    .hint-tip { display: none; }
     main { overflow: auto; }
     .tile { aspect-ratio: 16/9; }
     .bar { opacity: 1; }
+    .bar select { max-width: 70%; font-size: 16px; }
   }
 </style>
 </head>
@@ -131,7 +135,8 @@
   <label class="ctrl">🔊 עוצמה <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8"></label>
   <span class="now" id="now"></span>
   <span class="spacer"></span>
-  <span class="ctrl" title="לחיצה על מסך — שומעים אותו · מקשים 1–9 מחליפים קול · M משתיק הכל · לחיצה כפולה — מסך מלא">ⓘ לחיצה על מסך = הקול שלו</span>
+  <span class="ctrl hint-tip" title="לחיצה על מסך — שומעים אותו · מקשים 1–9 מחליפים קול · M משתיק הכל · לחיצה כפולה — מסך מלא">ⓘ לחיצה על מסך = הקול שלו</span>
+  <button id="share" title="שיתוף האתר">🔗 שיתוף</button>
   <details class="free">
     <summary>🎬 צפייה חינם</summary>
     <nav class="free-menu">
@@ -428,6 +433,18 @@ vol.addEventListener('input', () => {
     t.video.volume = volume;
     if (t.yt && t.yt.setVolume) try { t.yt.setVolume(Math.round(volume * 100)); } catch {}
   });
+});
+
+document.getElementById('share').addEventListener('click', async () => {
+  const url = location.origin + location.pathname;
+  const btn = document.getElementById('share');
+  if (navigator.share) {
+    try { await navigator.share({ title: 'מולטי-ערוצים', text: 'צפייה בכמה ערוצים במקביל', url }); } catch {}
+    return;
+  }
+  try { await navigator.clipboard.writeText(url); btn.textContent = '✓ הקישור הועתק'; }
+  catch { prompt('העתיקו את הקישור:', url); }
+  setTimeout(() => { btn.textContent = '🔗 שיתוף'; }, 2000);
 });
 
 document.addEventListener('click', e => {
