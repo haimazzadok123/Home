@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מולטי-ערוצים</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #171a22;
+    --panel-2: #20242f;
+    --text: #e8eaf0;
+    --muted: #8a90a2;
+    --accent: #3d8bff;
+    --live: #ff3b4f;
+    --border: #2a2f3c;
+    --gap: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .ctrl { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+  select, input, button {
+    font: inherit; font-size: 14px; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 9px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  input[type=range] { padding: 0; accent-color: var(--accent); width: 110px; }
+  .spacer { flex: 1; }
+  .now { font-size: 14px; }
+  .now b { color: var(--accent); }
+
+  main { flex: 1; min-height: 0; padding: var(--gap); }
+  .grid {
+    height: 100%; display: grid; gap: var(--gap);
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-auto-rows: 1fr;
+  }
+  .tile {
+    position: relative; background: #000; border-radius: 8px; overflow: hidden;
+    border: 3px solid transparent; cursor: pointer; min-height: 0;
+  }
+  .tile.audio { border-color: var(--accent); box-shadow: 0 0 18px rgba(61,139,255,.35); }
+  .tile video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+  .bar {
+    position: absolute; inset: 0 0 auto 0; display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px; background: linear-gradient(rgba(0,0,0,.75), transparent);
+    opacity: 0; transition: opacity .15s;
+  }
+  .tile:hover .bar, .tile.audio .bar, .tile:focus-within .bar { opacity: 1; }
+  .bar select { max-width: 60%; padding: 3px 6px; background: rgba(20,22,30,.85); }
+  .bar .num {
+    min-width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 12px; background: rgba(255,255,255,.15);
+  }
+  .bar button { padding: 3px 7px; background: rgba(20,22,30,.85); }
+  .badge {
+    position: absolute; bottom: 8px; inset-inline-start: 8px;
+    font-size: 13px; padding: 3px 9px; border-radius: 20px;
+    background: rgba(0,0,0,.6); pointer-events: none;
+  }
+  .tile.audio .badge { background: var(--accent); }
+  .msg {
+    position: absolute; inset: 0; display: none; flex-direction: column; gap: 10px;
+    align-items: center; justify-content: center; text-align: center; padding: 16px;
+    color: var(--muted); font-size: 14px; background: rgba(0,0,0,.6);
+  }
+  .tile.loading .msg.load, .tile.error .msg.err, .tile.empty .msg.none { display: flex; }
+
+  dialog {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; width: min(560px, calc(100vw - 32px));
+  }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h2 { margin-top: 0; font-size: 18px; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .row input { flex: 1; min-width: 140px; }
+  .list { max-height: 45vh; overflow: auto; margin: 10px 0; }
+  .list div {
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .list small { color: var(--muted); direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 340px; }
+  .hint { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; grid-auto-rows: minmax(200px, auto); }
+    main { overflow: auto; }
+    .tile { aspect-ratio: 16/9; }
+    .bar { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>📺 מולטי-ערוצים</h1>
+  <label class="ctrl">מסכים
+    <select id="layout">
+      <option value="2">2</option>
+      <option value="4" selected>4</option>
+      <option value="6">6</option>
+      <option value="9">9</option>
+    </select>
+  </label>
+  <label class="ctrl">🔊 עוצמה <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+  <span class="now" id="now"></span>
+  <span class="spacer"></span>
+  <button id="manage">⚙️ ניהול ערוצים</button>
+</header>
+
+<main><div class="grid" id="grid"></div></main>
+
+<dialog id="dlg">
+  <h2>ניהול ערוצים</h2>
+  <div class="list" id="chanList"></div>
+  <h3 style="font-size:15px;margin-bottom:6px">הוספת ערוץ</h3>
+  <div class="row">
+    <input id="newName" placeholder="שם הערוץ">
+    <input id="newUrl" placeholder="https://.../playlist.m3u8" dir="ltr">
+    <button id="addBtn">הוסף</button>
+  </div>
+  <p class="hint">
+    לחיצה על מסך — שומעים את הקול שלו (כל השאר מושתקים). מקשים <b>1–9</b> מחליפים קול,
+    <b>M</b> משתיק הכל, לחיצה כפולה — מסך מלא.<br>
+    כתובות השידור הן קישורי HLS (‏.m3u8) ציבוריים של הגופים המשדרים, והן משתנות מדי פעם.
+    אם ערוץ מפסיק לעבוד אפשר לעדכן את הכתובת כאן. השידורים פתוחים בדרך כלל רק מישראל.
+  </p>
+  <div class="row" style="justify-content:space-between">
+    <button id="resetBtn">שחזור רשימת ברירת מחדל</button>
+    <button id="closeBtn">סגור</button>
+  </div>
+</dialog>
+
+<script>
+// Official, free-to-air broadcaster streams only. URLs change from time to time;
+// they can be edited in the "manage channels" dialog without touching code.
+const DEFAULT_CHANNELS = [
+  { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
+  { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
+  { id: 'ch14',    name: 'עכשיו 14',        url: 'https://r.il.cdn-redge.media/livehls/oil/ch14/live/ch14/live.livx/playlist.m3u8' },
+  { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
+  { id: 'knesset', name: 'ערוץ הכנסת',      url: 'https://contact.gostreaming.tv/Knesset/myStream/playlist.m3u8' },
+  { id: 'makan',   name: 'מכאן 33',         url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/makan/live.livx/playlist.m3u8' },
+  { id: 'ch9',     name: 'ערוץ 9',          url: 'https://contact.gostreaming.tv/Con-11/index.m3u8' },
+  { id: 'i24en',   name: 'i24NEWS English', url: 'https://i24newsenglish-cdn.encoders.immergo.tv/master.m3u8' },
+];
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('tv.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('tv.' + k, JSON.stringify(v)); } catch {} },
+};
+
+let channels = store.get('channels', DEFAULT_CHANNELS);
+let count = store.get('count', 4);
+let assign = store.get('assign', DEFAULT_CHANNELS.map(c => c.id));
+let audioIdx = store.get('audio', 0);
+let volume = store.get('volume', 0.8);
+
+const grid = document.getElementById('grid');
+const tiles = []; // { el, video, hls, select, badge }
+
+const chanById = id => channels.find(c => c.id === id);
+
+function buildGrid() {
+  tiles.forEach(destroyTile);
+  tiles.length = 0;
+  grid.innerHTML = '';
+  const cols = count <= 1 ? 1 : count <= 4 ? 2 : 3;
+  grid.style.setProperty('--cols', cols);
+
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.tabIndex = 0;
+    el.innerHTML = `
+      <video muted playsinline autoplay></video>
+      <div class="bar">
+        <span class="num">${i + 1}</span>
+        <select aria-label="ערוץ במסך ${i + 1}"></select>
+        <span class="spacer"></span>
+        <button class="fs" title="מסך מלא">⛶</button>
+      </div>
+      <div class="badge"></div>
+      <div class="msg load">טוען…</div>
+      <div class="msg err"><span>השידור לא זמין כרגע</span><button class="retry">נסה שוב</button></div>
+      <div class="msg none">בחרו ערוץ מהרשימה</div>`;
+    const t = {
+      el, video: el.querySelector('video'), select: el.querySelector('select'),
+      badge: el.querySelector('.badge'), hls: null,
+    };
+    tiles.push(t);
+    grid.appendChild(el);
+
+    fillSelect(t.select, assign[i]);
+    t.select.addEventListener('click', e => e.stopPropagation());
+    t.select.addEventListener('change', () => {
+      assign[i] = t.select.value;
+      store.set('assign', assign);
+      load(i);
+    });
+    el.querySelector('.fs').addEventListener('click', e => { e.stopPropagation(); fullscreen(i); });
+    el.querySelector('.retry').addEventListener('click', e => { e.stopPropagation(); load(i); });
+    el.addEventListener('click', () => setAudio(i));
+    el.addEventListener('dblclick', () => fullscreen(i));
+    load(i);
+  }
+  if (audioIdx >= count) audioIdx = 0;
+  setAudio(audioIdx, true);
+}
+
+function fillSelect(sel, value) {
+  sel.innerHTML = '<option value="">— ללא —</option>' +
+    channels.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  sel.value = chanById(value) ? value : '';
+}
+
+function destroyTile(t) {
+  if (t.hls) { t.hls.destroy(); t.hls = null; }
+  t.video.removeAttribute('src');
+  t.video.load();
+}
+
+function setState(t, state) {
+  t.el.classList.remove('loading', 'error', 'empty');
+  if (state) t.el.classList.add(state);
+}
+
+function load(i) {
+  const t = tiles[i];
+  destroyTile(t);
+  const ch = chanById(assign[i]);
+  t.badge.textContent = ch ? ch.name : '';
+  if (!ch) { setState(t, 'empty'); return; }
+  setState(t, 'loading');
+
+  const v = t.video;
+  v.muted = i !== audioIdx;
+  v.volume = volume;
+  v.onplaying = () => setState(t, null);
+  v.onerror = () => setState(t, 'error');
+
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ liveSyncDurationCount: 3, maxBufferLength: 20, capLevelToPlayerSize: true });
+    t.hls = hls;
+    let recovered = false;
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) { recovered = true; hls.recoverMediaError(); return; }
+      setState(t, 'error');
+      hls.destroy(); t.hls = null;
+    });
+    hls.loadSource(ch.url);
+    hls.attachMedia(v);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => play(v));
+  } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+    v.src = ch.url; // Safari / iOS native HLS
+    play(v);
+  } else {
+    setState(t, 'error');
+  }
+}
+
+function play(v) {
+  const p = v.play();
+  if (p && p.catch) p.catch(err => {
+    // Unmuted autoplay blocked before a user gesture: fall back to muted.
+    if (err && err.name === 'NotAllowedError' && !v.muted) { v.muted = true; v.play().catch(() => {}); }
+  });
+}
+
+function setAudio(i, silent) {
+  audioIdx = i;
+  store.set('audio', i);
+  tiles.forEach((t, j) => {
+    const on = j === i;
+    t.el.classList.toggle('audio', on);
+    t.video.muted = !on;
+    t.video.volume = volume;
+    if (on && !silent && t.video.paused) play(t.video);
+  });
+  updateNow();
+}
+
+function muteAll() {
+  audioIdx = -1;
+  tiles.forEach(t => { t.video.muted = true; t.el.classList.remove('audio'); });
+  updateNow();
+}
+
+function updateNow() {
+  const now = document.getElementById('now');
+  const ch = audioIdx >= 0 && chanById(assign[audioIdx]);
+  now.innerHTML = ch ? `שומעים: <b>${escapeHtml(ch.name)}</b>` : 'כל המסכים מושתקים';
+}
+
+function fullscreen(i) {
+  const el = tiles[i].el;
+  setAudio(i);
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (el.requestFullscreen) el.requestFullscreen();
+  else if (tiles[i].video.webkitEnterFullscreen) tiles[i].video.webkitEnterFullscreen();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---- header controls ----
+const layoutSel = document.getElementById('layout');
+layoutSel.value = String(count);
+layoutSel.addEventListener('change', () => {
+  count = Number(layoutSel.value);
+  store.set('count', count);
+  buildGrid();
+});
+
+const vol = document.getElementById('volume');
+vol.value = volume;
+vol.addEventListener('input', () => {
+  volume = Number(vol.value);
+  store.set('volume', volume);
+  tiles.forEach(t => { t.video.volume = volume; });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, select, textarea') || document.getElementById('dlg').open) return;
+  const n = Number(e.key);
+  if (n >= 1 && n <= tiles.length) setAudio(n - 1);
+  else if (e.key === 'm' || e.key === 'M' || e.key === 'צ') muteAll();
+});
+
+// ---- channel management dialog ----
+const dlg = document.getElementById('dlg');
+const list = document.getElementById('chanList');
+
+function renderList() {
+  list.innerHTML = '';
+  channels.forEach(c => {
+    const row = document.createElement('div');
+    row.innerHTML = `<span><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.url)}</small></span>
+      <span style="display:flex;gap:6px"><button class="edit">עריכה</button><button class="del">מחק</button></span>`;
+    row.querySelector('.edit').onclick = () => {
+      const url = prompt(`כתובת שידור עבור ${c.name}:`, c.url);
+      if (url && url.trim()) { c.url = url.trim(); saveChannels(); }
+    };
+    row.querySelector('.del').onclick = () => {
+      if (!confirm(`למחוק את ${c.name}?`)) return;
+      channels = channels.filter(x => x !== c); saveChannels();
+    };
+    list.appendChild(row);
+  });
+}
+
+function saveChannels() {
+  store.set('channels', channels);
+  renderList();
+  tiles.forEach((t, i) => fillSelect(t.select, assign[i]));
+  buildGrid();
+}
+
+document.getElementById('manage').onclick = () => { renderList(); dlg.showModal(); };
+document.getElementById('closeBtn').onclick = () => dlg.close();
+document.getElementById('addBtn').onclick = () => {
+  const name = document.getElementById('newName').value.trim();
+  const url = document.getElementById('newUrl').value.trim();
+  if (!name || !/^https?:\/\//.test(url)) { alert('צריך שם וכתובת שמתחילה ב-https://'); return; }
+  channels.push({ id: 'c' + Date.now(), name, url });
+  document.getElementById('newName').value = '';
+  document.getElementById('newUrl').value = '';
+  saveChannels();
+};
+document.getElementById('resetBtn').onclick = () => {
+  if (!confirm('לשחזר את רשימת הערוצים המקורית?')) return;
+  channels = structuredClone(DEFAULT_CHANNELS);
+  assign = DEFAULT_CHANNELS.map(c => c.id);
+  store.set('assign', assign);
+  saveChannels();
+};
+
+buildGrid();
+</script>
+</body>
+</html>
