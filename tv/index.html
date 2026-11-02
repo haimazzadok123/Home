@@ -88,21 +88,6 @@
   .tile.loading .msg.load, .tile.error .msg.err, .tile.empty .msg.none, .tile.external .msg.ext, .tile.nosrc .msg.nosrc { display: flex; }
   .ext-link { color: #fff; background: var(--accent); padding: 7px 14px; border-radius: 6px; text-decoration: none; }
 
-  dialog {
-    background: var(--panel); color: var(--text); border: 1px solid var(--border);
-    border-radius: 10px; width: min(560px, calc(100vw - 32px));
-  }
-  dialog::backdrop { background: rgba(0,0,0,.6); }
-  dialog h2 { margin-top: 0; font-size: 18px; }
-  .row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-  .row input { flex: 1; min-width: 140px; }
-  .list { max-height: 45vh; overflow: auto; margin: 10px 0; }
-  .list div {
-    display: flex; gap: 8px; align-items: center; justify-content: space-between;
-    padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px;
-  }
-  .list small { color: var(--muted); direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 340px; }
-  .hint { color: var(--muted); font-size: 13px; line-height: 1.5; }
 
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; grid-auto-rows: minmax(200px, auto); }
@@ -126,43 +111,20 @@
   <label class="ctrl">🔊 עוצמה <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8"></label>
   <span class="now" id="now"></span>
   <span class="spacer"></span>
-  <button id="manage">⚙️ ניהול ערוצים</button>
+  <span class="ctrl" title="לחיצה על מסך — שומעים אותו · מקשים 1–9 מחליפים קול · M משתיק הכל · לחיצה כפולה — מסך מלא">ⓘ לחיצה על מסך = הקול שלו</span>
 </header>
 
 <main><div class="grid" id="grid"></div></main>
 
-<dialog id="dlg">
-  <h2>ניהול ערוצים</h2>
-  <div class="list" id="chanList"></div>
-  <h3 style="font-size:15px;margin-bottom:6px">הוספת ערוץ</h3>
-  <div class="row">
-    <input id="newName" placeholder="שם הערוץ">
-    <input id="newUrl" placeholder="https://…m3u8 / קישור יוטיוב / UC…" dir="ltr">
-    <button id="addBtn">הוסף</button>
-  </div>
-  <p class="hint">
-    לחיצה על מסך — שומעים את הקול שלו (כל השאר מושתקים). מקשים <b>1–9</b> מחליפים קול,
-    <b>M</b> משתיק הכל, לחיצה כפולה — מסך מלא.<br>
-    מקור יכול להיות קישור HLS (‏.m3u8) או יוטיוב: קישור לשידור חי, או מזהה ערוץ (UC…) — עם מזהה
-    ערוץ המסך מנגן אוטומטית את השידור החי הנוכחי של הערוץ, כשיש כזה. מוצאים את המזהה ביוטיוב:
-    דף הערוץ ← "עוד" (פרטי הערוץ) ← שיתוף ערוץ ← העתקת מזהה הערוץ.<br>
-    כתובות ה-m3u8 הן של הגופים המשדרים, והן משתנות מדי פעם.
-    אם ערוץ מפסיק לעבוד אפשר לעדכן את הכתובת כאן. השידורים פתוחים בדרך כלל רק מישראל.
-  </p>
-  <div class="row" style="justify-content:space-between">
-    <button id="resetBtn">שחזור רשימת ברירת מחדל</button>
-    <button id="closeBtn">סגור</button>
-  </div>
-</dialog>
 
 <script>
-// Official, free-to-air broadcaster streams only. URLs change from time to time;
-// they can be edited in the "manage channels" dialog without touching code.
-const DEFAULT_CHANNELS = [
-  { id: 'keshet12', name: 'קשת 12',         url: '', page: 'https://www.mako.co.il/mako-vod-live-tv/VOD-6540b8dcb64fd31006.htm' },
-  // N12 streams live on YouTube mostly during major news events. Paste its channel ID
-  // (UC...) or a live link via "manage channels" -> edit.
-  { id: 'n12yt',   name: 'חדשות 12 (יוטיוב)', url: '' },
+// Fixed channel list: official, free-to-air broadcaster streams only.
+// A url is an HLS (.m3u8) address, a YouTube live link, or a YouTube channel ID (UC...).
+const CHANNELS = [
+  { id: 'keshet12', name: 'קשת 12',         url: '', page: 'https://www.mako.co.il/news-channel2/Channel-2-Newscast-q3_2019/Article-3bf5c3a8e967f51006.htm' },
+  // N12's official YouTube channel (@israelnews). It is live mostly during major news events;
+  // the tile plays whatever the channel is currently streaming live.
+  { id: 'n12yt',   name: 'חדשות 12 (יוטיוב)', url: 'UCr2-QsbpVwSd_ksP3gh3ciQ' },
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
@@ -177,9 +139,9 @@ const store = {
   set(k, v) { try { localStorage.setItem('tv.' + k, JSON.stringify(v)); } catch {} },
 };
 
-let channels = store.get('channels3', DEFAULT_CHANNELS);
+const channels = CHANNELS;
 let count = store.get('count', 4);
-let assign = store.get('assign3', DEFAULT_CHANNELS.map(c => c.id));
+let assign = store.get('assign3', CHANNELS.map(c => c.id));
 let audioIdx = store.get('audio', 0);
 let volume = store.get('volume', 0.8);
 
@@ -284,7 +246,7 @@ function buildGrid() {
       <div class="msg load">טוען…</div>
       <div class="msg err"><span>השידור לא זמין כרגע</span><button class="retry">נסה שוב</button></div>
       <div class="msg none">בחרו ערוץ מהרשימה</div>
-      <div class="msg nosrc"><span>לערוץ הזה עוד אין מקור שידור.<br>⚙️ ניהול ערוצים ← עריכה ← מדביקים קישור יוטיוב או כתובת ‎.m3u8</span></div>
+      <div class="msg nosrc"><span>השידור לא זמין כרגע</span></div>
       <div class="msg ext"><span class="ext-text"></span><a class="ext-link" target="_blank" rel="noopener">▶ פתח שידור חי</a></div>`;
     const t = {
       el, video: el.querySelector('video'), select: el.querySelector('select'),
@@ -441,62 +403,12 @@ vol.addEventListener('input', () => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.target.matches('input, select, textarea') || document.getElementById('dlg').open) return;
+  if (e.target.matches('input, select, textarea')) return;
   const n = Number(e.key);
   if (n >= 1 && n <= tiles.length) setAudio(n - 1);
   else if (e.key === 'm' || e.key === 'M' || e.key === 'צ') muteAll();
 });
 
-// ---- channel management dialog ----
-const dlg = document.getElementById('dlg');
-const list = document.getElementById('chanList');
-
-function renderList() {
-  list.innerHTML = '';
-  channels.forEach(c => {
-    const row = document.createElement('div');
-    row.innerHTML = `<span><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.url || c.page || '')}</small></span>
-      <span style="display:flex;gap:6px"><button class="edit">עריכה</button><button class="del">מחק</button></span>`;
-    row.querySelector('.edit').onclick = () => {
-      const url = prompt(`מקור שידור עבור ${c.name}:\nכתובת ‎.m3u8, קישור יוטיוב, או מזהה ערוץ יוטיוב (UC...)`, c.url);
-      if (url && url.trim()) { c.url = url.trim(); saveChannels(); }
-    };
-    row.querySelector('.del').onclick = () => {
-      if (!confirm(`למחוק את ${c.name}?`)) return;
-      channels = channels.filter(x => x !== c); saveChannels();
-    };
-    list.appendChild(row);
-  });
-}
-
-function saveChannels() {
-  store.set('channels3', channels);
-  renderList();
-  tiles.forEach((t, i) => fillSelect(t.select, assign[i]));
-  buildGrid();
-}
-
-document.getElementById('manage').onclick = () => { renderList(); dlg.showModal(); };
-document.getElementById('closeBtn').onclick = () => dlg.close();
-document.getElementById('addBtn').onclick = () => {
-  const name = document.getElementById('newName').value.trim();
-  const url = document.getElementById('newUrl').value.trim();
-  const src = parseSource(url);
-  if (!name || !src || src.type === 'yt-bad' || (src.type === 'hls' && !/^https:\/\//.test(url))) {
-    alert('צריך שם, ומקור: כתובת https://…m3u8, קישור יוטיוב, או מזהה ערוץ יוטיוב (UC...)'); return;
-  }
-  channels.push({ id: 'c' + Date.now(), name, url });
-  document.getElementById('newName').value = '';
-  document.getElementById('newUrl').value = '';
-  saveChannels();
-};
-document.getElementById('resetBtn').onclick = () => {
-  if (!confirm('לשחזר את רשימת הערוצים המקורית?')) return;
-  channels = structuredClone(DEFAULT_CHANNELS);
-  assign = DEFAULT_CHANNELS.map(c => c.id);
-  store.set('assign3', assign);
-  saveChannels();
-};
 
 buildGrid();
 </script>
