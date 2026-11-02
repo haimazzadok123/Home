@@ -78,7 +78,8 @@
     align-items: center; justify-content: center; text-align: center; padding: 16px;
     color: var(--muted); font-size: 14px; background: rgba(0,0,0,.6);
   }
-  .tile.loading .msg.load, .tile.error .msg.err, .tile.empty .msg.none { display: flex; }
+  .tile.loading .msg.load, .tile.error .msg.err, .tile.empty .msg.none, .tile.external .msg.ext { display: flex; }
+  .ext-link { color: #fff; background: var(--accent); padding: 7px 14px; border-radius: 6px; text-decoration: none; }
 
   dialog {
     background: var(--panel); color: var(--text); border: 1px solid var(--border);
@@ -148,9 +149,9 @@
 // Official, free-to-air broadcaster streams only. URLs change from time to time;
 // they can be edited in the "manage channels" dialog without touching code.
 const DEFAULT_CHANNELS = [
+  { id: 'keshet12', name: 'קשת 12',         url: '', page: 'https://www.mako.co.il/mako-vod-live-tv/VOD-6540b8dcb64fd31006.htm' },
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
-  { id: 'ch14',    name: 'עכשיו 14',        url: 'https://r.il.cdn-redge.media/livehls/oil/ch14/live/ch14/live.livx/playlist.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
   { id: 'knesset', name: 'ערוץ הכנסת',      url: 'https://contact.gostreaming.tv/Knesset/myStream/playlist.m3u8' },
   { id: 'makan',   name: 'מכאן 33',         url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/makan/live.livx/playlist.m3u8' },
@@ -163,9 +164,9 @@ const store = {
   set(k, v) { try { localStorage.setItem('tv.' + k, JSON.stringify(v)); } catch {} },
 };
 
-let channels = store.get('channels', DEFAULT_CHANNELS);
+let channels = store.get('channels2', DEFAULT_CHANNELS);
 let count = store.get('count', 4);
-let assign = store.get('assign', DEFAULT_CHANNELS.map(c => c.id));
+let assign = store.get('assign2', DEFAULT_CHANNELS.map(c => c.id));
 let audioIdx = store.get('audio', 0);
 let volume = store.get('volume', 0.8);
 
@@ -196,7 +197,8 @@ function buildGrid() {
       <div class="badge"></div>
       <div class="msg load">טוען…</div>
       <div class="msg err"><span>השידור לא זמין כרגע</span><button class="retry">נסה שוב</button></div>
-      <div class="msg none">בחרו ערוץ מהרשימה</div>`;
+      <div class="msg none">בחרו ערוץ מהרשימה</div>
+      <div class="msg ext"><span class="ext-text"></span><a class="ext-link" target="_blank" rel="noopener">▶ פתח שידור חי</a></div>`;
     const t = {
       el, video: el.querySelector('video'), select: el.querySelector('select'),
       badge: el.querySelector('.badge'), hls: null,
@@ -208,7 +210,7 @@ function buildGrid() {
     t.select.addEventListener('click', e => e.stopPropagation());
     t.select.addEventListener('change', () => {
       assign[i] = t.select.value;
-      store.set('assign', assign);
+      store.set('assign2', assign);
       load(i);
     });
     el.querySelector('.fs').addEventListener('click', e => { e.stopPropagation(); fullscreen(i); });
@@ -234,7 +236,7 @@ function destroyTile(t) {
 }
 
 function setState(t, state) {
-  t.el.classList.remove('loading', 'error', 'empty');
+  t.el.classList.remove('loading', 'error', 'empty', 'external');
   if (state) t.el.classList.add(state);
 }
 
@@ -244,6 +246,14 @@ function load(i) {
   const ch = chanById(assign[i]);
   t.badge.textContent = ch ? ch.name : '';
   if (!ch) { setState(t, 'empty'); return; }
+  if (!ch.url && ch.page) {
+    t.el.querySelector('.ext-text').textContent = `${ch.name} משדר בשידור חי רק בנגן הרשמי שלו`;
+    const a = t.el.querySelector('.ext-link');
+    a.href = ch.page;
+    a.onclick = e => e.stopPropagation();
+    setState(t, 'external');
+    return;
+  }
   setState(t, 'loading');
 
   const v = t.video;
@@ -350,10 +360,10 @@ function renderList() {
   list.innerHTML = '';
   channels.forEach(c => {
     const row = document.createElement('div');
-    row.innerHTML = `<span><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.url)}</small></span>
+    row.innerHTML = `<span><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.url || c.page || '')}</small></span>
       <span style="display:flex;gap:6px"><button class="edit">עריכה</button><button class="del">מחק</button></span>`;
     row.querySelector('.edit').onclick = () => {
-      const url = prompt(`כתובת שידור עבור ${c.name}:`, c.url);
+      const url = prompt(`כתובת שידור (.m3u8) עבור ${c.name}:`, c.url);
       if (url && url.trim()) { c.url = url.trim(); saveChannels(); }
     };
     row.querySelector('.del').onclick = () => {
@@ -365,7 +375,7 @@ function renderList() {
 }
 
 function saveChannels() {
-  store.set('channels', channels);
+  store.set('channels2', channels);
   renderList();
   tiles.forEach((t, i) => fillSelect(t.select, assign[i]));
   buildGrid();
@@ -386,7 +396,7 @@ document.getElementById('resetBtn').onclick = () => {
   if (!confirm('לשחזר את רשימת הערוצים המקורית?')) return;
   channels = structuredClone(DEFAULT_CHANNELS);
   assign = DEFAULT_CHANNELS.map(c => c.id);
-  store.set('assign', assign);
+  store.set('assign2', assign);
   saveChannels();
 };
 
