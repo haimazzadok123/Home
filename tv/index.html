@@ -91,7 +91,10 @@
     position: absolute; inset: 0 0 auto 0; display: flex; align-items: center; gap: 6px;
     padding: 6px 8px; background: linear-gradient(rgba(0,0,0,.75), transparent);
     opacity: 0; transition: opacity .15s; z-index: 3;
+    pointer-events: none;
   }
+  .bar > * { pointer-events: auto; }
+  .tile.embed .bar { background: none; }
   /* touch screens have no hover: always show the channel picker */
   @media (hover: none) { .bar { opacity: 1; } }
   .tile:hover .bar, .tile.audio .bar, .tile:focus-within .bar { opacity: 1; }
@@ -169,7 +172,7 @@
 const CHANNELS = [
   // Keshet 12 via mako's own official embed player (no open stream exists).
   // Its sound is controlled from the player's own controls (cross-origin iframe).
-  { id: 'keshet12', name: 'קשת 12',         url: '', embed: 'https://www.mako.co.il/player-embed-mako3/?vid=33ae8c620b8df810VgnVCM200000650a10acRCRD&cid=6c311f1cf23ff210VgnVCM2000002a0c10acRCRD&galleryCid=3d385dd2dd5d4110VgnVCM100000290c10acRCRD&isAutoplay=true&isLive=true', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
+  { id: 'keshet12', name: 'קשת 12',         url: '', embed: 'https://www.mako.co.il/player-embed-mako3/?vid=33ae8c620b8df810VgnVCM200000650a10acRCRD&cid=6c311f1cf23ff210VgnVCM2000002a0c10acRCRD&galleryCid=3d385dd2dd5d4110VgnVCM100000290c10acRCRD&isAutoplay=true&isLive=true&isHomePage=mako3&isMainTeaser=true&persistGalleryCid=3d385dd2dd5d4110VgnVCM100000290c10acRCRD', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
@@ -414,20 +417,11 @@ function play(v) {
   });
 }
 
-function reloadEmbed(t) {
-  const f = t.el.querySelector('.yt-box iframe');
-  if (f) { const src = f.src; f.src = 'about:blank'; setTimeout(() => { f.src = src; }, 50); }
-}
-
 function setAudio(i, silent) {
-  const prev = audioIdx;
   audioIdx = i;
   store.set('audio', i);
   tiles.forEach((t, j) => {
     const on = j === i;
-    // Embedded (cross-origin) player: we can't unmute it directly, so reload it from this
-    // user click; the browser may then let it autoplay with sound.
-    if (on && !silent && t.el.classList.contains('embed') && prev !== j) reloadEmbed(t);
     t.el.classList.toggle('audio', on);
     applyAudio(t, on);
     if (on && !silent && !t.yt && t.video.paused && t.video.currentSrc) play(t.video);
