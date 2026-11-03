@@ -79,7 +79,10 @@
   .tile video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
   .tile.yt video { display: none; }
   .yt-box { position: absolute; inset: 0; display: none; }
-  .tile.yt .yt-box { display: block; }
+  .tile.yt .yt-box, .tile.embed .yt-box { display: block; }
+  .bar .open-ext { display: none; color: var(--text); text-decoration: none; padding: 3px 7px;
+    background: rgba(20,22,30,.85); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  .tile.embed .bar .open-ext { display: inline-block; }
   .yt-box iframe { width: 100%; height: 100%; border: 0; }
   /* transparent layer so clicks on a YouTube tile reach our page (choose audio, double-click fullscreen) */
   .yt-shield { position: absolute; inset: 0; display: none; }
@@ -164,7 +167,9 @@
 // Fixed channel list: official, free-to-air broadcaster streams only.
 // A url is an HLS (.m3u8) address, a YouTube live link, or a YouTube channel ID (UC...).
 const CHANNELS = [
-  { id: 'keshet12', name: 'קשת 12',         url: '', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
+  // Keshet 12 via mako's own official embed player (no open stream exists).
+  // Its sound is controlled from the player's own controls (cross-origin iframe).
+  { id: 'keshet12', name: 'קשת 12',         url: '', embed: 'https://www.mako.co.il/player-embed-mako3/?vid=33ae8c620b8df810VgnVCM200000650a10acRCRD&cid=6c311f1cf23ff210VgnVCM2000002a0c10acRCRD&galleryCid=3d385dd2dd5d4110VgnVCM100000290c10acRCRD&isAutoplay=true&isLive=true', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
@@ -282,6 +287,7 @@ function buildGrid() {
         <span class="num">${i + 1}</span>
         <select aria-label="ערוץ במסך ${i + 1}"></select>
         <span class="spacer"></span>
+        <a class="open-ext" target="_blank" rel="noopener" title="פתיחה באתר המקורי">↗</a>
         <button class="fs" title="מסך מלא">⛶</button>
       </div>
       <div class="badge"></div>
@@ -324,7 +330,8 @@ function destroyTile(t) {
   t.token = (t.token || 0) + 1;
   if (t.hls) { t.hls.destroy(); t.hls = null; }
   if (t.yt) { try { t.yt.destroy(); } catch {} t.yt = null; }
-  t.el.classList.remove('yt');
+  t.el.classList.remove('yt', 'embed');
+  t.el.querySelector('.yt-box').innerHTML = '<div></div>';
   t.video.removeAttribute('src');
   t.video.load();
 }
@@ -340,6 +347,23 @@ function load(i) {
   const ch = chanById(assign[i]);
   t.badge.textContent = ch ? ch.name : '';
   if (!ch) { setState(t, 'empty'); return; }
+  if (ch.embed) {
+    // Official embed player in an iframe. We can't mute/unmute it from here;
+    // the viewer uses the player's own sound control.
+    t.el.classList.add('embed');
+    const f = document.createElement('iframe');
+    f.src = ch.embed;
+    f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'origin';
+    t.el.querySelector('.yt-box').replaceChildren(f);
+    const a = t.el.querySelector('.open-ext');
+    a.href = ch.page || ch.embed;
+    a.onclick = e => e.stopPropagation();
+    t.badge.textContent = ch.name + ' · הקול מהנגן';
+    setState(t, null);
+    return;
+  }
   if (!ch.url && ch.page) {
     t.el.querySelector('.ext-text').textContent = `${ch.name} משדר בשידור חי רק בנגן הרשמי שלו`;
     const a = t.el.querySelector('.ext-link');
