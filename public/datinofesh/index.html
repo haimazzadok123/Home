@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>דתינופש</title>
+<meta name="description" content="דתינופש – חיפוש דילים לסופי שבוע בכל אתרי הנופש: חצי פנסיון, בריכה מקורה, יציאה במוצאי שבת." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕯️</text></svg>" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --accent-soft: #e8f2fd;
+    --nav: rgba(255, 255, 255, 0.72);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    --gold: #b8860b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-alt: #111113;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --muted: #a1a1a6;
+      --line: #38383a;
+      --accent: #2997ff;
+      --accent-hover: #47a6ff;
+      --accent-soft: #0b2a4a;
+      --nav: rgba(22, 22, 23, 0.72);
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+      --gold: #e6b84a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Hebrew", "Segoe UI", "Assistant", "Heebo", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.47;
+    letter-spacing: -0.01em;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--nav);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1024px; margin: 0 auto; height: 48px; padding: 0 16px;
+    display: flex; align-items: center; justify-content: space-between; font-size: 13px;
+  }
+  .brand { font-weight: 600; font-size: 17px; color: var(--text); }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--text); opacity: .8; }
+  .nav-links a:hover { opacity: 1; text-decoration: none; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 72px 16px 40px; }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 17px; margin: 0 0 8px; }
+  h1 { font-size: clamp(40px, 8vw, 80px); line-height: 1.05; margin: 0; font-weight: 700; letter-spacing: -0.03em; }
+  .hero p.sub { font-size: clamp(19px, 2.6vw, 28px); color: var(--muted); max-width: 720px; margin: 16px auto 0; font-weight: 400; }
+
+  /* Sections */
+  section.block { padding: 48px 16px; }
+  section.alt { background: var(--bg-alt); }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h2 { font-size: clamp(28px, 4.5vw, 48px); line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; text-align: center; }
+  .section-sub { text-align: center; color: var(--muted); font-size: 19px; margin: 0 0 32px; }
+
+  /* Search card */
+  .search-card {
+    background: var(--card); border-radius: 28px; box-shadow: var(--shadow);
+    padding: 28px; display: grid; gap: 24px; max-width: 860px; margin: 0 auto;
+  }
+  .search-card > *, .row > * { min-width: 0; }
+  .field-label { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block; }
+  .row { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+  .row.nums { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .row:not(.nums) { grid-template-columns: 1fr; } .search-card { padding: 20px; border-radius: 22px; } .nav-links { display: none; } }
+
+  select, input[type="number"] {
+    width: 100%; font: inherit; font-size: 17px; color: var(--text);
+    background: var(--bg-alt); border: 1px solid transparent; border-radius: 12px;
+    padding: 12px 14px; appearance: none; -webkit-appearance: none;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  /* Chips / segmented */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 980px; padding: 8px 16px; font: inherit; font-size: 15px; cursor: pointer;
+    transition: all .2s ease;
+  }
+  .chip small { display: block; font-size: 11px; color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip[aria-pressed="true"] small { color: var(--bg); opacity: .75; }
+
+  .segmented {
+    display: flex; background: var(--bg-alt); border-radius: 12px; padding: 3px; gap: 2px;
+  }
+  .segmented button {
+    flex: 1; border: 0; background: transparent; font: inherit; font-size: 14px; color: var(--text);
+    padding: 9px 6px; border-radius: 10px; cursor: pointer; transition: background .2s;
+  }
+  .segmented button[aria-pressed="true"] { background: var(--card); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-weight: 600; }
+
+  /* Toggles */
+  .toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 20px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 16px; }
+  .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch { flex: none; width: 51px; height: 31px; border-radius: 31px; background: var(--line); position: relative; transition: background .25s; }
+  .switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .25s; }
+  .toggle input:checked + .switch { background: #34c759; }
+  .toggle input:checked + .switch::after { transform: translateX(-20px); }
+  .toggle input:focus-visible + .switch { box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--accent); color: #fff; border: 0; border-radius: 980px;
+    padding: 14px 28px; font: inherit; font-size: 17px; cursor: pointer; transition: background .2s;
+  }
+  .btn:hover { background: var(--accent-hover); text-decoration: none; }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* Shabbat strip */
+  .shabbat {
+    max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--card); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .shabbat div { padding: 18px 12px; text-align: center; }
+  .shabbat div + div { border-right: 1px solid var(--line); }
+  .shabbat .k { font-size: 13px; color: var(--muted); }
+  .shabbat .v { font-size: 24px; font-weight: 600; margin-top: 2px; }
+  .shabbat-note { max-width: 860px; margin: 12px auto 0; text-align: center; font-size: 14px; color: var(--muted); }
+
+  /* Summary */
+  .summary { text-align: center; margin: 0 auto 28px; max-width: 760px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
+  .tag { background: var(--accent-soft); color: var(--accent); border-radius: 980px; padding: 4px 12px; font-size: 13px; font-weight: 500; }
+
+  /* Results grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .site {
+    background: var(--card); border-radius: 22px; padding: 24px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 10px; transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .site:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 12px 36px rgba(0,0,0,.12); }
+  .site-head { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 18px; flex: none; }
+  .site h3 { margin: 0; font-size: 19px; }
+  .site .kind { font-size: 12px; color: var(--muted); }
+  .site p { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+  .site .applied { font-size: 12px; color: var(--muted); }
+  .site .applied b { color: var(--text); font-weight: 600; }
+  .site .go { align-self: flex-start; font-size: 15px; padding: 10px 20px; }
+
+  .group-title { font-size: 21px; font-weight: 600; margin: 36px 0 14px; }
+  .group-title:first-of-type { margin-top: 0; }
+
+  /* Checklist */
+  .tips { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+  .tip { background: var(--card); border-radius: 22px; padding: 24px; box-shadow: var(--shadow); }
+  .tip .ic { font-size: 32px; }
+  .tip h3 { margin: 8px 0 6px; font-size: 19px; }
+  .tip p { margin: 0; color: var(--muted); font-size: 15px; }
+  .copybox { margin-top: 12px; background: var(--bg-alt); border-radius: 12px; padding: 12px; font-size: 14px; white-space: pre-wrap; }
+
+  footer { padding: 32px 16px 48px; font-size: 12px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
+  footer p { max-width: 760px; margin: 6px auto; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .fade { animation: fade .5s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">דתי<span>נופש</span></a>
+    <div class="nav-links">
+      <a href="#search">חיפוש</a>
+      <a href="#results">תוצאות</a>
+      <a href="#tips">לפני שמזמינים</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <p class="eyebrow">סופ״ש. שבת. מנוחה.</p>
+  <h1>דתינופש.</h1>
+  <p class="sub">חיפוש אחד בכל אתרי הנופש — חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
+</header>
+
+<section class="block alt" id="search">
+  <div class="wrap">
+    <div class="search-card">
+      <div>
+        <span class="field-label">איזה סופ״ש?</span>
+        <div class="chips" id="weekends" role="group" aria-label="בחירת סוף שבוע"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label class="field-label" for="region">לאן?</label>
+          <select id="region"></select>
+        </div>
+        <div>
+          <span class="field-label">משך השהות</span>
+          <div class="segmented" id="stay" role="group" aria-label="משך השהות">
+            <button type="button" data-v="fri-motz" aria-pressed="true">שישי ← מוצ״ש</button>
+            <button type="button" data-v="thu-motz" aria-pressed="false">חמישי ← מוצ״ש</button>
+            <button type="button" data-v="fri-sun" aria-pressed="false">שישי ← ראשון</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row nums">
+          <div><label class="field-label" for="adults">מבוגרים</label><input type="number" id="adults" min="1" max="10" value="2" /></div>
+          <div><label class="field-label" for="kids">ילדים</label><input type="number" id="kids" min="0" max="8" value="0" /></div>
+          <div><label class="field-label" for="rooms">חדרים</label><input type="number" id="rooms" min="1" max="5" value="1" /></div>
+        </div>
+        <div>
+          <span class="field-label">בריכה</span>
+          <div class="segmented" id="pool" role="group" aria-label="סוג בריכה">
+            <button type="button" data-v="any" aria-pressed="false">לא משנה</button>
+            <button type="button" data-v="regular" aria-pressed="false">רגילה</button>
+            <button type="button" data-v="indoor" aria-pressed="true">מקורה</button>
+            <button type="button" data-v="both" aria-pressed="false">שתיהן</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">מה חשוב לכם</span>
+        <div class="toggles">
+          <label class="toggle">חצי פנסיון (בוקר + ערב)<input type="checkbox" id="halfboard" checked /><span class="switch"></span></label>
+          <label class="toggle">עזיבה בצאת שבת<input type="checkbox" id="lateCheckout" checked /><span class="switch"></span></label>
+          <label class="toggle">כשרות מהדרין<input type="checkbox" id="mehadrin" /><span class="switch"></span></label>
+          <label class="toggle">בית כנסת במלון<input type="checkbox" id="shul" /><span class="switch"></span></label>
+          <label class="toggle">מעלית שבת<input type="checkbox" id="elevator" /><span class="switch"></span></label>
+          <label class="toggle">שעות רחצה נפרדות<input type="checkbox" id="separate" /><span class="switch"></span></label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="goBtn" type="button">חפשו בכל האתרים</button>
+      </div>
+    </div>
+
+    <div class="shabbat fade" id="shabbat" aria-live="polite">
+      <div><div class="k">פרשת השבוע</div><div class="v" id="parasha">—</div></div>
+      <div><div class="k">הדלקת נרות</div><div class="v" id="candles">—</div></div>
+      <div><div class="k">צאת שבת</div><div class="v" id="havdalah">—</div></div>
+    </div>
+    <p class="shabbat-note" id="shabbatNote"></p>
+  </div>
+</section>
+
+<section class="block" id="results">
+  <div class="wrap">
+    <h2>כל האתרים. חיפוש אחד.</h2>
+    <div class="summary">
+      <p class="section-sub" id="summaryText" style="margin-bottom:0"></p>
+      <div class="tags" id="summaryTags"></div>
+    </div>
+    <div id="groups"></div>
+  </div>
+</section>
+
+<section class="block alt" id="tips">
+  <div class="wrap">
+    <h2>לפני שמזמינים.</h2>
+    <p class="section-sub">שלושה דברים שכדאי לוודא מול המלון — לא תמיד מופיעים באתרים.</p>
+    <div class="tips">
+      <div class="tip">
+        <div class="ic">🕯️</div>
+        <h3>עזיבה בצאת שבת</h3>
+        <p>רוב המלונות מציעים "שבת חתן" או עזיבה מאוחרת במוצ״ש — לפעמים בתוספת תשלום. בקשו את זה בכתב בהזמנה.</p>
+      </div>
+      <div class="tip">
+        <div class="ic">🍽️</div>
+        <h3>חצי פנסיון בשבת</h3>
+        <p>בדקו שארוחת הערב כוללת סעודת ליל שבת מלאה, ושיש ארוחת צהריים בשבת (לעתים בתשלום נפרד).</p>
+      </div>
+      <div class="tip">
+        <div class="ic">🏊</div>
+        <h3>בריכה מקורה</h3>
+        <p>ודאו שהבריכה המקורה פתוחה בשבת ובאילו שעות, ואם יש שעות נפרדות לגברים ולנשים.</p>
+      </div>
+    </div>
+    <div class="tip" style="margin-top:20px">
+      <h3>הודעה מוכנה לשליחה למלון</h3>
+      <p>העתיקו ושלחו במייל או בוואטסאפ לפני ההזמנה:</p>
+      <div class="copybox" id="msg"></div>
+      <div class="actions" style="justify-content:flex-start;margin-top:12px">
+        <button class="btn secondary" id="copyBtn" type="button">העתקה</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>דתינופש</b> — מנוע הפניה: הקישורים פותחים חיפוש עם התאריכים והסינונים שלכם ישירות באתרי ההזמנות. המחירים והזמינות נקבעים באתרים עצמם.</p>
+  <p>אתרים ללא סינון לפי כתובת מוחפשים דרך גוגל (site:) עם מילות המפתח שבחרתם. זמני שבת באדיבות Hebcal.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const REGIONS = [
+    { id: "dead-sea", he: "ים המלח", en: "Dead Sea, Israel", lat: 31.20, lon: 35.36 },
+    { id: "jerusalem", he: "ירושלים", en: "Jerusalem", lat: 31.778, lon: 35.235, b: 40 },
+    { id: "tiberias", he: "טבריה והכנרת", en: "Tiberias", lat: 32.79, lon: 35.53 },
+    { id: "galilee", he: "הגליל העליון", en: "Upper Galilee, Israel", lat: 33.0, lon: 35.5 },
+    { id: "golan", he: "רמת הגולן", en: "Golan Heights", lat: 32.98, lon: 35.75 },
+    { id: "safed", he: "צפת", en: "Safed", lat: 32.965, lon: 35.496 },
+    { id: "eilat", he: "אילת", en: "Eilat", lat: 29.557, lon: 34.952 },
+    { id: "netanya", he: "נתניה", en: "Netanya", lat: 32.33, lon: 34.86 },
+    { id: "herzliya", he: "הרצליה", en: "Herzliya", lat: 32.166, lon: 34.80 },
+    { id: "tel-aviv", he: "תל אביב", en: "Tel Aviv", lat: 32.08, lon: 34.78 },
+    { id: "ashkelon", he: "אשקלון", en: "Ashkelon", lat: 31.67, lon: 34.57 },
+    { id: "zichron", he: "זכרון יעקב והכרמל", en: "Zikhron Ya'akov", lat: 32.57, lon: 34.95 },
+    { id: "mitzpe", he: "מצפה רמון", en: "Mitzpe Ramon", lat: 30.61, lon: 34.80 },
+  ];
+
+  const state = load() || {};
+  const $ = (id) => document.getElementById(id);
+
+  // ----- Weekends -----
+  const pad = (n) => String(n).padStart(2, "0");
+  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const fmt = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "short" });
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let firstFri = addDays(today, (5 - today.getDay() + 7) % 7);
+  if (today.getDay() === 6) firstFri = addDays(today, 6);
+  const fridays = Array.from({ length: 10 }, (_, i) => addDays(firstFri, i * 7));
+
+  const wkEl = $("weekends");
+  fridays.forEach((f, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.v = iso(f);
+    const label = i === 0 ? "הסופ״ש הקרוב" : i === 1 ? "בשבוע הבא" : `בעוד ${i} שבועות`;
+    b.innerHTML = `${fmt.format(f)}–${fmt.format(addDays(f, 1))}<small>${label}</small>`;
+    wkEl.appendChild(b);
+  });
+  let friday = fridays.find((f) => iso(f) === state.friday) || fridays[0];
+
+  // ----- Regions -----
+  const regionSel = $("region");
+  REGIONS.forEach((r) => { const o = document.createElement("option"); o.value = r.id; o.textContent = r.he; regionSel.appendChild(o); });
+  if (state.region) regionSel.value = state.region;
+
+  // ----- Segmented & inputs -----
+  function setupSegmented(el, key) {
+    if (state[key]) el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === state[key])));
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      render();
+    });
+  }
+  setupSegmented($("stay"), "stay");
+  setupSegmented($("pool"), "pool");
+  const seg = (id) => $(id).querySelector('[aria-pressed="true"]').dataset.v;
+
+  const TOGGLES = ["halfboard", "lateCheckout", "mehadrin", "shul", "elevator", "separate"];
+  TOGGLES.forEach((t) => { if (typeof state[t] === "boolean") $(t).checked = state[t]; $(t).addEventListener("change", render); });
+  ["adults", "kids", "rooms"].forEach((k) => { if (state[k]) $(k).value = state[k]; $(k).addEventListener("input", render); });
+  regionSel.addEventListener("change", () => { render(); loadShabbat(); });
+  wkEl.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    friday = fridays.find((f) => iso(f) === b.dataset.v); render(); loadShabbat();
+  });
+  $("goBtn").addEventListener("click", () => { render(); $("results").scrollIntoView({ behavior: "smooth" }); });
+
+  // ----- Build query -----
+  function getQuery() {
+    const region = REGIONS.find((r) => r.id === regionSel.value);
+    const stay = seg("stay");
+    const checkin = stay === "thu-motz" ? addDays(friday, -1) : friday;
+    const checkout = stay === "fri-sun" ? addDays(friday, 2) : addDays(friday, 1);
+    const q = {
+      region, stay, checkin, checkout,
+      nights: Math.round((checkout - checkin) / 864e5),
+      adults: Math.max(1, +$("adults").value || 1),
+      kids: Math.max(0, +$("kids").value || 0),
+      rooms: Math.max(1, +$("rooms").value || 1),
+      pool: seg("pool"),
+    };
+    TOGGLES.forEach((t) => (q[t] = $(t).checked));
+    q.lateCheckout = q.lateCheckout && stay !== "fri-sun";
+    return q;
+  }
+
+  function keywords(q) {
+    const k = [];
+    if (q.halfboard) k.push("חצי פנסיון");
+    if (q.pool === "indoor") k.push("בריכה מקורה");
+    if (q.pool === "regular") k.push("בריכה");
+    if (q.pool === "both") k.push("בריכה מקורה", "בריכה חיצונית");
+    if (q.lateCheckout) k.push("יציאה במוצאי שבת");
+    if (q.mehadrin) k.push("כשר למהדרין");
+    if (q.shul) k.push("בית כנסת");
+    if (q.elevator) k.push("מעלית שבת");
+    if (q.separate) k.push("שעות נפרדות");
+    return k;
+  }
+
+  const enc = encodeURIComponent;
+  const google = (site, q) => {
+    const kw = keywords(q).map((w) => `"${w}"`).join(" ");
+    return `https://www.google.com/search?q=${enc(`${site ? "site:" + site + " " : ""}מלון ${q.region.he} סוף שבוע ${kw}`)}`;
+  };
+  const kidsAges = (q, key) => Array.from({ length: q.kids }, () => `&${key}=8`).join("");
+
+  const SITES = [
+    {
+      group: "מנועי הזמנות בינלאומיים", name: "Booking.com", color: "#003580", letter: "B",
+      desc: "המאגר הגדול ביותר. סינון חצי פנסיון מופעל אוטומטית.",
+      applied: (q) => ["תאריכים", "אורחים", q.halfboard && "חצי פנסיון", q.pool !== "any" && "בריכה"],
+      url: (q) => {
+        const nflt = [];
+        if (q.halfboard) nflt.push("mealplan=9");
+        if (q.pool !== "any") nflt.push("hotelfacility=433");
+        return `https://www.booking.com/searchresults.he.html?ss=${enc(q.region.he)}&checkin=${iso(q.checkin)}&checkout=${iso(q.checkout)}&group_adults=${q.adults}&group_children=${q.kids}${kidsAges(q, "age")}&no_rooms=${q.rooms}&lang=he${nflt.length ? "&nflt=" + enc(nflt.join(";")) : ""}`;
+      },
+    },
+    {
+      group: "מנועי הזמנות בינלאומיים", name: "Google Hotels", color: "#4285f4", letter: "G",
+      desc: "השוואת מחירים מכל ספקי ההזמנות במקום אחד.",
+      applied: (q) => ["יעד", "מילות מפתח"],
+      url: (q) => `https://www.google.com/travel/search?q=${enc(`מלונות ${q.region.he} ${keywords(q).slice(0, 3).join(" ")}`)}&hl=iw`,
+    },
+    {
+      group: "מנועי הזמנות בינלאומיים", name: "Expedia", color: "#fcc203", letter: "E",
+      desc: "לעיתים מבצעי חבילות ומחירי חברים.",
+      applied: () => ["תאריכים", "אורחים"],
+      url: (q) => `https://www.expedia.com/Hotel-Search?destination=${enc(q.region.en)}&startDate=${iso(q.checkin)}&endDate=${iso(q.checkout)}&adults=${q.adults}&rooms=${q.rooms}`,
+    },
+    {
+      group: "מנועי הזמנות בינלאומיים", name: "Agoda", color: "#e1251b", letter: "A",
+      desc: "מחירים תחרותיים ומבצעי רגע אחרון.",
+      applied: () => ["תאריכים", "אורחים"],
+      url: (q) => `https://www.agoda.com/he-il/search?textToSearch=${enc(q.region.en)}&checkIn=${iso(q.checkin)}&los=${q.nights}&adults=${q.adults}&children=${q.kids}&rooms=${q.rooms}`,
+    },
+    {
+      group: "מנועי הזמנות בינלאומיים", name: "Hotels.com", color: "#d32f2f", letter: "H",
+      desc: "צוברים לילות חינם במועדון.",
+      applied: () => ["תאריכים", "אורחים"],
+      url: (q) => `https://www.hotels.com/Hotel-Search?destination=${enc(q.region.en)}&startDate=${iso(q.checkin)}&endDate=${iso(q.checkout)}&adults=${q.adults}&rooms=${q.rooms}`,
+    },
+    { group: "אתרי נופש ישראליים", name: "איסתא", site: "issta.co.il", color: "#00a3e0", letter: "א", desc: "חבילות נופש בארץ וסופי שבוע." },
+    { group: "אתרי נופש ישראליים", name: "דקה 90", site: "daka90.co.il", color: "#ff6a00", letter: "90", desc: "דילים של רגע אחרון לסופ״ש." },
+    { group: "אתרי נופש ישראליים", name: "גוליבר", site: "gulliver.co.il", color: "#0b6e4f", letter: "ג", desc: "נופש בארץ וחבילות מלונות." },
+    { group: "אתרי נופש ישראליים", name: "Hotels.co.il", site: "hotels.co.il", color: "#6f42c1", letter: "H", desc: "השוואת מלונות בישראל." },
+    { group: "אתרי נופש ישראליים", name: "זימרים", site: "zimmer.co.il", color: "#2e7d32", letter: "ז", desc: "צימרים ובתי הארחה עם בריכה." },
+    { group: "רשתות מלונות", name: "פתאל / לאונרדו", site: "fattal.co.il", color: "#1d3a6b", letter: "פ", desc: "רשת המלונות הגדולה בישראל." },
+    { group: "רשתות מלונות", name: "ישרוטל", site: "isrotel.co.il", color: "#8a6d3b", letter: "י", desc: "מלונות בים המלח, אילת והגליל." },
+    { group: "רשתות מלונות", name: "דן", site: "danhotels.co.il", color: "#222", letter: "D", desc: "מלונות דן ופנורמה." },
+    { group: "רשתות מלונות", name: "אסטרל / אפריקה ישראל", site: "astralhotels.co.il", color: "#c2185b", letter: "א", desc: "מלונות באילת." },
+    {
+      group: "חיפוש חופשי", name: "גוגל — כל הרשת", color: "#34a853", letter: "🔍",
+      desc: "חיפוש בכל האינטרנט עם כל מילות המפתח שבחרתם.",
+      applied: () => ["כל מילות המפתח"],
+      url: (q) => google("", q),
+    },
+  ];
+
+  // ----- Render -----
+  function render() {
+    const q = getQuery();
+    save(q);
+    wkEl.querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === iso(friday))));
+
+    const dayName = (d) => new Intl.DateTimeFormat("he-IL", { weekday: "long" }).format(d);
+    const checkoutTxt = q.lateCheckout ? "מוצאי שבת" : dayName(q.checkout);
+    $("summaryText").textContent = `${q.region.he} · ${dayName(q.checkin)} ${fmt.format(q.checkin)} עד ${checkoutTxt} ${fmt.format(q.checkout)} · ${q.adults} מבוגרים${q.kids ? ` + ${q.kids} ילדים` : ""}`;
+    $("summaryTags").innerHTML = keywords(q).map((k) => `<span class="tag">${k}</span>`).join("");
+
+    const groups = {};
+    SITES.forEach((s) => (groups[s.group] = groups[s.group] || []).push(s));
+    $("groups").innerHTML = Object.entries(groups).map(([g, list]) => `
+      <div class="group-title">${g}</div>
+      <div class="grid">${list.map((s) => {
+        const href = s.url ? s.url(q) : google(s.site, q);
+        const applied = (s.applied ? s.applied(q) : ["יעד", "מילות מפתח"]).filter(Boolean).join(" · ");
+        return `<article class="site fade">
+          <div class="site-head"><div class="logo" style="background:${s.color}">${s.letter}</div>
+            <div><h3>${s.name}</h3><div class="kind">${s.site || new URL(href).hostname.replace("www.", "")}</div></div></div>
+          <p>${s.desc}</p>
+          <div class="applied">מוחל: <b>${applied}</b></div>
+          <a class="btn go" href="${href}" target="_blank" rel="noopener">לחיפוש ‹</a>
+        </article>`;
+      }).join("")}</div>`).join("");
+
+    $("msg").textContent = hotelMessage(q);
+  }
+
+  function hotelMessage(q) {
+    const lines = [`שלום, מעוניינים בחדר ל־${q.adults} מבוגרים${q.kids ? ` ו־${q.kids} ילדים` : ""} בסוף השבוע ${fmt.format(q.checkin)}–${fmt.format(q.checkout)}.`];
+    if (q.halfboard) lines.push("• האם המחיר כולל חצי פנסיון, כולל סעודת ליל שבת?");
+    if (q.lateCheckout) lines.push("• האם אפשר לעזוב בצאת שבת (עזיבה מאוחרת) ובאיזו עלות?");
+    if (q.pool === "indoor" || q.pool === "both") lines.push("• האם הבריכה המקורה פתוחה בשבת ובאילו שעות?");
+    if (q.separate) lines.push("• האם יש שעות רחצה נפרדות לגברים ולנשים?");
+    if (q.mehadrin) lines.push("• מהי תעודת הכשרות של המטבח?");
+    if (q.shul) lines.push("• האם יש בית כנסת ומניין במלון?");
+    if (q.elevator) lines.push("• האם יש מעלית שבת?");
+    lines.push("תודה!");
+    return lines.join("\n");
+  }
+
+  $("copyBtn").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("msg").textContent); toast("ההודעה הועתקה"); }
+    catch { toast("לא ניתן להעתיק — סמנו והעתיקו ידנית"); }
+  });
+
+  function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2200); }
+
+  // ----- Shabbat times (Hebcal) -----
+  let shabbatReq = 0;
+  async function loadShabbat() {
+    const id = ++shabbatReq;
+    const r = REGIONS.find((x) => x.id === regionSel.value);
+    ["parasha", "candles", "havdalah"].forEach((k) => ($(k).textContent = "…"));
+    $("shabbatNote").textContent = "";
+    try {
+      const url = `https://www.hebcal.com/shabbat?cfg=json&latitude=${r.lat}&longitude=${r.lon}&tzid=Asia/Jerusalem&M=on&lg=he&b=${r.b || 20}&gy=${friday.getFullYear()}&gm=${friday.getMonth() + 1}&gd=${friday.getDate()}`;
+      const data = await (await fetch(url)).json();
+      if (id !== shabbatReq) return;
+      const time = (cat) => { const it = data.items.find((i) => i.category === cat); return it ? new Date(it.date).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" }) : "—"; };
+      const p = data.items.find((i) => i.category === "parashat");
+      $("parasha").textContent = p ? (p.hebrew || p.title).replace("פרשת ", "") : "—";
+      $("candles").textContent = time("candles");
+      const hv = time("havdalah");
+      $("havdalah").textContent = hv;
+      if (hv !== "—") {
+        const [h, m] = hv.split(":").map(Number);
+        const late = new Date(2000, 0, 1, h, m + 60);
+        $("shabbatNote").textContent = `ב${r.he}: בקשו מהמלון עזיבה עד כ־${pad(late.getHours())}:${pad(late.getMinutes())}, שעה אחרי צאת השבת.`;
+      }
+    } catch {
+      if (id !== shabbatReq) return;
+      ["parasha", "candles", "havdalah"].forEach((k) => ($(k).textContent = "—"));
+      $("shabbatNote").textContent = "לא הצלחנו לטעון את זמני השבת כרגע.";
+    }
+  }
+
+  // ----- Persistence -----
+  function save(q) {
+    try {
+      const s = { friday: iso(friday), region: q.region.id, stay: q.stay, pool: q.pool, adults: q.adults, kids: q.kids, rooms: q.rooms };
+      TOGGLES.forEach((t) => (s[t] = $(t).checked));
+      localStorage.setItem("datinofesh", JSON.stringify(s));
+    } catch { /* storage unavailable */ }
+  }
+  function load() { try { return JSON.parse(localStorage.getItem("datinofesh")); } catch { return null; } }
+
+  render();
+  loadShabbat();
+})();
+</script>
+</body>
+</html>
