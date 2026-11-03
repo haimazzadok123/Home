@@ -1,0 +1,8 @@
+// Cloudflare deploy settings: publish only the TV site (the tv/ folder).
+{
+  "name": "israel-tv",
+  "compatibility_date": "2026-11-02",
+  "assets": {
+    "directory": "./tv"
+  }
+}
