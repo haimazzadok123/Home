@@ -167,9 +167,7 @@
 // Fixed channel list: official, free-to-air broadcaster streams only.
 // A url is an HLS (.m3u8) address, a YouTube live link, or a YouTube channel ID (UC...).
 const CHANNELS = [
-  // Keshet 12 via mako's own official embed player (no open stream exists).
-  // Its sound is controlled from the player's own controls (cross-origin iframe).
-  { id: 'keshet12', name: 'קשת 12',         url: '', embed: 'https://www.mako.co.il/player-embed-mako3/?vid=33ae8c620b8df810VgnVCM200000650a10acRCRD&cid=6c311f1cf23ff210VgnVCM2000002a0c10acRCRD&galleryCid=3d385dd2dd5d4110VgnVCM100000290c10acRCRD&isAutoplay=true&isLive=true', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
+  { id: 'keshet12', name: 'קשת 12',         url: '', page: 'https://www.mako.co.il/culture-tv/articles/Article-c75a4149b6ef091027.htm' },
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
