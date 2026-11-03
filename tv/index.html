@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>מולטי-ערוצים</title>
+<title>טלוויזיה ישראלית</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" integrity="sha384-9v3HcdYrO3D+OPDTjZ40RXocgE4GtXVCd3/mCS62JsM93JXgI1afJVuwjFvsu6ni" crossorigin="anonymous"></script>
 <style>
@@ -132,7 +132,7 @@
 </head>
 <body>
 <header>
-  <h1>📺 מולטי-ערוצים</h1>
+  <h1>📺 טלוויזיה ישראלית</h1>
   <label class="ctrl">מסכים
     <select id="layout">
       <option value="2">2</option>
@@ -477,7 +477,7 @@ document.getElementById('share').addEventListener('click', async () => {
   const url = location.origin + location.pathname;
   const btn = document.getElementById('share');
   if (navigator.share) {
-    try { await navigator.share({ title: 'מולטי-ערוצים', text: 'צפייה בכמה ערוצים במקביל', url }); } catch {}
+    try { await navigator.share({ title: 'טלוויזיה ישראלית', text: 'צפייה בכמה ערוצים במקביל', url }); } catch {}
     return;
   }
   try { await navigator.clipboard.writeText(url); btn.textContent = '✓ הקישור הועתק'; }
