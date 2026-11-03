@@ -172,6 +172,26 @@
   .site .applied b { color: var(--text); font-weight: 600; }
   .site .go { align-self: flex-start; font-size: 15px; padding: 10px 20px; }
 
+  /* Ready results (hotel catalog) */
+  .legend { display: flex; gap: 20px; justify-content: center; font-size: 13px; color: var(--muted); margin: -16px 0 24px; }
+  .hotels { display: grid; gap: 16px; }
+  .hotel { background: var(--card); border-radius: 22px; padding: 22px 24px; box-shadow: var(--shadow); display: grid; gap: 10px; border: 1px solid var(--line); }
+  .hotel-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .hotel h3 { margin: 0; font-size: 21px; }
+  .hotel .place { font-size: 14px; color: var(--muted); }
+  .score { flex: none; font-size: 13px; font-weight: 600; border-radius: 980px; padding: 4px 12px; background: var(--accent-soft); color: var(--accent); }
+  .score.full { background: #34c759; color: #fff; }
+  .feats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .feat { font-size: 13px; border-radius: 980px; padding: 4px 10px 4px 12px; background: var(--bg-alt); display: inline-flex; align-items: center; gap: 6px; }
+  .b { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; color: #fff; }
+  .b.yes { background: #34c759; } .b.unk { background: #ff9f0a; } .b.no { background: #ff3b30; }
+  .hotel .co { font-size: 14px; } .hotel .co b { font-weight: 600; }
+  .hotel .nt { font-size: 14px; color: var(--muted); margin: 0; }
+  .hotel .links { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hotel .links .btn { font-size: 14px; padding: 9px 18px; }
+  .hotel .links .src { font-size: 13px; margin-inline-start: auto; }
+  .empty { text-align: center; color: var(--muted); padding: 24px; }
+
   .group-title { font-size: 21px; font-weight: 600; margin: 36px 0 14px; }
   .group-title:first-of-type { margin-top: 0; }
 
@@ -200,7 +220,8 @@
     <a class="brand" href="#top">דתי<span>נופש</span></a>
     <div class="nav-links">
       <a href="#search">חיפוש</a>
-      <a href="#results">תוצאות</a>
+      <a href="#ready">תוצאות</a>
+      <a href="#results">כל האתרים</a>
       <a href="#tips">לפני שמזמינים</a>
     </div>
   </div>
@@ -278,7 +299,16 @@
   </div>
 </section>
 
-<section class="block" id="results">
+<section class="block" id="ready">
+  <div class="wrap">
+    <h2>תוצאות מוכנות.</h2>
+    <p class="section-sub" id="readySub"></p>
+    <div class="legend"><span><i class="b yes">✓</i> מאומת במקור</span><span><i class="b unk">?</i> לבירור מול המלון</span></div>
+    <div class="hotels" id="hotels"></div>
+  </div>
+</section>
+
+<section class="block alt" id="results">
   <div class="wrap">
     <h2>כל האתרים. חיפוש אחד.</h2>
     <div class="summary">
@@ -328,9 +358,11 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="hotels.js"></script>
 <script>
 (() => {
   const REGIONS = [
+    { id: "all", he: "כל הארץ", en: "Israel", lat: 31.778, lon: 35.235, b: 40 },
     { id: "dead-sea", he: "ים המלח", en: "Dead Sea, Israel", lat: 31.20, lon: 35.36 },
     { id: "jerusalem", he: "ירושלים", en: "Jerusalem", lat: 31.778, lon: 35.235, b: 40 },
     { id: "tiberias", he: "טבריה והכנרת", en: "Tiberias", lat: 32.79, lon: 35.53 },
@@ -338,7 +370,7 @@
     { id: "golan", he: "רמת הגולן", en: "Golan Heights", lat: 32.98, lon: 35.75 },
     { id: "safed", he: "צפת", en: "Safed", lat: 32.965, lon: 35.496 },
     { id: "eilat", he: "אילת", en: "Eilat", lat: 29.557, lon: 34.952 },
-    { id: "netanya", he: "נתניה", en: "Netanya", lat: 32.33, lon: 34.86 },
+    { id: "netanya", he: "נתניה והשרון", en: "Netanya", lat: 32.33, lon: 34.86 },
     { id: "herzliya", he: "הרצליה", en: "Herzliya", lat: 32.166, lon: 34.80 },
     { id: "tel-aviv", he: "תל אביב", en: "Tel Aviv", lat: 32.08, lon: 34.78 },
     { id: "ashkelon", he: "אשקלון", en: "Ashkelon", lat: 31.67, lon: 34.57 },
@@ -396,7 +428,7 @@
     const b = e.target.closest("button"); if (!b) return;
     friday = fridays.find((f) => iso(f) === b.dataset.v); render(); loadShabbat();
   });
-  $("goBtn").addEventListener("click", () => { render(); $("results").scrollIntoView({ behavior: "smooth" }); });
+  $("goBtn").addEventListener("click", () => { render(); $("ready").scrollIntoView({ behavior: "smooth" }); });
 
   // ----- Build query -----
   function getQuery() {
@@ -433,22 +465,20 @@
 
   const enc = encodeURIComponent;
   const google = (site, q) => {
-    const kw = keywords(q).map((w) => `"${w}"`).join(" ");
-    return `https://www.google.com/search?q=${enc(`${site ? "site:" + site + " " : ""}מלון ${q.region.he} סוף שבוע ${kw}`)}`;
+    // No exact-phrase quotes and only the two most important keywords —
+    // quoting every phrase made Google return zero results.
+    const kw = keywords(q).slice(0, 2).join(" ");
+    return `https://www.google.com/search?q=${enc(`${site ? "site:" + site + " " : ""}מלון ${q.region.id === "all" ? "" : q.region.he} ${kw}`.replace(/\s+/g, " "))}`;
   };
   const kidsAges = (q, key) => Array.from({ length: q.kids }, () => `&${key}=8`).join("");
+  const bookingUrl = (ss, q) => `https://www.booking.com/searchresults.he.html?ss=${enc(ss)}&checkin=${iso(q.checkin)}&checkout=${iso(q.checkout)}&group_adults=${q.adults}&group_children=${q.kids}${kidsAges(q, "age")}&no_rooms=${q.rooms}&lang=he`;
 
   const SITES = [
     {
       group: "מנועי הזמנות בינלאומיים", name: "Booking.com", color: "#003580", letter: "B",
-      desc: "המאגר הגדול ביותר. סינון חצי פנסיון מופעל אוטומטית.",
-      applied: (q) => ["תאריכים", "אורחים", q.halfboard && "חצי פנסיון", q.pool !== "any" && "בריכה"],
-      url: (q) => {
-        const nflt = [];
-        if (q.halfboard) nflt.push("mealplan=9");
-        if (q.pool !== "any") nflt.push("hotelfacility=433");
-        return `https://www.booking.com/searchresults.he.html?ss=${enc(q.region.he)}&checkin=${iso(q.checkin)}&checkout=${iso(q.checkout)}&group_adults=${q.adults}&group_children=${q.kids}${kidsAges(q, "age")}&no_rooms=${q.rooms}&lang=he${nflt.length ? "&nflt=" + enc(nflt.join(";")) : ""}`;
-      },
+      desc: "המאגר הגדול ביותר. סננו שם 'ארוחת בוקר וערב' ו'בריכה'.",
+      applied: () => ["תאריכים", "אורחים"],
+      url: (q) => bookingUrl(q.region.id === "all" ? "ישראל" : q.region.he, q),
     },
     {
       group: "מנועי הזמנות בינלאומיים", name: "Google Hotels", color: "#4285f4", letter: "G",
@@ -519,6 +549,56 @@
       }).join("")}</div>`).join("");
 
     $("msg").textContent = hotelMessage(q);
+    renderHotels(q);
+  }
+
+  // ----- Ready results from the verified hotel catalog -----
+  function renderHotels(q) {
+    const all = window.DATINOFESH_HOTELS || [];
+    // Each requested feature: true = confirmed, null = unknown, false = excluded.
+    const reqs = [];
+    if (q.pool === "indoor") reqs.push(["בריכה מקורה", (h) => h.indoor]);
+    if (q.pool === "regular") reqs.push(["בריכה רגילה", (h) => h.outdoor]);
+    if (q.pool === "both") reqs.push(["בריכה מקורה", (h) => h.indoor], ["בריכה חיצונית", (h) => h.outdoor]);
+    if (q.halfboard) reqs.push(["חצי פנסיון", (h) => h.halfboard]);
+    if (q.lateCheckout) reqs.push(["עזיבה במוצ״ש", (h) => (h.late === true ? true : h.late === false ? false : null)]);
+    if (q.mehadrin) reqs.push(["מהדרין", (h) => (h.kosher && /גלאט|מהדרין/.test(h.kosher) ? true : null)]);
+    if (q.shul) reqs.push(["בית כנסת", (h) => h.shul]);
+    if (q.elevator) reqs.push(["מעלית שבת", (h) => h.elevator]);
+    if (q.separate) reqs.push(["שעות נפרדות", (h) => h.separate]);
+
+    const inRegion = all.filter((h) => q.region.id === "all" || h.region === q.region.id);
+    const scored = inRegion
+      .map((h) => { const v = reqs.map(([label, f]) => [label, f(h)]); return { h, v, yes: v.filter((x) => x[1] === true).length }; })
+      .filter((x) => x.v.every((r) => r[1] !== false))
+      .sort((a, b) => b.yes - a.yes);
+
+    const regionTxt = q.region.id === "all" ? "בכל הארץ" : `ב${q.region.he}`;
+    $("readySub").textContent = scored.length
+      ? `${scored.length} מלונות ${regionTxt} מתאימים לחיפוש, מסודרים לפי מספר הדרישות שאומתו.`
+      : `לא נמצאו בקטלוג מלונות ${regionTxt} שמתאימים לכל הדרישות.`;
+
+    const lateTxt = { paid: "עזיבה מאוחרת בתשלום", package: "חבילת מוצ״ש בעבר", request: "עזיבה מאוחרת לפי בקשה" };
+    $("hotels").innerHTML = scored.length ? scored.map(({ h, v, yes }) => {
+      const badge = (ok) => `<i class="b ${ok === true ? "yes" : ok === false ? "no" : "unk"}">${ok === true ? "✓" : ok === false ? "✕" : "?"}</i>`;
+      const extra = [];
+      if (h.kosher) extra.push(`<span class="feat">${badge(true)}${h.kosher}</span>`);
+      if (typeof h.late === "string") extra.push(`<span class="feat">${badge(null)}${lateTxt[h.late]}</span>`);
+      return `<article class="hotel fade">
+        <div class="hotel-top">
+          <div><h3>${h.name}</h3><div class="place">${h.place}</div></div>
+          ${reqs.length ? `<span class="score ${yes === reqs.length ? "full" : ""}">${yes}/${reqs.length} אומתו</span>` : ""}
+        </div>
+        <div class="feats">${v.map(([label, ok]) => `<span class="feat">${badge(ok)}${label}</span>`).join("")}${extra.join("")}</div>
+        <div class="co"><b>שבת:</b> ${h.checkout}</div>
+        <p class="nt">${h.note}</p>
+        <div class="links">
+          <a class="btn" href="${bookingUrl(h.en, q)}" target="_blank" rel="noopener">מחיר ב-Booking ‹</a>
+          <a class="btn secondary" href="https://www.google.com/travel/search?q=${enc(h.en)}&hl=iw" target="_blank" rel="noopener">השוואת מחירים</a>
+          <a class="src" href="${h.src}" target="_blank" rel="noopener">מקור המידע</a>
+        </div>
+      </article>`;
+    }).join("") : `<div class="empty">נסו "כל הארץ", או כבו חלק מהדרישות — או חפשו באתרים למטה.</div>`;
   }
 
   function hotelMessage(q) {
