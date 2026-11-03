@@ -288,6 +288,7 @@ function buildGrid() {
         <select aria-label="ערוץ במסך ${i + 1}"></select>
         <span class="spacer"></span>
         <a class="open-ext" target="_blank" rel="noopener" title="פתיחה באתר המקורי">↗</a>
+        <button class="snd" title="לשמוע את המסך הזה">🔊</button>
         <button class="fs" title="מסך מלא">⛶</button>
       </div>
       <div class="badge"></div>
@@ -311,6 +312,7 @@ function buildGrid() {
       load(i);
     });
     el.querySelector('.fs').addEventListener('click', e => { e.stopPropagation(); fullscreen(i); });
+    el.querySelector('.snd').addEventListener('click', e => { e.stopPropagation(); setAudio(i); });
     el.querySelector('.retry').addEventListener('click', e => { e.stopPropagation(); load(i); });
     el.addEventListener('click', () => setAudio(i));
     el.addEventListener('dblclick', () => fullscreen(i));
@@ -412,11 +414,20 @@ function play(v) {
   });
 }
 
+function reloadEmbed(t) {
+  const f = t.el.querySelector('.yt-box iframe');
+  if (f) { const src = f.src; f.src = 'about:blank'; setTimeout(() => { f.src = src; }, 50); }
+}
+
 function setAudio(i, silent) {
+  const prev = audioIdx;
   audioIdx = i;
   store.set('audio', i);
   tiles.forEach((t, j) => {
     const on = j === i;
+    // Embedded (cross-origin) player: we can't unmute it directly, so reload it from this
+    // user click; the browser may then let it autoplay with sound.
+    if (on && !silent && t.el.classList.contains('embed') && prev !== j) reloadEmbed(t);
     t.el.classList.toggle('audio', on);
     applyAudio(t, on);
     if (on && !silent && !t.yt && t.video.paused && t.video.currentSrc) play(t.video);
