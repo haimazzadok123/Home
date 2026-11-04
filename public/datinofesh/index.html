@@ -238,6 +238,23 @@
   .group-title { margin: 24px 0 10px; font-size: 18px; }
   main footer { border-top: 1px solid var(--line); padding: 20px 0 32px; }
 
+  .ready-head { display: flex; justify-content: space-between; align-items: center; gap: 8px 20px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ready-head .section-sub { margin: 0; text-align: start; font-size: 15px; }
+  .ready-head .legend { margin: 0; }
+  .hotels { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .hotel { padding: 14px 16px; gap: 6px; border-radius: 18px; }
+  .hotel h3 { font-size: 16px; line-height: 1.25; }
+  .hotel .place { font-size: 12px; }
+  .hotel .score { padding: 2px 9px; font-size: 12px; }
+  .hotel .feats { gap: 4px; }
+  .hotel .feat { font-size: 12px; padding: 2px 8px 2px 9px; gap: 4px; }
+  .hotel .b { width: 15px; height: 15px; font-size: 10px; }
+  .hotel .co, .hotel .nt { font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .hotel .links { gap: 6px; margin-top: 2px; }
+  .hotel .links .btn { font-size: 12px; padding: 6px 12px; }
+  .hotel .links .src { font-size: 12px; }
+  .pager { margin-top: 14px; }
+
   @media (min-width: 1100px) {
     .hero { display: none; }
     .mini-hero { display: block; padding: 0 4px 16px; }
@@ -255,6 +272,17 @@
     .side .shabbat .v { font-size: 19px; }
     .main { max-width: none; margin: 0; padding: 12px 32px 0; }
     .tabs { top: 0; }
+    /* Dense rows: name + actions on top, features and Shabbat info below */
+    .hotels { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 10px; }
+    .hotel { grid-template-columns: 1fr auto; grid-template-areas: "top links" "feats feats" "co co"; padding: 10px 14px; gap: 6px 12px; align-items: center; }
+    .hotel .hotel-top { grid-area: top; min-width: 0; align-items: center; justify-content: flex-start; gap: 8px; }
+    .hotel .nm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+    .hotel .nm h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hotel .nm .place { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hotel .links { grid-area: links; margin: 0; flex-wrap: nowrap; }
+    .hotel .feats { grid-area: feats; }
+    .hotel .co { grid-area: co; -webkit-line-clamp: 1; }
+    .hotel .nt { display: none; }
     .nav-links a[href="#search"] { display: none; }
   }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
@@ -361,8 +389,10 @@
   </div>
 
   <section class="panel" id="ready" role="tabpanel">
-    <p class="section-sub" id="readySub"></p>
-    <div class="legend"><span><i class="b yes">✓</i> מאומת במקור</span><span><i class="b unk">?</i> לבירור מול המלון</span></div>
+    <div class="ready-head">
+      <p class="section-sub" id="readySub"></p>
+      <div class="legend"><span><i class="b yes">✓</i> מאומת במקור</span><span><i class="b unk">?</i> לבירור מול המלון</span></div>
+    </div>
     <div class="hotels" id="hotels"></div>
     <div class="pager" id="pager"></div>
   </section>
@@ -490,6 +520,7 @@
     document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
     document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== id));
     $("main").scrollTop = 0;
+    if (id === "ready") refit();
     if (scroll && window.matchMedia("(max-width: 1099px)").matches) $("main").scrollIntoView({ behavior: "smooth" });
   }
   document.querySelectorAll("[data-tab]").forEach((el) => el.addEventListener("click", (e) => { e.preventDefault(); showTab(el.dataset.tab, true); }));
@@ -617,14 +648,33 @@
   }
 
   // ----- Ready results from the verified hotel catalog -----
-  const PAGE_SIZE = 6;
+  let PAGE_SIZE = 8;
   let hotelPage = 0, lastQuery = null;
   $("pager").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-p]"); if (!b || b.disabled) return;
     hotelPage = +b.dataset.p; renderHotels(lastQuery, true); showTab("ready", true);
   });
 
-  function renderHotels(q, keepPage) {
+  // Fill the visible area on large screens: columns x rows that fit.
+  function fitPageSize() {
+    const main = $("main"), grid = $("hotels"), card = grid.querySelector(".hotel");
+    if (!window.matchMedia("(min-width: 1100px)").matches || !card || $("ready").hidden) return 8;
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+    const gap = parseFloat(getComputedStyle(grid).rowGap) || 12;
+    const hs = [...grid.querySelectorAll(".hotel")].map((c) => c.offsetHeight);
+    const cardH = hs.reduce((x, y) => x + y, 0) / hs.length;
+    const avail = main.clientHeight - (grid.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop) - 64;
+    const rows = Math.max(2, Math.round((avail + gap) / (cardH + gap)));
+    return cols * rows;
+  }
+  function refit() {
+    if (!lastQuery) return;
+    const first = hotelPage * PAGE_SIZE, n = fitPageSize();
+    if (n !== PAGE_SIZE) { PAGE_SIZE = n; hotelPage = Math.floor(first / n); renderHotels(lastQuery, true, true); }
+  }
+  let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(refit, 150); });
+
+  function renderHotels(q, keepPage, noFit) {
     lastQuery = q;
     if (!keepPage) hotelPage = 0;
     const all = window.DATINOFESH_HOTELS || [];
@@ -666,21 +716,22 @@
       const extra = [];
       if (h.kosher) extra.push(`<span class="feat">${badge(true)}${h.kosher}</span>`);
       if (typeof h.late === "string") extra.push(`<span class="feat">${badge(null)}${lateTxt[h.late]}</span>`);
-      return `<article class="hotel fade">
+      return `<article class="hotel fade" title="${h.note}">
         <div class="hotel-top">
-          <div><h3>${h.name}</h3><div class="place">${h.place}</div></div>
-          ${reqs.length ? `<span class="score ${yes === reqs.length ? "full" : ""}">${yes}/${reqs.length} אומתו</span>` : ""}
+          <div class="nm"><h3>${h.name}</h3><div class="place">${h.place}</div></div>
+          ${reqs.length ? `<span class="score ${yes === reqs.length ? "full" : ""}" title="דרישות שאומתו">${yes}/${reqs.length}</span>` : ""}
         </div>
         <div class="feats">${v.map(([label, ok]) => `<span class="feat">${badge(ok)}${label}</span>`).join("")}${extra.join("")}</div>
-        <div class="co"><b>שבת:</b> ${h.checkout}</div>
-        <p class="nt">${h.note}</p>
+        <div class="co" title="${h.checkout}"><b>שבת:</b> ${h.checkout}</div>
+        <p class="nt" title="${h.note}">${h.note}</p>
         <div class="links">
-          <a class="btn" href="${bookingUrl(h.en, q)}" target="_blank" rel="noopener">מחיר ב-Booking ‹</a>
-          <a class="btn secondary" href="https://www.google.com/travel/search?q=${enc(h.en)}&hl=iw" target="_blank" rel="noopener">השוואת מחירים</a>
-          <a class="src" href="${h.src}" target="_blank" rel="noopener">מקור המידע</a>
+          <a class="btn" href="${bookingUrl(h.en, q)}" target="_blank" rel="noopener">Booking ‹</a>
+          <a class="btn secondary" href="https://www.google.com/travel/search?q=${enc(h.en)}&hl=iw" target="_blank" rel="noopener">מחירים</a>
+          <a class="src" href="${h.src}" target="_blank" rel="noopener">מקור</a>
         </div>
       </article>`;
     }).join("") : `<div class="empty">נסו "כל הארץ", או כבו חלק מהדרישות — או חפשו באתרים למטה.</div>`;
+    if (!noFit) refit();
   }
 
   function hotelMessage(q) {
