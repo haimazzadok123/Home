@@ -206,8 +206,59 @@
   footer { padding: 32px 16px 48px; font-size: 12px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
   footer p { max-width: 760px; margin: 6px auto; }
 
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* App layout: tabs + pager everywhere; on large screens a side panel and
+     independently scrolling columns so the page itself doesn't scroll. */
+  .layout { background: var(--bg-alt); }
+  .side { padding: 32px 16px 8px; }
+  .side .search-card, .side .shabbat, .side .shabbat-note { max-width: 860px; margin-left: auto; margin-right: auto; }
+  .mini-hero { display: none; }
+  .main { padding: 24px 16px 0; max-width: 1012px; margin: 0 auto; }
+  .tabs { position: sticky; top: 48px; z-index: 5; display: flex; gap: 4px; background: var(--bg-alt); padding: 8px 0 12px; overflow-x: auto; scrollbar-width: none; }
+  .tabs button { flex: none; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 15px; padding: 8px 16px; border-radius: 980px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); font-weight: 600; }
+  .tabs .count { font-size: 12px; opacity: .7; }
+  .panel { padding-bottom: 24px; }
+  .panel .section-sub { margin: 4px 0 16px; font-size: 17px; }
+  .legend { margin: 0 0 16px; }
+  .hotels { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+  .hotel { padding: 18px 20px; gap: 8px; align-content: start; }
+  .hotel h3 { font-size: 18px; }
+  .hotel-top { flex-wrap: nowrap; }
+  .hotel .links .btn { font-size: 13px; padding: 8px 14px; }
+  .hotel .co, .hotel .nt { font-size: 13px; }
+  .pager { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+  .pager button { min-width: 36px; height: 36px; border-radius: 980px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; padding: 0 12px; }
+  .pager button[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .pager button:disabled { opacity: .4; cursor: default; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .site { padding: 18px; border-radius: 18px; gap: 8px; }
+  .site h3 { font-size: 16px; }
+  .site p { font-size: 13px; }
+  .group-title { margin: 24px 0 10px; font-size: 18px; }
+  main footer { border-top: 1px solid var(--line); padding: 20px 0 32px; }
+
+  @media (min-width: 1100px) {
+    .hero { display: none; }
+    .mini-hero { display: block; padding: 0 4px 16px; }
+    .mini-hero h1 { font-size: 40px; }
+    .mini-hero .eyebrow { font-size: 14px; margin-bottom: 2px; }
+    .layout { display: grid; grid-template-columns: 400px 1fr; height: calc(100vh - 49px); overflow: hidden; }
+    .side, .main { overflow-y: auto; height: 100%; overscroll-behavior: contain; }
+    .side { padding: 24px 20px; border-left: 1px solid var(--line); background: var(--bg); }
+    .side .search-card { padding: 20px; gap: 18px; border-radius: 22px; box-shadow: none; border: 1px solid var(--line); }
+    .side .row:not(.nums) { grid-template-columns: 1fr; gap: 18px; }
+    .side .toggles { grid-template-columns: 1fr; }
+    .side .toggle { padding: 7px 0; font-size: 15px; }
+    .side .chip { padding: 6px 12px; font-size: 14px; }
+    .side .shabbat { margin-top: 16px; box-shadow: none; border: 1px solid var(--line); }
+    .side .shabbat .v { font-size: 19px; }
+    .main { max-width: none; margin: 0; padding: 12px 32px 0; }
+    .tabs { top: 0; }
+    .nav-links a[href="#search"] { display: none; }
+  }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) scale(1); opacity: 1; }
   .fade { animation: fade .5s ease both; }
   @keyframes fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -220,9 +271,9 @@
     <a class="brand" href="#top">דתי<span>נופש</span></a>
     <div class="nav-links">
       <a href="#search">חיפוש</a>
-      <a href="#ready">תוצאות</a>
-      <a href="#results">כל האתרים</a>
-      <a href="#tips">לפני שמזמינים</a>
+      <a href="#ready" data-tab="ready">תוצאות</a>
+      <a href="#results" data-tab="results">כל האתרים</a>
+      <a href="#tips" data-tab="tips">לפני שמזמינים</a>
     </div>
   </div>
 </nav>
@@ -233,95 +284,98 @@
   <p class="sub">חיפוש אחד בכל אתרי הנופש — חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
 </header>
 
-<section class="block alt" id="search">
-  <div class="wrap">
-    <div class="search-card">
-      <div>
-        <span class="field-label">איזה סופ״ש?</span>
-        <div class="chips" id="weekends" role="group" aria-label="בחירת סוף שבוע"></div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label class="field-label" for="region">לאן?</label>
-          <select id="region"></select>
-        </div>
-        <div>
-          <span class="field-label">משך השהות</span>
-          <div class="segmented" id="stay" role="group" aria-label="משך השהות">
-            <button type="button" data-v="fri-motz" aria-pressed="true">שישי ← מוצ״ש</button>
-            <button type="button" data-v="thu-motz" aria-pressed="false">חמישי ← מוצ״ש</button>
-            <button type="button" data-v="fri-sun" aria-pressed="false">שישי ← ראשון</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="row nums">
-          <div><label class="field-label" for="adults">מבוגרים</label><input type="number" id="adults" min="1" max="10" value="2" /></div>
-          <div><label class="field-label" for="kids">ילדים</label><input type="number" id="kids" min="0" max="8" value="0" /></div>
-          <div><label class="field-label" for="rooms">חדרים</label><input type="number" id="rooms" min="1" max="5" value="1" /></div>
-        </div>
-        <div>
-          <span class="field-label">בריכה</span>
-          <div class="segmented" id="pool" role="group" aria-label="סוג בריכה">
-            <button type="button" data-v="any" aria-pressed="false">לא משנה</button>
-            <button type="button" data-v="regular" aria-pressed="false">רגילה</button>
-            <button type="button" data-v="indoor" aria-pressed="true">מקורה</button>
-            <button type="button" data-v="both" aria-pressed="false">שתיהן</button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <span class="field-label">מה חשוב לכם</span>
-        <div class="toggles">
-          <label class="toggle">חצי פנסיון (בוקר + ערב)<input type="checkbox" id="halfboard" checked /><span class="switch"></span></label>
-          <label class="toggle">עזיבה בצאת שבת<input type="checkbox" id="lateCheckout" checked /><span class="switch"></span></label>
-          <label class="toggle">כשרות מהדרין<input type="checkbox" id="mehadrin" /><span class="switch"></span></label>
-          <label class="toggle">בית כנסת במלון<input type="checkbox" id="shul" /><span class="switch"></span></label>
-          <label class="toggle">מעלית שבת<input type="checkbox" id="elevator" /><span class="switch"></span></label>
-          <label class="toggle">שעות רחצה נפרדות<input type="checkbox" id="separate" /><span class="switch"></span></label>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="btn" id="goBtn" type="button">חפשו בכל האתרים</button>
-      </div>
-    </div>
-
-    <div class="shabbat fade" id="shabbat" aria-live="polite">
-      <div><div class="k">פרשת השבוע</div><div class="v" id="parasha">—</div></div>
-      <div><div class="k">הדלקת נרות</div><div class="v" id="candles">—</div></div>
-      <div><div class="k">צאת שבת</div><div class="v" id="havdalah">—</div></div>
-    </div>
-    <p class="shabbat-note" id="shabbatNote"></p>
+<div class="layout">
+<aside class="side" id="search">
+  <div class="mini-hero">
+    <p class="eyebrow">סופ״ש. שבת. מנוחה.</p>
+    <h1>דתינופש.</h1>
   </div>
-</section>
+  <div class="search-card">
+    <div>
+      <span class="field-label">איזה סופ״ש?</span>
+      <div class="chips" id="weekends" role="group" aria-label="בחירת סוף שבוע"></div>
+    </div>
 
-<section class="block" id="ready">
-  <div class="wrap">
-    <h2>תוצאות מוכנות.</h2>
+    <div class="row">
+      <div>
+        <label class="field-label" for="region">לאן?</label>
+        <select id="region"></select>
+      </div>
+      <div>
+        <span class="field-label">משך השהות</span>
+        <div class="segmented" id="stay" role="group" aria-label="משך השהות">
+          <button type="button" data-v="fri-motz" aria-pressed="true">שישי ← מוצ״ש</button>
+          <button type="button" data-v="thu-motz" aria-pressed="false">חמישי ← מוצ״ש</button>
+          <button type="button" data-v="fri-sun" aria-pressed="false">שישי ← ראשון</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row nums">
+        <div><label class="field-label" for="adults">מבוגרים</label><input type="number" id="adults" min="1" max="10" value="2" /></div>
+        <div><label class="field-label" for="kids">ילדים</label><input type="number" id="kids" min="0" max="8" value="0" /></div>
+        <div><label class="field-label" for="rooms">חדרים</label><input type="number" id="rooms" min="1" max="5" value="1" /></div>
+      </div>
+      <div>
+        <span class="field-label">בריכה</span>
+        <div class="segmented" id="pool" role="group" aria-label="סוג בריכה">
+          <button type="button" data-v="any" aria-pressed="false">לא משנה</button>
+          <button type="button" data-v="regular" aria-pressed="false">רגילה</button>
+          <button type="button" data-v="indoor" aria-pressed="true">מקורה</button>
+          <button type="button" data-v="both" aria-pressed="false">שתיהן</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="field-label">מה חשוב לכם</span>
+      <div class="toggles">
+        <label class="toggle">חצי פנסיון (בוקר + ערב)<input type="checkbox" id="halfboard" checked /><span class="switch"></span></label>
+        <label class="toggle">עזיבה בצאת שבת<input type="checkbox" id="lateCheckout" checked /><span class="switch"></span></label>
+        <label class="toggle">כשרות מהדרין<input type="checkbox" id="mehadrin" /><span class="switch"></span></label>
+        <label class="toggle">בית כנסת במלון<input type="checkbox" id="shul" /><span class="switch"></span></label>
+        <label class="toggle">מעלית שבת<input type="checkbox" id="elevator" /><span class="switch"></span></label>
+        <label class="toggle">שעות רחצה נפרדות<input type="checkbox" id="separate" /><span class="switch"></span></label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="goBtn" type="button">הצג תוצאות</button>
+    </div>
+  </div>
+
+  <div class="shabbat fade" id="shabbat" aria-live="polite">
+    <div><div class="k">פרשת השבוע</div><div class="v" id="parasha">—</div></div>
+    <div><div class="k">הדלקת נרות</div><div class="v" id="candles">—</div></div>
+    <div><div class="k">צאת שבת</div><div class="v" id="havdalah">—</div></div>
+  </div>
+  <p class="shabbat-note" id="shabbatNote"></p>
+</aside>
+
+<main class="main" id="main">
+  <div class="tabs" role="tablist" aria-label="תוצאות">
+    <button type="button" role="tab" data-tab="ready" aria-selected="true">תוצאות מוכנות <span class="count" id="readyCount"></span></button>
+    <button type="button" role="tab" data-tab="results" aria-selected="false">כל האתרים</button>
+    <button type="button" role="tab" data-tab="tips" aria-selected="false">לפני שמזמינים</button>
+  </div>
+
+  <section class="panel" id="ready" role="tabpanel">
     <p class="section-sub" id="readySub"></p>
     <div class="legend"><span><i class="b yes">✓</i> מאומת במקור</span><span><i class="b unk">?</i> לבירור מול המלון</span></div>
     <div class="hotels" id="hotels"></div>
-  </div>
-</section>
+    <div class="pager" id="pager"></div>
+  </section>
 
-<section class="block alt" id="results">
-  <div class="wrap">
-    <h2>כל האתרים. חיפוש אחד.</h2>
+  <section class="panel" id="results" role="tabpanel" hidden>
     <div class="summary">
       <p class="section-sub" id="summaryText" style="margin-bottom:0"></p>
       <div class="tags" id="summaryTags"></div>
     </div>
     <div id="groups"></div>
-  </div>
-</section>
+  </section>
 
-<section class="block alt" id="tips">
-  <div class="wrap">
-    <h2>לפני שמזמינים.</h2>
+  <section class="panel" id="tips" role="tabpanel" hidden>
     <p class="section-sub">שלושה דברים שכדאי לוודא מול המלון — לא תמיד מופיעים באתרים.</p>
     <div class="tips">
       <div class="tip">
@@ -348,13 +402,14 @@
         <button class="btn secondary" id="copyBtn" type="button">העתקה</button>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<footer>
-  <p><b>דתינופש</b> — מנוע הפניה: הקישורים פותחים חיפוש עם התאריכים והסינונים שלכם ישירות באתרי ההזמנות. המחירים והזמינות נקבעים באתרים עצמם.</p>
-  <p>אתרים ללא סינון לפי כתובת מוחפשים דרך גוגל (site:) עם מילות המפתח שבחרתם. זמני שבת באדיבות Hebcal.</p>
-</footer>
+  <footer>
+    <p><b>דתינופש</b> — מנוע הפניה: הקישורים פותחים חיפוש עם התאריכים והסינונים שלכם ישירות באתרי ההזמנות. המחירים והזמינות נקבעים באתרים עצמם.</p>
+    <p>אתרים ללא סינון לפי כתובת מוחפשים דרך גוגל (site:) עם מילות המפתח שבחרתם. זמני שבת באדיבות Hebcal.</p>
+  </footer>
+</main>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -428,7 +483,16 @@
     const b = e.target.closest("button"); if (!b) return;
     friday = fridays.find((f) => iso(f) === b.dataset.v); render(); loadShabbat();
   });
-  $("goBtn").addEventListener("click", () => { render(); $("ready").scrollIntoView({ behavior: "smooth" }); });
+  $("goBtn").addEventListener("click", () => { render(); showTab("ready", true); });
+
+  // ----- Tabs -----
+  function showTab(id, scroll) {
+    document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+    document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== id));
+    $("main").scrollTop = 0;
+    if (scroll && window.matchMedia("(max-width: 1099px)").matches) $("main").scrollIntoView({ behavior: "smooth" });
+  }
+  document.querySelectorAll("[data-tab]").forEach((el) => el.addEventListener("click", (e) => { e.preventDefault(); showTab(el.dataset.tab, true); }));
 
   // ----- Build query -----
   function getQuery() {
@@ -553,7 +617,16 @@
   }
 
   // ----- Ready results from the verified hotel catalog -----
-  function renderHotels(q) {
+  const PAGE_SIZE = 6;
+  let hotelPage = 0, lastQuery = null;
+  $("pager").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-p]"); if (!b || b.disabled) return;
+    hotelPage = +b.dataset.p; renderHotels(lastQuery, true); showTab("ready", true);
+  });
+
+  function renderHotels(q, keepPage) {
+    lastQuery = q;
+    if (!keepPage) hotelPage = 0;
     const all = window.DATINOFESH_HOTELS || [];
     // Each requested feature: true = confirmed, null = unknown, false = excluded.
     const reqs = [];
@@ -575,11 +648,20 @@
 
     const regionTxt = q.region.id === "all" ? "בכל הארץ" : `ב${q.region.he}`;
     $("readySub").textContent = scored.length
-      ? `${scored.length} מלונות ${regionTxt} מתאימים לחיפוש, מסודרים לפי מספר הדרישות שאומתו.`
+      ? (scored.length === 1 ? `מלון אחד ${regionTxt} מתאים לחיפוש.` : `${scored.length} מלונות ${regionTxt} מתאימים לחיפוש, מסודרים לפי מספר הדרישות שאומתו.`)
       : `לא נמצאו בקטלוג מלונות ${regionTxt} שמתאימים לכל הדרישות.`;
 
     const lateTxt = { paid: "עזיבה מאוחרת בתשלום", package: "חבילת מוצ״ש בעבר", request: "עזיבה מאוחרת לפי בקשה" };
-    $("hotels").innerHTML = scored.length ? scored.map(({ h, v, yes }) => {
+    const pages = Math.ceil(scored.length / PAGE_SIZE);
+    hotelPage = Math.min(hotelPage, Math.max(0, pages - 1));
+    $("readyCount").textContent = `(${scored.length})`;
+    $("pager").innerHTML = pages > 1
+      ? `<button data-p="${hotelPage - 1}" ${hotelPage === 0 ? "disabled" : ""} aria-label="הקודם">›</button>` +
+        Array.from({ length: pages }, (_, i) => `<button data-p="${i}" ${i === hotelPage ? 'aria-current="page"' : ""}>${i + 1}</button>`).join("") +
+        `<button data-p="${hotelPage + 1}" ${hotelPage === pages - 1 ? "disabled" : ""} aria-label="הבא">‹</button>`
+      : "";
+    const shown = scored.slice(hotelPage * PAGE_SIZE, (hotelPage + 1) * PAGE_SIZE);
+    $("hotels").innerHTML = shown.length ? shown.map(({ h, v, yes }) => {
       const badge = (ok) => `<i class="b ${ok === true ? "yes" : ok === false ? "no" : "unk"}">${ok === true ? "✓" : ok === false ? "✕" : "?"}</i>`;
       const extra = [];
       if (h.kosher) extra.push(`<span class="feat">${badge(true)}${h.kosher}</span>`);
