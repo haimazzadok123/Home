@@ -175,7 +175,9 @@ const CHANNELS = [
   { id: 'kan11',   name: 'כאן 11',          url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8' },
   { id: 'ch13',    name: 'רשת 13',          url: 'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8' },
   { id: 'i24he',   name: 'i24NEWS עברית',   url: 'https://i24newshebrew-cdn.encoders.immergo.tv/master.m3u8' },
-  { id: 'ch16',    name: 'ערוץ 16',          url: 'https://ch16israel-cdn.encoders.immergo.tv/2/streamPlaylist.m3u8' },
+  // Channel 16: direct stream first; if it fails, the channel's official web player.
+  { id: 'ch16',    name: 'ערוץ 16',          url: 'https://ch16israel-cdn.encoders.immergo.tv/2/streamPlaylist.m3u8',
+    fallbackEmbed: 'https://www.ch16.co.il/player/channel/6a3448c2e20c91b5cd8c9da1' },
   { id: 'redbull', name: 'Red Bull TV',     url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
   { id: 'knesset', name: 'ערוץ הכנסת',      url: 'https://contact.gostreaming.tv/Knesset/myStream/playlist.m3u8' },
   { id: 'makan',   name: 'מכאן 33',         url: 'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/makan/live.livx/playlist.m3u8' },
@@ -346,29 +348,30 @@ function setState(t, state) {
   if (state) t.el.classList.add(state);
 }
 
+// Official embed player in an iframe. We can't mute/unmute it from here;
+// the viewer uses the player's own sound control.
+function showEmbed(t, ch, src) {
+  t.el.classList.add('embed');
+  const f = document.createElement('iframe');
+  f.src = src;
+  f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
+  f.allowFullscreen = true;
+  f.referrerPolicy = 'origin';
+  t.el.querySelector('.yt-box').replaceChildren(f);
+  const a = t.el.querySelector('.open-ext');
+  a.href = ch.page || src;
+  a.onclick = e => e.stopPropagation();
+  t.badge.textContent = ch.name + ' · הקול מהנגן';
+  setState(t, null);
+}
+
 function load(i) {
   const t = tiles[i];
   destroyTile(t);
   const ch = chanById(assign[i]);
   t.badge.textContent = ch ? ch.name : '';
   if (!ch) { setState(t, 'empty'); return; }
-  if (ch.embed) {
-    // Official embed player in an iframe. We can't mute/unmute it from here;
-    // the viewer uses the player's own sound control.
-    t.el.classList.add('embed');
-    const f = document.createElement('iframe');
-    f.src = ch.embed;
-    f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
-    f.allowFullscreen = true;
-    f.referrerPolicy = 'origin';
-    t.el.querySelector('.yt-box').replaceChildren(f);
-    const a = t.el.querySelector('.open-ext');
-    a.href = ch.page || ch.embed;
-    a.onclick = e => e.stopPropagation();
-    t.badge.textContent = ch.name + ' · הקול מהנגן';
-    setState(t, null);
-    return;
-  }
+  if (ch.embed) { showEmbed(t, ch, ch.embed); return; }
   if (!ch.url && ch.page) {
     t.el.querySelector('.ext-text').textContent = `${ch.name} משדר בשידור חי רק בנגן הרשמי שלו`;
     const a = t.el.querySelector('.ext-link');
@@ -383,10 +386,19 @@ function load(i) {
   if (src.type === 'yt') { loadYouTube(i, src); return; }
 
   const v = t.video;
+  const token = t.token;
+  const fail = () => {
+    if (t.token !== token) return; // tile was reloaded meanwhile
+    if (ch.fallbackEmbed) {
+      if (t.hls) { t.hls.destroy(); t.hls = null; }
+      v.removeAttribute('src'); v.load();
+      showEmbed(t, ch, ch.fallbackEmbed);
+    } else setState(t, 'error');
+  };
   v.muted = i !== audioIdx;
   v.volume = volume;
   v.onplaying = () => setState(t, null);
-  v.onerror = () => setState(t, 'error');
+  v.onerror = fail;
 
   if (window.Hls && Hls.isSupported()) {
     const hls = new Hls({ liveSyncDurationCount: 3, maxBufferLength: 20, capLevelToPlayerSize: true });
@@ -395,8 +407,8 @@ function load(i) {
     hls.on(Hls.Events.ERROR, (_, data) => {
       if (!data.fatal) return;
       if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) { recovered = true; hls.recoverMediaError(); return; }
-      setState(t, 'error');
       hls.destroy(); t.hls = null;
+      fail();
     });
     hls.loadSource(ch.url);
     hls.attachMedia(v);
