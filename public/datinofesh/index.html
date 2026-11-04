@@ -273,8 +273,12 @@
     .main { max-width: none; margin: 0; padding: 12px 32px 0; }
     .tabs { top: 0; }
     /* Dense rows: name + actions on top, features and Shabbat info below */
-    .hotels { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 10px; }
-    .hotel { grid-template-columns: 1fr auto; grid-template-areas: "top links" "feats feats" "co co"; padding: 10px 14px; gap: 6px 12px; align-items: center; }
+    .hotels { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .hotel { grid-template-columns: 1fr auto; grid-template-areas: "top links" "feats feats" "co co" "nt nt"; padding: 16px 20px; gap: 8px 16px; align-items: center; }
+    .hotel h3 { font-size: 17px; }
+    .hotel .place { font-size: 13px; }
+    .hotel .feat { font-size: 13px; padding: 3px 10px 3px 11px; }
+    .hotel .co, .hotel .nt { font-size: 13px; }
     .hotel .hotel-top { grid-area: top; min-width: 0; align-items: center; justify-content: flex-start; gap: 8px; }
     .hotel .nm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
     .hotel .nm h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -282,7 +286,7 @@
     .hotel .links { grid-area: links; margin: 0; flex-wrap: nowrap; }
     .hotel .feats { grid-area: feats; }
     .hotel .co { grid-area: co; -webkit-line-clamp: 1; }
-    .hotel .nt { display: none; }
+    .hotel .nt { grid-area: nt; -webkit-line-clamp: 1; }
     .nav-links a[href="#search"] { display: none; }
   }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
@@ -520,7 +524,6 @@
     document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
     document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.id !== id));
     $("main").scrollTop = 0;
-    if (id === "ready") refit();
     if (scroll && window.matchMedia("(max-width: 1099px)").matches) $("main").scrollIntoView({ behavior: "smooth" });
   }
   document.querySelectorAll("[data-tab]").forEach((el) => el.addEventListener("click", (e) => { e.preventDefault(); showTab(el.dataset.tab, true); }));
@@ -648,33 +651,14 @@
   }
 
   // ----- Ready results from the verified hotel catalog -----
-  let PAGE_SIZE = 8;
+  const PAGE_SIZE = 10;
   let hotelPage = 0, lastQuery = null;
   $("pager").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-p]"); if (!b || b.disabled) return;
     hotelPage = +b.dataset.p; renderHotels(lastQuery, true); showTab("ready", true);
   });
 
-  // Fill the visible area on large screens: columns x rows that fit.
-  function fitPageSize() {
-    const main = $("main"), grid = $("hotels"), card = grid.querySelector(".hotel");
-    if (!window.matchMedia("(min-width: 1100px)").matches || !card || $("ready").hidden) return 8;
-    const cols = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
-    const gap = parseFloat(getComputedStyle(grid).rowGap) || 12;
-    const hs = [...grid.querySelectorAll(".hotel")].map((c) => c.offsetHeight);
-    const cardH = hs.reduce((x, y) => x + y, 0) / hs.length;
-    const avail = main.clientHeight - (grid.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop) - 64;
-    const rows = Math.max(2, Math.round((avail + gap) / (cardH + gap)));
-    return cols * rows;
-  }
-  function refit() {
-    if (!lastQuery) return;
-    const first = hotelPage * PAGE_SIZE, n = fitPageSize();
-    if (n !== PAGE_SIZE) { PAGE_SIZE = n; hotelPage = Math.floor(first / n); renderHotels(lastQuery, true, true); }
-  }
-  let resizeT; window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(refit, 150); });
-
-  function renderHotels(q, keepPage, noFit) {
+  function renderHotels(q, keepPage) {
     lastQuery = q;
     if (!keepPage) hotelPage = 0;
     const all = window.DATINOFESH_HOTELS || [];
@@ -731,7 +715,6 @@
         </div>
       </article>`;
     }).join("") : `<div class="empty">נסו "כל הארץ", או כבו חלק מהדרישות — או חפשו באתרים למטה.</div>`;
-    if (!noFit) refit();
   }
 
   function hotelMessage(q) {
