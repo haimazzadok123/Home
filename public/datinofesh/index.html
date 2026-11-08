@@ -2,14 +2,16 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
 <title>דתינופש</title>
 <meta name="description" content="דתינופש מחפש לכם סוף שבוע במלון עם חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕯️</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&family=Varela+Round&display=swap" />
-<meta name="theme-color" content="#0284C7" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F0F9FF" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F172A" />
+<meta name="color-scheme" content="light dark" />
 <style>
   :root {
     --bg: #F0F9FF;
@@ -61,7 +63,16 @@
     }
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+  /* Native-feeling controls: instant taps, no text selection on long-press */
+  button, a, summary, label.toggle, select { touch-action: manipulation; }
+  button, .btn, .chip, .tabs button, .segmented button, .pager button, summary, label.toggle {
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .chip, .segmented button, .tabs button, .pager button, .hotel .links .btn { transition: transform 120ms ease-out, background .2s, color .2s, border-color .2s; }
+  .chip:active, .segmented button:active, .tabs button:active, .pager button:active:not(:disabled) { transform: scale(.96); }
+  .switch { transition: background .25s, transform 120ms ease-out; }
+  .toggle:active .switch { transform: scale(.94); }
   body {
     margin: 0;
     background: var(--bg);
@@ -72,7 +83,7 @@
     font-size: 16px;
   }
   a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  @media (hover: hover) and (pointer: fine) { a:hover { text-decoration: underline; } }
   :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
   /* Nav */
@@ -82,18 +93,20 @@
     backdrop-filter: saturate(180%) blur(16px);
     -webkit-backdrop-filter: saturate(180%) blur(16px);
     border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
   }
   .nav-inner {
     max-width: 1100px; margin: 0 auto; height: 56px; padding: 0 16px;
     display: flex; align-items: center; justify-content: space-between; font-size: 15px;
   }
   .brand { font-family: var(--display); font-weight: 700; font-size: 24px; color: var(--text); display: inline-flex; align-items: center; }
-  .brand:hover { text-decoration: none; }
+  @media (hover: hover) and (pointer: fine) { .brand:hover { text-decoration: none; } }
   .brand span { color: var(--gold); }
   .brand::before { content: ""; margin-inline-end: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft), 0 0 14px 2px rgba(14,165,233,.45); }
   .nav-links { display: flex; gap: 6px; }
   .nav-links a { color: var(--muted); padding: 6px 12px; border-radius: 980px; font-weight: 600; }
-  .nav-links a:hover { color: var(--text); background: var(--bg-alt); text-decoration: none; }
+  @media (hover: hover) and (pointer: fine) { .nav-links a:hover { color: var(--text); background: var(--bg-alt); text-decoration: none; } }
 
   /* Hero */
   .hero { text-align: center; padding: 56px 16px 72px; background: var(--hero); color: var(--hero-text); position: relative; overflow: hidden; }
@@ -141,7 +154,7 @@
     border-radius: 14px; padding: 8px 14px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; text-align: start;
     transition: border-color .2s, background .2s, transform .15s;
   }
-  .chip:hover { border-color: var(--gold); }
+  @media (hover: hover) and (pointer: fine) { .chip:hover { border-color: var(--gold); } }
   .chip small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
   .chip[aria-pressed="true"] { background: var(--gold-soft); border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
   .chip[aria-pressed="true"] small { color: var(--gold); }
@@ -151,7 +164,7 @@
     flex: 1; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted);
     padding: 8px 6px; border-radius: 9px; cursor: pointer; transition: background .2s, color .2s; line-height: 1.25;
   }
-  .segmented button:hover { color: var(--text); }
+  @media (hover: hover) and (pointer: fine) { .segmented button:hover { color: var(--text); } }
   .segmented button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.08); }
 
   /* Toggles */
@@ -169,10 +182,10 @@
     background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); border-radius: 980px;
     padding: 13px 28px; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; transition: background .2s, transform .15s;
   }
-  .btn:hover { background: var(--accent-hover); text-decoration: none; }
+  @media (hover: hover) and (pointer: fine) { .btn:hover { background: var(--accent-hover); text-decoration: none; } }
   .btn:active { transform: scale(.97); }
   .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-  .btn.secondary:hover { border-color: var(--accent); background: var(--accent-soft); }
+  @media (hover: hover) and (pointer: fine) { .btn.secondary:hover { border-color: var(--accent); background: var(--accent-soft); } }
   .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   #goBtn { width: 100%; }
 
@@ -198,7 +211,7 @@
     background: var(--card); border-radius: 18px; padding: 18px; box-shadow: var(--shadow); border: 1px solid var(--line);
     display: flex; flex-direction: column; gap: 8px; transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
   }
-  .site:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--gold); }
+  @media (hover: hover) and (pointer: fine) { .site:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--gold); } }
   .site-head { display: flex; align-items: center; gap: 12px; }
   .logo { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px; flex: none; }
   .site h3 { margin: 0; font-size: 16px; }
@@ -217,7 +230,7 @@
     display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;
     transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
   }
-  .hotel:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  @media (hover: hover) and (pointer: fine) { .hotel:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); } }
   .hotel.top::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--gold), #e9c77a); }
   .hotel-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
   .hotel .nm { min-width: 0; }
@@ -237,7 +250,7 @@
   .hotel .links { display: flex; gap: 6px; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
   .hotel .links .btn { font-size: 13px; padding: 7px 14px; }
   .hotel .links .src { font-size: 13px; margin-inline-start: auto; color: var(--muted); }
-  .hotel .links .src:hover { color: var(--accent); }
+  @media (hover: hover) and (pointer: fine) { .hotel .links .src:hover { color: var(--accent); } }
   .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 24px; background: var(--card); border: 1px dashed var(--line); border-radius: 18px; }
 
   .group-title { font-family: var(--display); font-size: 20px; font-weight: 700; margin: 28px 0 12px; }
@@ -251,7 +264,7 @@
   .tip p { margin: 0; color: var(--muted); font-size: 15px; }
   .copybox { margin-top: 12px; background: var(--bg-alt); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 14px; white-space: pre-wrap; line-height: 1.7; }
 
-  footer { padding: 24px 0 32px; font-size: 12px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
+  footer { padding: 24px 0 calc(32px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
   footer p { max-width: 760px; margin: 6px auto; }
 
   /* App layout */
@@ -259,18 +272,19 @@
   .side { padding: 0 16px 8px; margin-top: -44px; position: relative; }
   .mini-hero { display: none; }
   .main { padding: 24px 16px 0; max-width: 1100px; margin: 0 auto; }
-  .tabs { position: sticky; top: 56px; z-index: 5; display: flex; gap: 4px; background: var(--nav); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 10px 0; margin-bottom: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+  .tabs { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 5; display: flex; gap: 4px; background: var(--nav); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 10px 0; margin-bottom: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
   .tabs button { flex: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 15px; font-weight: 700; padding: 8px 16px; border-radius: 980px; cursor: pointer; transition: background .2s, color .2s; }
-  .tabs button:hover { color: var(--text); background: var(--bg-alt); }
+  @media (hover: hover) and (pointer: fine) { .tabs button:hover { color: var(--text); background: var(--bg-alt); } }
   .tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
-    .tabs .count { font-size: 12px; opacity: .75; font-weight: 600; }
+    @media (max-width: 420px) { .tabs { gap: 0; } .tabs button { padding: 8px 11px; font-size: 14px; } }
+  .tabs .count { font-size: 12px; opacity: .75; font-weight: 600; }
   .panel { padding-bottom: 24px; }
   .panel .section-sub { margin: 4px 0 16px; font-size: 16px; }
   .ready-head { display: flex; justify-content: space-between; align-items: center; gap: 8px 20px; flex-wrap: wrap; margin-bottom: 14px; }
   .ready-head .section-sub { margin: 0; text-align: start; font-size: 15px; }
   .pager { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 20px; flex-wrap: wrap; }
   .pager button { min-width: 38px; height: 38px; border-radius: 980px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 12px; }
-  .pager button:hover:not(:disabled) { border-color: var(--accent); }
+  @media (hover: hover) and (pointer: fine) { .pager button:hover:not(:disabled) { border-color: var(--accent); } }
   .pager button[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .pager button:disabled { opacity: .4; cursor: default; }
 
@@ -280,7 +294,7 @@
     .mini-hero h1 { font-size: 40px; }
     .mini-hero .eyebrow { font-size: 13px; margin-bottom: 2px; color: var(--hero-accent); }
     .mini-hero p { margin: 6px 0 0; font-size: 14px; color: var(--hero-muted); }
-    .layout { display: grid; grid-template-columns: 400px 1fr; height: calc(100vh - 57px); overflow: hidden; background: var(--bg-alt); }
+    .layout { display: grid; grid-template-columns: 400px 1fr; height: calc(100dvh - 57px); overflow: hidden; background: var(--bg-alt); }
     .side, .main { overflow-y: auto; height: 100%; overscroll-behavior: contain; }
     .side { margin: 0; padding: 20px; border-left: 1px solid var(--line); background: var(--bg); }
     .side .search-card { padding: 18px; gap: 18px; border-radius: 20px; box-shadow: none; }
@@ -296,7 +310,7 @@
     .hotels { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
     .nav-links a[href="#search"] { display: none; }
   }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; font-weight: 600; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
+  .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; font-weight: 600; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
   .toast.show { transform: translateX(-50%) scale(1); opacity: 1; }
   /* Calm mode: fewer boxes, colors and shadows */
   .more-prefs { margin-top: 2px; }
@@ -305,9 +319,9 @@
   .more-prefs summary::-webkit-details-marker, .hotel .info summary::-webkit-details-marker { display: none; }
   .more-prefs summary::after, .hotel .info summary::after { content: "⌄"; font-size: 14px; transition: transform .2s; transform: translateY(-3px); }
   .more-prefs[open] summary::after, .hotel .info[open] summary::after { transform: rotate(180deg) translateY(-3px); }
-  .more-prefs summary:hover, .hotel .info summary:hover { color: var(--text); }
+  @media (hover: hover) and (pointer: fine) { .more-prefs summary:hover, .hotel .info summary:hover { color: var(--text); } }
   .hotel { box-shadow: none; gap: 12px; padding: 18px 20px; }
-  .hotel:hover { transform: none; box-shadow: var(--shadow); }
+  @media (hover: hover) and (pointer: fine) { .hotel:hover { transform: none; box-shadow: var(--shadow); } }
   .hotel .place::before { content: none; }
   .feats { gap: 4px 14px; }
   .feat { background: none; padding: 0; font-weight: 500; font-size: 13px; color: var(--muted); }
@@ -322,7 +336,7 @@
   .hotel .info .co b { color: var(--text); }
   .hotel .info .src { display: inline-block; margin-top: 8px; font-size: 13px; }
   .site, .tip { box-shadow: none; }
-  .site:hover { box-shadow: var(--shadow); transform: none; }
+  @media (hover: hover) and (pointer: fine) { .site:hover { box-shadow: var(--shadow); transform: none; } }
   .legend { font-size: 12px; }
   .fade { animation: fade .4s ease both; }
   @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
