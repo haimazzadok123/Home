@@ -14,7 +14,9 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
   url.searchParams.set('limit', '5')
   url.searchParams.set('accept-language', 'he')
 
-  const res = await fetch(url.toString(), { signal })
+  // A hung lookup must not leave "מחפש…" on screen forever.
+  const timeout = AbortSignal.timeout(10_000)
+  const res = await fetch(url.toString(), { signal: signal ? AbortSignal.any([signal, timeout]) : timeout })
   if (!res.ok) throw new Error(`חיפוש המיקום נכשל (שגיאה ${res.status})`)
 
   const data: Array<{ lat: string; lon: string; display_name: string }> = await res.json()

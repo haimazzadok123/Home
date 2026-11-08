@@ -1,4 +1,4 @@
-import type { FoodFilterTag, FuelFilterTag, LatLng, Poi } from '../types'
+import type { FoodFilterTag, FuelFilterTag, LatLng, Poi, PoiCategory } from '../types'
 
 /**
  * The public overpass-api.de instance is prone to 504s under load, so fall back to a
@@ -11,22 +11,21 @@ const OVERPASS_ENDPOINTS = [
 ]
 
 /**
- * Kosher food places aren't consistently tagged in OpenStreetMap, so we cast a wide net:
- * explicit diet:kosher=yes/only, cuisine=kosher, and shop=kosher (kosher grocers/bakeries).
- * `area` is an Overpass `around:` filter that follows the route line.
+ * Overpass statements per category. Kosher food places aren't consistently tagged in
+ * OpenStreetMap, so that one casts a wide net: diet:kosher=yes/only, cuisine=kosher and
+ * shop=kosher (kosher grocers/bakeries).
  */
-function buildQuery(area: string): string {
-  return `
-    [out:json][timeout:60];
-    (
-      nwr["tourism"~"^(viewpoint|camp_site)$"](${area});
-      nwr["diet:kosher"~"yes|only"](${area});
-      nwr["cuisine"~"kosher"](${area});
-      nwr["shop"="kosher"](${area});
-      nwr["amenity"="fuel"](${area});
-    );
-    out center tags;
-  `
+const CATEGORY_STATEMENTS: Record<PoiCategory, string[]> = {
+  viewpoint: ['nwr["tourism"="viewpoint"]'],
+  'kosher-food': ['nwr["diet:kosher"~"yes|only"]', 'nwr["cuisine"~"kosher"]', 'nwr["shop"="kosher"]'],
+  fuel: ['nwr["amenity"="fuel"]'],
+  camping: ['nwr["tourism"="camp_site"]'],
+}
+
+/** Builds a query for the chosen categories only; `area` is an `around:` filter along the route. */
+function buildQuery(area: string, categories: PoiCategory[]): string {
+  const statements = categories.flatMap((c) => CATEGORY_STATEMENTS[c]).map((st) => `${st}(${area});`)
+  return `[out:json][timeout:25];(${statements.join('')});out center tags;`
 }
 
 /**
@@ -161,7 +160,7 @@ export interface RawPoi {
   tags: Record<string, string>
 }
 
-const OVERPASS_TIMEOUT_MS = 45_000
+const OVERPASS_TIMEOUT_MS = 25_000
 
 /** Tries each Overpass mirror in turn — the public instances routinely 504 or hang under load. */
 async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
@@ -171,7 +170,7 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     // A hung mirror must not stall the search, so each attempt has its own timeout.
     const timeout = AbortSignal.timeout(OVERPASS_TIMEOUT_MS)
-    const attemptSignal = signal && 'any' in AbortSignal ? AbortSignal.any([signal, timeout]) : timeout
+    const attemptSignal = signal ? AbortSignal.any([signal, timeout]) : timeout
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -200,12 +199,19 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
 }
 
 /**
- * Queries Overpass for scenic viewpoints, kosher food, fuel stations and KKL/Nature Authority
- * camping within radiusKm of the line through `path`.
+ * Queries Overpass for the chosen categories (viewpoints, kosher food, fuel stations, KKL/Nature
+ * Authority camping) within radiusKm of the line through `path`.
  */
-export async function fetchPois(path: LatLng[], radiusKm: number, signal?: AbortSignal): Promise<RawPoi[]> {
+export async function fetchPois(
+  path: LatLng[],
+  radiusKm: number,
+  categories: PoiCategory[],
+  signal?: AbortSignal,
+): Promise<RawPoi[]> {
+  if (categories.length === 0) return []
   const coords = path.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(',')
-  const query = buildQuery(`around:${Math.round(radiusKm * 1000)},${coords}`)
+  const query = buildQuery(`around:${Math.round(radiusKm * 1000)},${coords}`, categories)
+  const wanted = new Set(categories)
 
   const data = await queryOverpass(query, signal)
 
@@ -216,7 +222,7 @@ export async function fetchPois(path: LatLng[], radiusKm: number, signal?: Abort
     const category = categorize(tags)
     const name = displayNameFor(tags)
     // Skip unnamed places — a generic category label isn't a useful name to show.
-    if (!category || !name) continue
+    if (!category || !name || !wanted.has(category)) continue
 
     const lat = el.lat ?? el.center?.lat
     const lng = el.lon ?? el.center?.lon

@@ -15,7 +15,6 @@ import { buildShareUrl, parseShareUrl } from './utils/shareLink'
 import './App.css'
 
 const DEFAULT_CORRIDOR_KM = 5
-const ALL_CATEGORIES: PoiCategory[] = ['viewpoint', 'kosher-food', 'fuel', 'camping']
 const CORRIDOR_DEBOUNCE_MS = 600
 
 function toggleInSet<T>(setter: (updater: (prev: Set<T>) => Set<T>) => void, value: T) {
@@ -31,6 +30,7 @@ interface RouteOverride {
   start?: Place
   end?: Place
   corridor?: number
+  categories?: Set<PoiCategory>
 }
 
 function withRouteDistance(raw: RawPoi[], routeLine: ReturnType<typeof toRouteLine>, corridorKm: number): Poi[] {
@@ -51,50 +51,102 @@ function App() {
   const [routeSummary, setRouteSummary] = useState<{ distanceKm: number; durationMin: number } | null>(null)
   const [pois, setPois] = useState<Poi[]>([])
   const [corridorKm, setCorridorKm] = useState(DEFAULT_CORRIDOR_KM)
-  const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(() => new Set(ALL_CATEGORIES))
+  const [activeFilters, setActiveFilters] = useState<Set<PoiCategory>>(new Set())
   const [activeFoodTags, setActiveFoodTags] = useState<Set<FoodFilterTag>>(new Set())
   const [activeFuelTags, setActiveFuelTags] = useState<Set<FuelFilterTag>>(new Set())
   const [activeFuelBrands, setActiveFuelBrands] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
+  const [loadingCats, setLoadingCats] = useState<Set<PoiCategory>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [focusedPoiId, setFocusedPoiId] = useState<string | null>(null)
   const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>(() => loadSavedRoutes())
   const [shareStatus, setShareStatus] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  // Guards against a slow, previous plan's hiking-POI fetch resolving after a newer plan has
-  // already started (or the user hit "clear") and appending its results onto the wrong route.
-  const planRequestIdRef = useRef(0)
+  // Every new route, corridor change, cancel or clear bumps the version, so a slow answer
+  // that belongs to an older search can never add its places to the current one.
+  const versionRef = useRef(0)
+  const abortRef = useRef(new AbortController())
+  /** Categories already searched (or being searched) for the current route and corridor. */
+  const fetchedRef = useRef(new Set<PoiCategory>())
+  const pendingRef = useRef(new Set<PoiCategory>())
+  const activeFiltersRef = useRef(activeFilters)
   const corridorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const poisLoading = loadingCats.size > 0
+
+  function applyFilters(next: Set<PoiCategory>) {
+    activeFiltersRef.current = next
+    setActiveFilters(next)
+  }
+
+  /** Stops everything in flight and forgets what was searched. */
+  function resetSearch() {
+    abortRef.current.abort()
+    abortRef.current = new AbortController()
+    versionRef.current++
+    fetchedRef.current = new Set()
+    pendingRef.current = new Set()
+    if (corridorTimerRef.current) clearTimeout(corridorTimerRef.current)
+    setLoadingCats(new Set())
+  }
+
+  /** Cancel button: stops running searches but keeps the route and places already found. */
+  function cancelSearch() {
+    abortRef.current.abort()
+    abortRef.current = new AbortController()
+    versionRef.current++
+    // Unfinished categories can be searched again by choosing them again.
+    for (const c of pendingRef.current) fetchedRef.current.delete(c)
+    pendingRef.current = new Set()
+    if (corridorTimerRef.current) clearTimeout(corridorTimerRef.current)
+    setLoadingCats(new Set())
+    setLoading(false)
+  }
 
   /**
-   * Loads the places along an already-planned route. The Overpass search and the slower
-   * Israel Hiking Map lookups run side by side; whichever finishes first shows up first.
-   * A failed place search keeps the route on the map and only shows a message.
+   * Searches the route for the given categories only, skipping ones already searched.
+   * Overpass and the slower Israel Hiking Map (viewpoints only) run side by side.
    */
-  async function loadPois(coordinates: LatLng[], corridor: number, requestId: number) {
-    const isCurrent = () => planRequestIdRef.current === requestId
-    const routeLine = toRouteLine(coordinates)
-    setPois([])
+  async function searchCategories(categories: PoiCategory[], coordinates: LatLng[], corridor: number) {
+    const todo = categories.filter((c) => !fetchedRef.current.has(c))
+    if (todo.length === 0) return
 
-    // Best-effort source used to enrich the viewpoint category; its failures stay silent.
-    fetchHikingPois(routeLine)
-      .then((rawHikingPois) => {
-        if (!isCurrent()) return
-        const hikingWithDistance = withRouteDistance(rawHikingPois, routeLine, corridor)
-        if (hikingWithDistance.length > 0) setPois((prev) => [...prev, ...hikingWithDistance])
-      })
-      .catch(() => {})
+    const version = versionRef.current
+    const signal = abortRef.current.signal
+    const isCurrent = () => versionRef.current === version
+    const routeLine = toRouteLine(coordinates)
+    for (const c of todo) {
+      fetchedRef.current.add(c)
+      pendingRef.current.add(c)
+    }
+    setLoadingCats(new Set(pendingRef.current))
+    setError(null)
+
+    if (todo.includes('viewpoint')) {
+      // Best-effort extra viewpoints; its failures stay silent.
+      fetchHikingPois(routeLine, signal)
+        .then((rawHikingPois) => {
+          if (!isCurrent()) return
+          const hikingWithDistance = withRouteDistance(rawHikingPois, routeLine, corridor)
+          if (hikingWithDistance.length > 0) setPois((prev) => [...prev, ...hikingWithDistance])
+        })
+        .catch(() => {})
+    }
 
     try {
       // A small margin so points that sit just off the simplified line are not missed;
       // withRouteDistance then measures against the full route and drops the extras.
-      const rawPois = await fetchPois(routeQueryPoints(routeLine), corridor + 0.5)
+      const rawPois = await fetchPois(routeQueryPoints(routeLine), corridor + 0.5, todo, signal)
       if (!isCurrent()) return
       const withDistance = withRouteDistance(rawPois, routeLine, corridor)
-      setPois((prev) => [...withDistance, ...prev])
+      setPois((prev) => [...prev, ...withDistance])
     } catch {
+      if (!isCurrent()) return
+      for (const c of todo) fetchedRef.current.delete(c)
+      setError('שרת המקומות לא ענה. נסו שוב בעוד דקה (כבו והדליקו את הסוג שבחרתם).')
+    } finally {
       if (isCurrent()) {
-        setError('המסלול מוכן, אבל שרת המקומות לא ענה. נסו שוב בעוד דקה.')
+        for (const c of todo) pendingRef.current.delete(c)
+        setLoadingCats(new Set(pendingRef.current))
       }
     }
   }
@@ -103,13 +155,16 @@ function App() {
     const effectiveStart = override?.start ?? start
     const effectiveEnd = override?.end ?? end
     const corridor = override?.corridor ?? corridorKm
+    const categories = override?.categories ?? activeFiltersRef.current
 
     if (!effectiveStart || !effectiveEnd) {
       setError('בחרו נקודת יציאה ונקודת יעד מתוך ההצעות שמופיעות בזמן ההקלדה.')
       return
     }
 
-    const requestId = ++planRequestIdRef.current
+    resetSearch()
+    const version = versionRef.current
+    const signal = abortRef.current.signal
 
     setLoading(true)
     setError(null)
@@ -121,17 +176,19 @@ function App() {
     setPois([])
 
     try {
-      const result = await fetchRoute(effectiveStart, effectiveEnd)
-      if (planRequestIdRef.current !== requestId) return
+      const result = await fetchRoute(effectiveStart, effectiveEnd, signal)
+      if (versionRef.current !== version) return
       setRoute(result.coordinates)
       setRouteSummary({ distanceKm: result.distanceKm, durationMin: result.durationMin })
-      await loadPois(result.coordinates, corridor, requestId)
+      setLoading(false)
+      // Only the categories the user chose are searched.
+      void searchCategories([...categories], result.coordinates, corridor)
     } catch (err) {
-      if (planRequestIdRef.current === requestId) {
+      if (versionRef.current === version) {
         setError(err instanceof Error ? err.message : 'משהו השתבש בתכנון המסלול.')
       }
     } finally {
-      if (planRequestIdRef.current === requestId) setLoading(false)
+      if (versionRef.current === version) setLoading(false)
     }
   }
 
@@ -143,11 +200,11 @@ function App() {
     setStart(shared.start)
     setEnd(shared.end)
     setCorridorKm(shared.corridorKm)
-    setActiveFilters(shared.filters.size > 0 ? shared.filters : new Set(ALL_CATEGORIES))
+    applyFilters(shared.filters)
     setActiveFoodTags(shared.foodTags)
     setActiveFuelTags(shared.fuelTags)
     setActiveFuelBrands(shared.fuelBrands)
-    void planRoute({ start: shared.start, end: shared.end, corridor: shared.corridorKm })
+    void planRoute({ start: shared.start, end: shared.end, corridor: shared.corridorKm, categories: shared.filters })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -158,7 +215,15 @@ function App() {
   }
 
   function toggleFilter(category: PoiCategory) {
-    toggleInSet(setActiveFilters, category)
+    const next = new Set(activeFiltersRef.current)
+    if (next.has(category)) {
+      next.delete(category)
+    } else {
+      next.add(category)
+      // Choosing a category searches the route for that category only.
+      if (route) void searchCategories([category], route, corridorKm)
+    }
+    applyFilters(next)
   }
 
   function toggleFoodTag(tag: FoodFilterTag) {
@@ -176,15 +241,13 @@ function App() {
   function handleCorridorChange(km: number) {
     setCorridorKm(km)
     if (!route) return
-    // The route itself does not change, so only the places are searched again, and only
-    // once the slider settles; dragging it used to send a full re-plan for every step.
+    // The route itself does not change, so only the chosen categories are searched again,
+    // and only once the slider settles.
     if (corridorTimerRef.current) clearTimeout(corridorTimerRef.current)
-    corridorTimerRef.current = setTimeout(async () => {
-      const requestId = ++planRequestIdRef.current
-      setLoading(true)
-      setError(null)
-      await loadPois(route, km, requestId)
-      if (planRequestIdRef.current === requestId) setLoading(false)
+    corridorTimerRef.current = setTimeout(() => {
+      resetSearch()
+      setPois([])
+      void searchCategories([...activeFiltersRef.current], route, km)
     }, CORRIDOR_DEBOUNCE_MS)
   }
 
@@ -214,11 +277,12 @@ function App() {
     setStart(saved.start)
     setEnd(saved.end)
     setCorridorKm(saved.corridorKm)
-    setActiveFilters(new Set(saved.filters.length > 0 ? saved.filters : ALL_CATEGORIES))
+    const savedFilters = new Set(saved.filters)
+    applyFilters(savedFilters)
     setActiveFoodTags(new Set(saved.foodTags))
     setActiveFuelTags(new Set(saved.fuelTags))
     setActiveFuelBrands(new Set(saved.fuelBrands))
-    void planRoute({ start: saved.start, end: saved.end, corridor: saved.corridorKm })
+    void planRoute({ start: saved.start, end: saved.end, corridor: saved.corridorKm, categories: savedFilters })
   }
 
   function handleDeleteRoute(id: string) {
@@ -226,8 +290,7 @@ function App() {
   }
 
   function handleClearRoute() {
-    planRequestIdRef.current++
-    if (corridorTimerRef.current) clearTimeout(corridorTimerRef.current)
+    resetSearch()
     setLoading(false)
     setStart(null)
     setEnd(null)
@@ -329,23 +392,33 @@ function App() {
                 className="plan-button"
                 onClick={() => {
                   void planRoute()
-                  // Keep the sheet open when a point is missing, so the message stays visible.
-                  if (start && end) setMobileMenuOpen(false)
+                  // Keep the sheet open when a point is missing (so the message shows) or when
+                  // nothing is chosen yet (so the categories below can be picked).
+                  if (start && end && activeFilters.size > 0) setMobileMenuOpen(false)
                 }}
                 disabled={loading}
               >
-                {loading ? 'מחפש…' : 'תכנון מסלול'}
+                {loading ? 'מחשב מסלול…' : 'תכנון מסלול'}
               </button>
-              {(start || end || route) && (
-                <button type="button" className="clear-button" onClick={handleClearRoute} disabled={loading}>
-                  ניקוי
+              {loading || poisLoading ? (
+                <button type="button" className="clear-button" onClick={cancelSearch}>
+                  ביטול
                 </button>
+              ) : (
+                (start || end || route) && (
+                  <button type="button" className="clear-button" onClick={handleClearRoute}>
+                    ניקוי
+                  </button>
+                )
               )}
             </div>
           </div>
           <Sidebar
             pois={pois}
-            loading={loading}
+            loading={poisLoading}
+            loadingCategories={loadingCats}
+            hasRoute={!!route}
+            onCancel={cancelSearch}
             error={error}
             filterState={filterState}
             onToggleFilter={toggleFilter}
@@ -372,8 +445,18 @@ function App() {
           focusedPoiId={focusedPoiId}
         />
         {!mobileMenuOpen && (
-          <button type="button" className="mobile-fab" onClick={() => setMobileMenuOpen(true)}>
-            {route ? `🧭 ${pois.filter((p) => matchesActiveFilters(p, filterState)).length} מקומות בדרך` : '🔍 תכנון מסלול'}
+          <button
+            type="button"
+            className="mobile-fab"
+            onClick={() => (loading || poisLoading ? cancelSearch() : setMobileMenuOpen(true))}
+          >
+            {loading || poisLoading
+              ? '✕ ביטול חיפוש'
+              : !route
+                ? '🔍 תכנון מסלול'
+                : activeFilters.size === 0
+                  ? '🧭 בחרו מה לחפש בדרך'
+                  : `🧭 ${pois.filter((p) => matchesActiveFilters(p, filterState)).length} מקומות בדרך`}
           </button>
         )}
       </div>

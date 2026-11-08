@@ -13,6 +13,9 @@ import {
 interface SidebarProps {
   pois: Poi[]
   loading: boolean
+  loadingCategories: Set<PoiCategory>
+  hasRoute: boolean
+  onCancel: () => void
   error: string | null
   filterState: ActiveFilterState
   onToggleFilter: (category: PoiCategory) => void
@@ -78,6 +81,9 @@ function SubfilterGroup<T extends string>({ title, options, labelFor, active, on
 export function Sidebar({
   pois,
   loading,
+  loadingCategories,
+  hasRoute,
+  onCancel,
   error,
   filterState,
   onToggleFilter,
@@ -130,6 +136,7 @@ export function Sidebar({
       )}
       {shareStatus && <div className="status-message">{shareStatus}</div>}
 
+      <h3 className="filters-title">מה לחפש בדרך?</h3>
       <div className="filters">
         {FILTERS.map((f) => (
           <button
@@ -139,7 +146,9 @@ export function Sidebar({
             aria-pressed={filterState.categories.has(f.category)}
             onClick={() => onToggleFilter(f.category)}
           >
-            <span className="filter-icon">{f.emoji}</span>
+            <span className="filter-icon">
+              {loadingCategories.has(f.category) ? <span className="spinner" aria-label="מחפש" /> : f.emoji}
+            </span>
             <span className="filter-label">{f.label}</span>
           </button>
         ))}
@@ -184,13 +193,25 @@ export function Sidebar({
         />
       </div>
 
-      {loading && <div className="status-message">מחפש מקומות לאורך המסלול…</div>}
-      {error && <div className="status-message error">{error}</div>}
-      {!loading && !error && pois.length === 0 && (
-        <div className="status-message">אחרי תכנון המסלול יופיעו כאן תצפיות, אוכל כשר, תחנות דלק ולינה לאורך הדרך.</div>
+      {loading && (
+        <div className="status-message loading-row">
+          <span className="spinner" aria-hidden="true" />
+          <span>מחפש לאורך המסלול…</span>
+          <button type="button" className="pill-button" onClick={onCancel}>
+            ביטול
+          </button>
+        </div>
       )}
-      {!loading && !error && pois.length > 0 && filterState.categories.size === 0 && (
-        <div className="status-message">בחרו לפחות סוג מקום אחד למעלה.</div>
+      {error && <div className="status-message error">{error}</div>}
+      {!loading && !error && filterState.categories.size === 0 && (
+        <div className="status-message">
+          {hasRoute
+            ? 'בחרו למעלה מה לחפש. נחפש רק את מה שבחרתם.'
+            : 'בחרו מה לחפש ותכננו מסלול. אפשר גם להוסיף סוגים אחרי שהמסלול מוכן.'}
+        </div>
+      )}
+      {!loading && !error && hasRoute && filterState.categories.size > 0 && visible.length === 0 && (
+        <div className="status-message">לא נמצאו מקומות כאלה ליד המסלול. אפשר להגדיל את המרחק מהמסלול.</div>
       )}
 
       <ul className="poi-list">
