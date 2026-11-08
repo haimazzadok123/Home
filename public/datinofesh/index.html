@@ -310,6 +310,49 @@
     .hotels { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
     .nav-links a[href="#search"] { display: none; }
   }
+
+  /* ===== Intro screen ===== */
+  .intro {
+    position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; text-align: center;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px));
+    background: radial-gradient(120% 90% at 50% 100%, #0EA5E9 0%, #0369A1 35%, #0C2A4A 70%, #071A30 100%);
+    color: #F0F9FF; overflow: hidden; cursor: pointer;
+    transition: opacity 450ms cubic-bezier(.23,1,.32,1), transform 450ms cubic-bezier(.23,1,.32,1);
+  }
+  .intro.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+  .intro[hidden] { display: none; }
+  html.intro-on, html.intro-on body { overflow: hidden; }
+  .intro .stars { position: absolute; inset: 0; pointer-events: none; }
+  .intro .star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .2; animation: twinkle 3s ease-in-out infinite; }
+  @keyframes twinkle { 50% { opacity: .9; transform: scale(1.4); } }
+  .intro-inner { position: relative; display: grid; justify-items: center; gap: 6px; }
+  .candles { display: flex; gap: 26px; align-items: flex-end; height: 130px; margin-bottom: 18px; position: relative; }
+  .candles::before { content: ""; position: absolute; left: 50%; top: 0; width: 240px; height: 200px; transform: translate(-50%, -30%); background: radial-gradient(circle, rgba(253,224,140,.38), transparent 62%); animation: halo 3.2s ease-in-out infinite; }
+  @keyframes halo { 50% { opacity: .7; transform: translate(-50%, -30%) scale(.94); } }
+  .candle { position: relative; width: 26px; height: 78px; border-radius: 6px 6px 4px 4px; background: linear-gradient(90deg, #E0F2FE, #fff 45%, #CFE6F5); box-shadow: inset 0 -8px 12px rgba(3,105,161,.15); transform-origin: bottom; animation: rise 700ms cubic-bezier(.23,1,.32,1) both; }
+  .candle:nth-child(2) { animation-delay: 90ms; }
+  .candle::before { content: ""; position: absolute; left: 50%; top: -9px; width: 2px; height: 10px; margin-left: -1px; background: #334155; border-radius: 1px; }
+  .flame { position: absolute; left: 50%; bottom: calc(100% + 6px); width: 16px; height: 34px; margin-left: -8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+    background: radial-gradient(ellipse at 50% 78%, #fff 0 18%, #FDE68A 34%, #F59E0B 62%, rgba(245,158,11,0) 72%);
+    filter: drop-shadow(0 0 10px rgba(253,224,140,.9)); transform-origin: 50% 90%;
+    animation: ignite 500ms 650ms cubic-bezier(.23,1,.32,1) both, flicker 1.6s 1.15s ease-in-out infinite; }
+  .candle:nth-child(2) .flame { animation-delay: 760ms, 1.3s; animation-duration: 500ms, 1.9s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px) scaleY(.8); } }
+  @keyframes ignite { from { opacity: 0; transform: scale(.2); } }
+  @keyframes flicker { 0%,100% { transform: rotate(-2deg) scaleY(1); } 30% { transform: rotate(2deg) scaleY(1.08) scaleX(.94); } 60% { transform: rotate(-1deg) scaleY(.95); } }
+  .intro-eyebrow { margin: 0; font-weight: 700; font-size: 15px; letter-spacing: .04em; color: #BAE6FD; animation: fadeUp 600ms 900ms cubic-bezier(.23,1,.32,1) both; }
+  .intro-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 104px); line-height: 1.05; font-weight: 700; color: #fff; text-shadow: 0 6px 30px rgba(14,165,233,.45); }
+  .intro-title span { display: inline-block; animation: letter 700ms cubic-bezier(.23,1,.32,1) both; }
+  @keyframes letter { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } }
+  .intro-sub { margin: 6px 0 22px; max-width: 420px; font-size: 18px; color: rgba(240,249,255,.8); animation: fadeUp 600ms 1.4s cubic-bezier(.23,1,.32,1) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } }
+  .intro-btn { font: inherit; font-size: 18px; font-weight: 700; color: #0C4A6E; background: #fff; border: 0; border-radius: 980px; padding: 14px 34px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(2,132,199,.45), 0 0 0 6px rgba(255,255,255,.12); animation: fadeUp 600ms 1.6s cubic-bezier(.23,1,.32,1) both; transition: transform 120ms ease-out; }
+  .intro-btn:active { transform: scale(.96); }
+  @media (hover: hover) and (pointer: fine) { .intro-btn:hover { box-shadow: 0 12px 34px rgba(2,132,199,.6), 0 0 0 8px rgba(255,255,255,.18); } }
+  .intro-hint { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; font-size: 13px; color: rgba(240,249,255,.55); animation: fadeUp 600ms 2s ease-out both; }
+  .mouse-only { display: none; }
+  @media (hover: hover) and (pointer: fine) { .mouse-only { display: inline; } .touch-only { display: none; } }
   .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; font-weight: 600; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
   .toast.show { transform: translateX(-50%) scale(1); opacity: 1; }
   /* Calm mode: fewer boxes, colors and shadows */
@@ -344,6 +387,28 @@
 </style>
 </head>
 <body>
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle" hidden>
+  <div class="stars" id="stars" aria-hidden="true"></div>
+  <div class="intro-inner">
+    <div class="candles" aria-hidden="true">
+      <div class="candle"><div class="flame"></div></div>
+      <div class="candle"><div class="flame"></div></div>
+    </div>
+    <p class="intro-eyebrow">סופ״ש במלון שומר שבת</p>
+    <h2 class="intro-title" id="introTitle">דתינופש</h2>
+    <p class="intro-sub">מלונות עם חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
+    <button class="intro-btn" id="introBtn" type="button">כניסה לאתר ‹</button>
+  </div>
+  <div class="intro-hint"><span class="touch-only">הקישו בכל מקום כדי להיכנס</span><span class="mouse-only">לחצו בכל מקום או על Enter</span></div>
+</div>
+<script>
+  // Show the intro once per browser session, before the page paints.
+  (function () {
+    var seen = false;
+    try { seen = sessionStorage.getItem("datinofesh-intro") === "1"; } catch (e) {}
+    if (!seen) { document.getElementById("intro").hidden = false; document.documentElement.classList.add("intro-on"); }
+  })();
+</script>
 
 <nav>
   <div class="nav-inner">
@@ -835,6 +900,37 @@
     } catch { /* storage unavailable */ }
   }
   function load() { try { return JSON.parse(localStorage.getItem("datinofesh")); } catch { return null; } }
+
+  // ----- Intro screen -----
+  (function intro() {
+    const el = $("intro");
+    if (el.hidden) return;
+    const title = $("introTitle");
+    title.innerHTML = [...title.textContent].map((c, i) => `<span style="animation-delay:${250 + i * 70}ms">${c}</span>`).join("");
+    const stars = $("stars");
+    for (let i = 0; i < 60; i++) {
+      const st = document.createElement("i");
+      st.className = "star";
+      st.style.cssText = `top:${Math.random() * 70}%;left:${Math.random() * 100}%;animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(2 + Math.random() * 3).toFixed(2)}s`;
+      stars.appendChild(st);
+    }
+    $("introBtn").focus({ preventScroll: true });
+    let done = false;
+    const close = () => {
+      if (done) return; done = true;
+      try { sessionStorage.setItem("datinofesh-intro", "1"); } catch { /* storage unavailable */ }
+      el.classList.add("out");
+      document.documentElement.classList.remove("intro-on");
+      document.removeEventListener("keydown", onKey);
+      const finish = () => { el.hidden = true; };
+      el.addEventListener("transitionend", finish, { once: true });
+      setTimeout(finish, 600);
+    };
+    const onKey = (e) => { if (["Enter", " ", "Escape"].includes(e.key)) { e.preventDefault(); close(); } };
+    el.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setTimeout(close, 1500);
+  })();
 
   render();
   loadShabbat();
