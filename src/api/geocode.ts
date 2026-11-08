@@ -1,4 +1,5 @@
 import type { Place } from '../types'
+import { withTimeout } from '../utils/abort'
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 
@@ -15,11 +16,15 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
   url.searchParams.set('accept-language', 'he')
 
   // A hung lookup must not leave "מחפש…" on screen forever.
-  const timeout = AbortSignal.timeout(10_000)
-  const res = await fetch(url.toString(), { signal: signal ? AbortSignal.any([signal, timeout]) : timeout })
-  if (!res.ok) throw new Error(`חיפוש המיקום נכשל (שגיאה ${res.status})`)
-
-  const data: Array<{ lat: string; lon: string; display_name: string }> = await res.json()
+  const t = withTimeout(signal, 10_000)
+  let data: Array<{ lat: string; lon: string; display_name: string }>
+  try {
+    const res = await fetch(url.toString(), { signal: t.signal })
+    if (!res.ok) throw new Error(`חיפוש המיקום נכשל (שגיאה ${res.status})`)
+    data = await res.json()
+  } finally {
+    t.done()
+  }
   return data.map((item) => ({
     lat: Number(item.lat),
     lng: Number(item.lon),

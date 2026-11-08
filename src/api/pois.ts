@@ -1,3 +1,4 @@
+import { withTimeout } from '../utils/abort'
 import type { FoodFilterTag, FuelFilterTag, LatLng, Poi, PoiCategory } from '../types'
 
 /**
@@ -169,14 +170,13 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
   for (const endpoint of OVERPASS_ENDPOINTS) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     // A hung mirror must not stall the search, so each attempt has its own timeout.
-    const timeout = AbortSignal.timeout(OVERPASS_TIMEOUT_MS)
-    const attemptSignal = signal ? AbortSignal.any([signal, timeout]) : timeout
+    const attempt = withTimeout(signal, OVERPASS_TIMEOUT_MS)
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         body: `data=${encodeURIComponent(query)}`,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: attemptSignal,
+        signal: attempt.signal,
       })
       if (!res.ok) {
         lastError = new Error(`חיפוש נקודות העניין נכשל (שגיאה ${res.status})`)
@@ -192,6 +192,9 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
     } catch (err) {
       if (signal?.aborted) throw err
       lastError = err
+      console.warn(`Overpass server failed: ${endpoint}`, err)
+    } finally {
+      attempt.done()
     }
   }
 

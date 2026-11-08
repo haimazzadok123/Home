@@ -2,6 +2,7 @@ import along from '@turf/along'
 import length from '@turf/length'
 import type { Feature, LineString } from 'geojson'
 import type { LatLng } from '../types'
+import { withTimeout } from '../utils/abort'
 import type { RawPoi } from './pois'
 
 const BASE_URL = 'https://israelhiking.osm.org.il'
@@ -76,7 +77,7 @@ export async function fetchHikingPois(routeLine: Feature<LineString>, signal?: A
       const url = `${BASE_URL}/api/points/closest?location=${sample.lat},${sample.lng}&language=he`
       // Each request gets its own timeout — a single hung request must never stall the whole
       // route plan, since this is a best-effort supplementary source layered on top of it.
-      const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+      const res = await fetch(url, { signal: withTimeout(signal, REQUEST_TIMEOUT_MS).signal })
       if (res.ok) {
         const data = (await res.json()) as IsraelHikingFeature
         const feature = extractFeature(data)
