@@ -1,5 +1,6 @@
 import type { LatLng, Place, RouteResult } from '../types'
 import { withTimeout } from '../utils/abort'
+import { AllAttemptsFailedError, firstSuccessful, preferredOrder, rememberPreferred } from '../utils/hedge'
 
 /**
  * Free, keyless routing servers, tried in order. When one is down (or blocked by the
@@ -94,29 +95,45 @@ async function valhallaRoute(start: Place, end: Place, signal?: AbortSignal): Pr
   }
 }
 
-/** Fetches a driving route between two points, trying each routing server in turn. */
+const ROUTE_STAGGER_MS = 2_500
+const PREFERRED_KEY = 'travel-planner:route-server'
+
+/**
+ * Fetches a driving route between two points. The server that answered last time goes
+ * first; if it is silent for a couple of seconds the next one starts alongside it, and
+ * whichever answers first wins.
+ */
 export async function fetchRoute(start: Place, end: Place, signal?: AbortSignal): Promise<RouteResult> {
-  const attempts: Array<[string, () => Promise<RouteResult>]> = [
-    ...OSRM_ENDPOINTS.map((base): [string, () => Promise<RouteResult>] => [base, () => osrmRoute(base, start, end, signal)]),
-    [VALHALLA_ENDPOINT, () => valhallaRoute(start, end, signal)],
-  ]
-  let noRouteFound = false
-
-  for (const [name, attempt] of attempts) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    try {
-      return await attempt()
-    } catch (err) {
-      if (signal?.aborted) throw err
-      if (err instanceof NoRouteError) noRouteFound = true
-      // Shown in the browser console (F12) to tell a blocked server from a down one.
-      console.warn(`Routing server failed: ${name}`, err)
-    }
-  }
-
-  throw new Error(
-    noRouteFound
-      ? 'לא נמצא מסלול נסיעה בין שתי הנקודות שנבחרו.'
-      : 'אף שרת מסלולים לא ענה. ייתכן שהרשת שלכם (למשל רשת בעבודה) חוסמת אותם. נסו מרשת אחרת או מהטלפון.',
+  const servers = preferredOrder(
+    PREFERRED_KEY,
+    [
+      ...OSRM_ENDPOINTS.map((base) => ({ id: base, run: (s: AbortSignal) => osrmRoute(base, start, end, s) })),
+      { id: VALHALLA_ENDPOINT, run: (s: AbortSignal) => valhallaRoute(start, end, s) },
+    ],
+    (server) => server.id,
   )
+
+  try {
+    const { value, index } = await firstSuccessful(
+      servers.map((server) => (s: AbortSignal) =>
+        server.run(s).catch((err) => {
+          // Shown in the browser console (F12) to tell a blocked server from a down one.
+          if (!s.aborted) console.warn(`Routing server failed: ${server.id}`, err)
+          throw err
+        }),
+      ),
+      ROUTE_STAGGER_MS,
+      signal,
+    )
+    rememberPreferred(PREFERRED_KEY, servers[index].id)
+    return value
+  } catch (err) {
+    if (signal?.aborted) throw err
+    const noRouteFound = err instanceof AllAttemptsFailedError && err.errors.some((e) => e instanceof NoRouteError)
+    throw new Error(
+      noRouteFound
+        ? 'לא נמצא מסלול נסיעה בין שתי הנקודות שנבחרו.'
+        : 'אף שרת מסלולים לא ענה. ייתכן שהרשת שלכם (למשל רשת בעבודה) חוסמת אותם. נסו מרשת אחרת או מהטלפון.',
+    )
+  }
 }

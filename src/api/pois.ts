@@ -1,4 +1,5 @@
 import { withTimeout } from '../utils/abort'
+import { firstSuccessful, preferredOrder, rememberPreferred } from '../utils/hedge'
 import type { FoodFilterTag, FuelFilterTag, LatLng, Poi, PoiCategory } from '../types'
 
 /**
@@ -17,15 +18,18 @@ const OVERPASS_ENDPOINTS = [
  * shop=kosher (kosher grocers/bakeries).
  */
 const CATEGORY_STATEMENTS: Record<PoiCategory, string[]> = {
-  viewpoint: ['nwr["tourism"="viewpoint"]'],
-  'kosher-food': ['nwr["diet:kosher"~"yes|only"]', 'nwr["cuisine"~"kosher"]', 'nwr["shop"="kosher"]'],
-  fuel: ['nwr["amenity"="fuel"]'],
-  camping: ['nwr["tourism"="camp_site"]'],
+  viewpoint: ['["tourism"="viewpoint"]'],
+  'kosher-food': ['["diet:kosher"~"^(yes|only)$"]', '["cuisine"~"kosher"]', '["shop"="kosher"]'],
+  fuel: ['["amenity"="fuel"]'],
+  camping: ['["tourism"="camp_site"]'],
 }
 
 /** Builds a query for the chosen categories only; `area` is an `around:` filter along the route. */
 function buildQuery(area: string, categories: PoiCategory[]): string {
-  const statements = categories.flatMap((c) => CATEGORY_STATEMENTS[c]).map((st) => `${st}(${area});`)
+  // Nodes and ways only: relations are rare for these and their centers are slow to compute.
+  const statements = categories
+    .flatMap((c) => CATEGORY_STATEMENTS[c])
+    .flatMap((filter) => [`node${filter}(${area});`, `way${filter}(${area});`])
   return `[out:json][timeout:25];(${statements.join('')});out center tags;`
 }
 
@@ -162,43 +166,55 @@ export interface RawPoi {
 }
 
 const OVERPASS_TIMEOUT_MS = 25_000
+/** A normal answer takes a few seconds, so a second mirror only joins after a longer wait. */
+const OVERPASS_STAGGER_MS = 6_000
+const PREFERRED_KEY = 'travel-planner:overpass-server'
 
-/** Tries each Overpass mirror in turn — the public instances routinely 504 or hang under load. */
-async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
-  let lastError: unknown
-
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    // A hung mirror must not stall the search, so each attempt has its own timeout.
-    const attempt = withTimeout(signal, OVERPASS_TIMEOUT_MS)
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: `data=${encodeURIComponent(query)}`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: attempt.signal,
-      })
-      if (!res.ok) {
-        lastError = new Error(`חיפוש נקודות העניין נכשל (שגיאה ${res.status})`)
-        continue
-      }
-      const data = (await res.json()) as { elements?: OverpassElement[]; remark?: string }
-      // Overpass reports a server-side timeout as HTTP 200 with a "runtime error" remark.
-      if (!data.elements || (data.elements.length === 0 && data.remark?.includes('error'))) {
-        lastError = new Error('שרת נקודות העניין עמוס כרגע.')
-        continue
-      }
-      return { elements: data.elements }
-    } catch (err) {
-      if (signal?.aborted) throw err
-      lastError = err
-      console.warn(`Overpass server failed: ${endpoint}`, err)
-    } finally {
-      attempt.done()
+async function queryOverpassAt(endpoint: string, query: string, signal: AbortSignal): Promise<OverpassElement[]> {
+  // A hung mirror must not stall the search, so each attempt has its own timeout.
+  const attempt = withTimeout(signal, OVERPASS_TIMEOUT_MS)
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      signal: attempt.signal,
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = (await res.json()) as { elements?: OverpassElement[]; remark?: string }
+    // Overpass reports a server-side timeout as HTTP 200 with a "runtime error" remark.
+    if (!data.elements || (data.elements.length === 0 && data.remark?.includes('error'))) {
+      throw new Error(data.remark ?? 'no elements')
     }
+    return data.elements
+  } finally {
+    attempt.done()
   }
+}
 
-  throw lastError instanceof Error ? lastError : new Error('חיפוש נקודות העניין נכשל.')
+/**
+ * Asks the Overpass mirrors, starting with the one that answered last time. A second mirror
+ * joins if the first is slow, and the first answer wins.
+ */
+async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
+  const endpoints = preferredOrder(PREFERRED_KEY, OVERPASS_ENDPOINTS, (e) => e)
+  try {
+    const { value, index } = await firstSuccessful(
+      endpoints.map((endpoint) => (s: AbortSignal) =>
+        queryOverpassAt(endpoint, query, s).catch((err) => {
+          if (!s.aborted) console.warn(`Overpass server failed: ${endpoint}`, err)
+          throw err
+        }),
+      ),
+      OVERPASS_STAGGER_MS,
+      signal,
+    )
+    rememberPreferred(PREFERRED_KEY, endpoints[index])
+    return { elements: value }
+  } catch (err) {
+    if (signal?.aborted) throw err
+    throw new Error('חיפוש נקודות העניין נכשל.')
+  }
 }
 
 /**

@@ -133,9 +133,10 @@ function App() {
     }
 
     try {
-      // A small margin so points that sit just off the simplified line are not missed;
-      // withRouteDistance then measures against the full route and drops the extras.
-      const rawPois = await fetchPois(routeQueryPoints(routeLine), corridor + 0.5, todo, signal)
+      // Widen the search by how far the simplified line strays from the road, so nothing
+      // near the real route is missed; withRouteDistance then drops the extras.
+      const { points, deviationKm } = routeQueryPoints(routeLine)
+      const rawPois = await fetchPois(points, corridor + deviationKm + 0.3, todo, signal)
       if (!isCurrent()) return
       const withDistance = withRouteDistance(rawPois, routeLine, corridor)
       setPois((prev) => [...prev, ...withDistance])

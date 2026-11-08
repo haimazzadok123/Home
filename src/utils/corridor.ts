@@ -22,20 +22,25 @@ export function distanceToRoute(
   }
 }
 
-const MAX_QUERY_POINTS = 80
+const MAX_QUERY_POINTS = 50
 
 /**
  * A simplified copy of the route (at most MAX_QUERY_POINTS points) for Overpass's
- * `around` filter. Searching along the line instead of inside its bounding box keeps
- * the query small: a diagonal route like Tel Aviv to Eilat has a bounding box covering
- * half the country, which made the public Overpass servers time out.
+ * `around` filter, plus how far (km) the simplified line can stray from the real one.
+ * Searching along the line instead of inside its bounding box keeps the query small.
  */
-export function routeQueryPoints(routeLine: Feature<LineString>): LatLng[] {
+export function routeQueryPoints(routeLine: Feature<LineString>): { points: LatLng[]; deviationKm: number } {
   let tolerance = 0.001
   let coords = routeLine.geometry.coordinates
+  let usedTolerance = 0
   while (coords.length > MAX_QUERY_POINTS && tolerance < 1) {
     coords = simplify(routeLine, { tolerance, highQuality: false }).geometry.coordinates
+    usedTolerance = tolerance
     tolerance *= 2
   }
-  return coords.map(([lng, lat]) => ({ lat, lng }))
+  return {
+    points: coords.map(([lng, lat]) => ({ lat, lng })),
+    // tolerance is in degrees; one degree is at most ~111 km.
+    deviationKm: usedTolerance * 111,
+  }
 }
