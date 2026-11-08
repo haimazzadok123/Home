@@ -311,46 +311,65 @@
     .nav-links a[href="#search"] { display: none; }
   }
 
-  /* ===== Intro screen ===== */
+  /* ===== Intro screen: sunset turns to Shabbat night ===== */
   .intro {
-    position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; text-align: center;
-    padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px));
-    background: radial-gradient(120% 90% at 50% 100%, #0EA5E9 0%, #0369A1 35%, #0C2A4A 70%, #071A30 100%);
-    color: #F0F9FF; overflow: hidden; cursor: pointer;
-    transition: opacity 450ms cubic-bezier(.23,1,.32,1), transform 450ms cubic-bezier(.23,1,.32,1);
+    --px: 0; --py: 0;
+    position: fixed; inset: 0; z-index: 100; overflow: hidden; cursor: pointer; color: #F0F9FF; text-align: center;
+    background: #050E1E;
   }
-  .intro.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
   .intro[hidden] { display: none; }
   html.intro-on, html.intro-on body { overflow: hidden; }
-  .intro .stars { position: absolute; inset: 0; pointer-events: none; }
-  .intro .star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .2; animation: twinkle 3s ease-in-out infinite; }
-  @keyframes twinkle { 50% { opacity: .9; transform: scale(1.4); } }
-  .intro-inner { position: relative; display: grid; justify-items: center; gap: 6px; }
-  .candles { display: flex; gap: 26px; align-items: flex-end; height: 130px; margin-bottom: 18px; position: relative; }
-  .candles::before { content: ""; position: absolute; left: 50%; top: 0; width: 240px; height: 200px; transform: translate(-50%, -30%); background: radial-gradient(circle, rgba(253,224,140,.38), transparent 62%); animation: halo 3.2s ease-in-out infinite; }
-  @keyframes halo { 50% { opacity: .7; transform: translate(-50%, -30%) scale(.94); } }
-  .candle { position: relative; width: 26px; height: 78px; border-radius: 6px 6px 4px 4px; background: linear-gradient(90deg, #E0F2FE, #fff 45%, #CFE6F5); box-shadow: inset 0 -8px 12px rgba(3,105,161,.15); transform-origin: bottom; animation: rise 700ms cubic-bezier(.23,1,.32,1) both; }
-  .candle:nth-child(2) { animation-delay: 90ms; }
-  .candle::before { content: ""; position: absolute; left: 50%; top: -9px; width: 2px; height: 10px; margin-left: -1px; background: #334155; border-radius: 1px; }
-  .flame { position: absolute; left: 50%; bottom: calc(100% + 6px); width: 16px; height: 34px; margin-left: -8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  .intro .layer { position: absolute; inset: -20px; pointer-events: none; will-change: transform;
+    transform: translate3d(calc(var(--px) * var(--d, 0) * 1px), calc(var(--py) * var(--d, 0) * 1px), 0); transition: transform 600ms cubic-bezier(.23,1,.32,1); }
+  .sky-dusk { background: linear-gradient(to top, #FDBA74 0%, #FB7185 22%, #A855F7 48%, #1E3A8A 78%, #0B1736 100%); }
+  .sky-night { background: radial-gradient(120% 70% at 50% 100%, #0EA5E9 0%, #0369A1 22%, #0C2A4A 52%, #050E1E 100%); opacity: 0; animation: night 2600ms 300ms cubic-bezier(.45,0,.55,1) forwards; }
+  @keyframes night { to { opacity: 1; } }
+  .sun-wrap { --d: 6; }
+  .sun { position: absolute; left: 50%; bottom: 26vh; width: min(34vw, 220px); aspect-ratio: 1; margin-left: calc(min(34vw, 220px) / -2); border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #FFF7D6, #FDBA74 55%, #F97316);
+    box-shadow: 0 0 80px 30px rgba(253,186,116,.55), 0 0 200px 80px rgba(251,113,133,.35);
+    animation: sunset 2600ms 200ms cubic-bezier(.55,0,.6,1) forwards; }
+  @keyframes sunset { to { transform: translateY(32vh); opacity: .2; } }
+  #starCanvas { --d: 3; opacity: 0; animation: night 1800ms 1300ms ease-out forwards; }
+  .intro .hills { --d: 14; inset: auto -20px -20px -20px; height: 42vh; }
+  .hills svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hills .win { fill: #0B2440; transition: fill 500ms ease-out, filter 500ms; }
+  .hills .win.on { fill: #FDE68A; filter: drop-shadow(0 0 3px rgba(253,230,138,.9)); }
+  .intro-stage { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(24px + env(safe-area-inset-top, 0px)) 24px 30vh; }
+  .intro-inner { --d: -8; position: relative; display: grid; justify-items: center; gap: 4px;
+    transform: translate3d(calc(var(--px) * var(--d) * 1px), calc(var(--py) * var(--d) * 1px), 0); transition: transform 600ms cubic-bezier(.23,1,.32,1); }
+  .candles { display: flex; gap: 18px; align-items: flex-end; height: 84px; margin-bottom: 14px; position: relative; }
+  .candles::before { content: ""; position: absolute; left: 50%; top: -30px; width: 200px; height: 160px; margin-left: -100px; background: radial-gradient(circle, rgba(253,224,140,.42), transparent 62%); opacity: 0; animation: night 900ms 2300ms ease-out forwards, halo 3.2s 3.2s ease-in-out infinite; }
+  @keyframes halo { 50% { opacity: .7; transform: scale(.92); } }
+  .candle { position: relative; width: 18px; height: 54px; border-radius: 5px 5px 3px 3px; background: linear-gradient(90deg, #E0F2FE, #fff 45%, #CFE6F5); box-shadow: inset 0 -6px 10px rgba(3,105,161,.18); animation: rise 800ms 1600ms cubic-bezier(.23,1,.32,1) both; }
+  .candle:nth-child(2) { animation-delay: 1700ms; }
+  .candle::before { content: ""; position: absolute; left: 50%; top: -7px; width: 2px; height: 8px; margin-left: -1px; background: #334155; border-radius: 1px; }
+  .flame { position: absolute; left: 50%; bottom: calc(100% + 4px); width: 13px; height: 28px; margin-left: -6.5px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
     background: radial-gradient(ellipse at 50% 78%, #fff 0 18%, #FDE68A 34%, #F59E0B 62%, rgba(245,158,11,0) 72%);
-    filter: drop-shadow(0 0 10px rgba(253,224,140,.9)); transform-origin: 50% 90%;
-    animation: ignite 500ms 650ms cubic-bezier(.23,1,.32,1) both, flicker 1.6s 1.15s ease-in-out infinite; }
-  .candle:nth-child(2) .flame { animation-delay: 760ms, 1.3s; animation-duration: 500ms, 1.9s; }
-  @keyframes rise { from { opacity: 0; transform: translateY(18px) scaleY(.8); } }
-  @keyframes ignite { from { opacity: 0; transform: scale(.2); } }
-  @keyframes flicker { 0%,100% { transform: rotate(-2deg) scaleY(1); } 30% { transform: rotate(2deg) scaleY(1.08) scaleX(.94); } 60% { transform: rotate(-1deg) scaleY(.95); } }
-  .intro-eyebrow { margin: 0; font-weight: 700; font-size: 15px; letter-spacing: .04em; color: #BAE6FD; animation: fadeUp 600ms 900ms cubic-bezier(.23,1,.32,1) both; }
-  .intro-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 104px); line-height: 1.05; font-weight: 700; color: #fff; text-shadow: 0 6px 30px rgba(14,165,233,.45); }
-  .intro-title span { display: inline-block; animation: letter 700ms cubic-bezier(.23,1,.32,1) both; }
-  @keyframes letter { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } }
-  .intro-sub { margin: 6px 0 22px; max-width: 420px; font-size: 18px; color: rgba(240,249,255,.8); animation: fadeUp 600ms 1.4s cubic-bezier(.23,1,.32,1) both; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } }
-  .intro-btn { font: inherit; font-size: 18px; font-weight: 700; color: #0C4A6E; background: #fff; border: 0; border-radius: 980px; padding: 14px 34px; cursor: pointer;
-    box-shadow: 0 10px 30px rgba(2,132,199,.45), 0 0 0 6px rgba(255,255,255,.12); animation: fadeUp 600ms 1.6s cubic-bezier(.23,1,.32,1) both; transition: transform 120ms ease-out; }
-  .intro-btn:active { transform: scale(.96); }
-  @media (hover: hover) and (pointer: fine) { .intro-btn:hover { box-shadow: 0 12px 34px rgba(2,132,199,.6), 0 0 0 8px rgba(255,255,255,.18); } }
-  .intro-hint { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; font-size: 13px; color: rgba(240,249,255,.55); animation: fadeUp 600ms 2s ease-out both; }
+    filter: drop-shadow(0 0 10px rgba(253,224,140,.95)); transform-origin: 50% 90%;
+    animation: ignite 500ms 2300ms cubic-bezier(.34,1.56,.64,1) both, flicker 1.6s 2.8s ease-in-out infinite; }
+  .candle:nth-child(2) .flame { animation-delay: 2450ms, 2.95s; animation-duration: 500ms, 1.9s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes ignite { from { opacity: 0; transform: scale(.1); } }
+  @keyframes flicker { 0%,100% { transform: rotate(-2deg) scaleY(1); } 30% { transform: rotate(2.5deg) scaleY(1.1) scaleX(.92); } 60% { transform: rotate(-1deg) scaleY(.94); } }
+  .intro-eyebrow { margin: 0; font-weight: 700; font-size: 14px; letter-spacing: .12em; color: #BAE6FD; animation: fadeUp 700ms 900ms cubic-bezier(.23,1,.32,1) both; }
+  .intro-title { margin: 0; font-family: var(--display); font-size: clamp(60px, 15vw, 128px); line-height: 1.02; font-weight: 700; color: #fff;
+    text-shadow: 0 0 40px rgba(56,189,248,.55), 0 8px 30px rgba(2,6,23,.5); }
+  .intro-title span { display: inline-block; animation: letter 900ms cubic-bezier(.23,1,.32,1) both; }
+  @keyframes letter { from { opacity: 0; transform: translateY(40px) scale(.9); filter: blur(10px); } }
+  .intro-title.shine { background: linear-gradient(110deg, #fff 35%, #7DD3FC 48%, #fff 52%, #fff 100%); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 22px rgba(56,189,248,.55)); animation: shine 3.5s ease-in-out infinite; }
+  @keyframes shine { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+  .intro-sub { margin: 8px 0 24px; max-width: 440px; font-size: 18px; color: rgba(240,249,255,.85); text-shadow: 0 2px 12px rgba(2,6,23,.5); animation: fadeUp 700ms 2600ms cubic-bezier(.23,1,.32,1) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+  .intro-btn { position: relative; font: inherit; font-size: 18px; font-weight: 700; color: #0C4A6E; background: #fff; border: 0; border-radius: 980px; padding: 15px 38px; cursor: pointer; overflow: hidden;
+    box-shadow: 0 12px 34px rgba(2,132,199,.5), 0 0 0 6px rgba(255,255,255,.12); animation: fadeUp 700ms 2850ms cubic-bezier(.23,1,.32,1) both, pulse 2.4s 3.6s ease-in-out infinite; transition: transform 140ms ease-out; }
+  .intro-btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(186,230,253,.9) 50%, transparent 65%); transform: translateX(-120%); animation: sweep 2.4s 3.6s ease-in-out infinite; }
+  @keyframes sweep { 60%, 100% { transform: translateX(120%); } }
+  @keyframes pulse { 50% { box-shadow: 0 12px 34px rgba(2,132,199,.5), 0 0 0 12px rgba(255,255,255,.06); } }
+  .intro-btn:active { transform: scale(.95); }
+  .intro-skip { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; font: inherit; font-size: 13px; font-weight: 600; color: rgba(240,249,255,.7); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 980px; padding: 6px 14px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fadeUp 500ms 600ms ease-out both; }
+  .intro-hint { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; font-size: 12px; color: rgba(240,249,255,.5); animation: fadeUp 600ms 3.4s ease-out both; }
+  @media (prefers-reduced-motion: reduce) { .sky-night, #starCanvas { opacity: 1; } .sun { display: none; } }
   .mouse-only { display: none; }
   @media (hover: hover) and (pointer: fine) { .mouse-only { display: inline; } .touch-only { display: none; } }
   .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; font-weight: 600; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
@@ -388,16 +407,34 @@
 </head>
 <body>
 <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle" hidden>
-  <div class="stars" id="stars" aria-hidden="true"></div>
-  <div class="intro-inner">
-    <div class="candles" aria-hidden="true">
-      <div class="candle"><div class="flame"></div></div>
-      <div class="candle"><div class="flame"></div></div>
+  <div class="layer sky-dusk" aria-hidden="true"></div>
+  <div class="layer sun-wrap" aria-hidden="true"><div class="sun"></div></div>
+  <div class="layer sky-night" aria-hidden="true"></div>
+  <canvas class="layer" id="starCanvas" aria-hidden="true"></canvas>
+  <div class="layer hills" aria-hidden="true">
+    <svg viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice">
+      <path fill="#0B3B63" d="M0 210 C 180 150 320 170 470 200 S 760 120 940 160 S 1250 210 1440 150 V400 H0Z"/>
+      <path fill="#082B4A" d="M0 270 C 220 220 380 250 560 270 S 900 210 1100 240 S 1330 260 1440 230 V400 H0Z"/>
+      <g id="hotel" fill="#061E36" transform="translate(-200 0)">
+        <rect x="870" y="150" width="190" height="150" rx="4"/>
+        <rect x="905" y="118" width="120" height="36" rx="3"/>
+        <rect x="1060" y="200" width="90" height="100" rx="3"/>
+      </g>
+      <path fill="#051B30" d="M0 320 C 240 280 420 300 640 318 S 1040 280 1240 300 S 1380 312 1440 300 V400 H0Z"/>
+    </svg>
+  </div>
+  <button class="intro-skip" id="introSkip" type="button">דילוג</button>
+  <div class="intro-stage">
+    <div class="intro-inner">
+      <div class="candles" aria-hidden="true">
+        <div class="candle"><div class="flame"></div></div>
+        <div class="candle"><div class="flame"></div></div>
+      </div>
+      <p class="intro-eyebrow">השבת נכנסת. הגיע הזמן לנוח.</p>
+      <h2 class="intro-title" id="introTitle">דתינופש</h2>
+      <p class="intro-sub">מלונות עם חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
+      <button class="intro-btn" id="introBtn" type="button">כניסה לאתר ‹</button>
     </div>
-    <p class="intro-eyebrow">סופ״ש במלון שומר שבת</p>
-    <h2 class="intro-title" id="introTitle">דתינופש</h2>
-    <p class="intro-sub">מלונות עם חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
-    <button class="intro-btn" id="introBtn" type="button">כניסה לאתר ‹</button>
   </div>
   <div class="intro-hint"><span class="touch-only">הקישו בכל מקום כדי להיכנס</span><span class="mouse-only">לחצו בכל מקום או על Enter</span></div>
 </div>
@@ -905,31 +942,101 @@
   (function intro() {
     const el = $("intro");
     if (el.hidden) return;
-    const title = $("introTitle");
-    title.innerHTML = [...title.textContent].map((c, i) => `<span style="animation-delay:${250 + i * 70}ms">${c}</span>`).join("");
-    const stars = $("stars");
-    for (let i = 0; i < 60; i++) {
-      const st = document.createElement("i");
-      st.className = "star";
-      st.style.cssText = `top:${Math.random() * 70}%;left:${Math.random() * 100}%;animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(2 + Math.random() * 3).toFixed(2)}s`;
-      stars.appendChild(st);
-    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let running = true;
+
+    // Title: letters land one by one, then a light sweep runs across the word.
+    const title = $("introTitle"), word = title.textContent;
+    title.innerHTML = [...word].map((c, i) => `<span style="animation-delay:${1100 + i * 90}ms">${c}</span>`).join("");
+    setTimeout(() => { title.textContent = word; title.classList.add("shine"); }, 1100 + word.length * 90 + 900);
+
+    // Hotel windows light up one by one as night falls.
+    const hotel = document.getElementById("hotel"), NS = "http://www.w3.org/2000/svg", wins = [];
+    const addWins = (x0, y0, cols, rows) => { for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const w = document.createElementNS(NS, "rect");
+      w.setAttribute("x", x0 + c * 22); w.setAttribute("y", y0 + r * 24); w.setAttribute("width", 12); w.setAttribute("height", 13); w.setAttribute("rx", 1.5);
+      w.setAttribute("class", "win"); hotel.appendChild(w); wins.push(w);
+    } };
+    addWins(884, 162, 8, 5); addWins(919, 126, 5, 1); addWins(1072, 212, 4, 3);
+    wins.sort(() => Math.random() - .5).forEach((w, i) => {
+      if (Math.random() < .2) return; // a few rooms stay dark
+      setTimeout(() => w.classList.add("on"), reduce ? 0 : 1500 + i * 45 + Math.random() * 300);
+    });
+
+    // Stars, a shooting star now and then, and sparks rising from the candles.
+    const cv = $("starCanvas"), ctx = cv.getContext("2d");
+    let W, H, dpr, stars = [], sparks = [], shooting = null, lastShoot = 0;
+    const size = () => {
+      dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      stars = Array.from({ length: Math.round(W * H / 5000) }, () => ({ x: Math.random() * W, y: Math.random() * H * .75, r: Math.random() * 1.3 + .3, p: Math.random() * 6.28, s: .5 + Math.random() * 1.5 }));
+    };
+    size(); window.addEventListener("resize", size);
+    const flames = [...el.querySelectorAll(".flame")];
+    const draw = (t) => {
+      if (!running) return;
+      ctx.clearRect(0, 0, W, H);
+      for (const st of stars) {
+        ctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(st.p + t / 1000 * st.s));
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.283); ctx.fill();
+      }
+      if (!shooting && t - lastShoot > 3500 && t > 2500 && !reduce) {
+        lastShoot = t; shooting = { x: W * (.55 + Math.random() * .4), y: H * (.05 + Math.random() * .2), vx: -(7 + Math.random() * 4), vy: 3 + Math.random() * 2, life: 1 };
+      }
+      if (shooting) {
+        const sh = shooting, g = ctx.createLinearGradient(sh.x, sh.y, sh.x - sh.vx * 14, sh.y - sh.vy * 14);
+        g.addColorStop(0, `rgba(255,255,255,${sh.life})`); g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.globalAlpha = 1; ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - sh.vx * 14, sh.y - sh.vy * 14); ctx.stroke();
+        sh.x += sh.vx; sh.y += sh.vy; sh.life -= .018; if (sh.life <= 0) shooting = null;
+      }
+      if (t > 2700 && !reduce) {
+        const cvr = cv.getBoundingClientRect();
+        for (const f of flames) if (Math.random() < .18) {
+          const r = f.getBoundingClientRect();
+          sparks.push({ x: r.left + r.width / 2 - cvr.left + (Math.random() - .5) * 6, y: r.top - cvr.top + 4, vx: (Math.random() - .5) * .6, vy: -(.6 + Math.random() * 1.1), life: 1 });
+        }
+      }
+      sparks = sparks.filter((p) => (p.life -= .012) > 0);
+      for (const p of sparks) {
+        p.x += p.vx + Math.sin((t + p.y) / 300) * .2; p.y += p.vy;
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.life > .6 ? "#FDE68A" : "#FDBA74";
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.4 * p.life + .3, 0, 6.283); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+
+    // Parallax: layers drift with the mouse or the phone's tilt.
+    const setP = (x, y) => { el.style.setProperty("--px", x.toFixed(3)); el.style.setProperty("--py", y.toFixed(3)); };
+    const onMove = (e) => setP((e.clientX / innerWidth - .5) * 2, (e.clientY / innerHeight - .5) * 2);
+    const onTilt = (e) => { if (e.gamma != null) setP(Math.max(-1, Math.min(1, e.gamma / 25)), Math.max(-1, Math.min(1, (e.beta - 45) / 25))); };
+    if (!reduce) { el.addEventListener("pointermove", onMove); window.addEventListener("deviceorientation", onTilt); }
+
+    // Exit: a circular portal opens from where you clicked and reveals the site.
     $("introBtn").focus({ preventScroll: true });
     let done = false;
-    const close = () => {
+    const close = (x = innerWidth / 2, y = innerHeight / 2) => {
       if (done) return; done = true;
       try { sessionStorage.setItem("datinofesh-intro", "1"); } catch { /* storage unavailable */ }
-      el.classList.add("out");
-      document.documentElement.classList.remove("intro-on");
       document.removeEventListener("keydown", onKey);
-      const finish = () => { el.hidden = true; };
-      el.addEventListener("transitionend", finish, { once: true });
-      setTimeout(finish, 600);
+      window.removeEventListener("deviceorientation", onTilt);
+      document.documentElement.classList.remove("intro-on");
+      const finish = () => { running = false; el.hidden = true; window.removeEventListener("resize", size); };
+      if (reduce) { finish(); return; }
+      const max = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 40, start = performance.now(), dur = 750;
+      const step = (now) => {
+        const k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 4), r = e * max;
+        const m = `radial-gradient(circle at ${x}px ${y}px, transparent ${r}px, #000 ${r + 24}px)`;
+        el.style.webkitMaskImage = m; el.style.maskImage = m;
+        if (k < 1) requestAnimationFrame(step); else finish();
+      };
+      requestAnimationFrame(step);
     };
     const onKey = (e) => { if (["Enter", " ", "Escape"].includes(e.key)) { e.preventDefault(); close(); } };
-    el.addEventListener("click", close);
+    el.addEventListener("click", (e) => close(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2));
     document.addEventListener("keydown", onKey);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setTimeout(close, 1500);
+    if (reduce) setTimeout(() => close(), 1500);
   })();
 
   render();
