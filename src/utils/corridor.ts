@@ -1,6 +1,6 @@
 import { lineString, point } from '@turf/helpers'
 import nearestPointOnLine from '@turf/nearest-point-on-line'
-import simplify from '@turf/simplify'
+import length from '@turf/length'
 import type { Feature, LineString } from 'geojson'
 import type { LatLng } from '../types'
 
@@ -22,25 +22,34 @@ export function distanceToRoute(
   }
 }
 
-const MAX_QUERY_POINTS = 50
+const MAX_BOXES = 12
 
 /**
- * A simplified copy of the route (at most MAX_QUERY_POINTS points) for Overpass's
- * `around` filter, plus how far (km) the simplified line can stray from the real one.
- * Searching along the line instead of inside its bounding box keeps the query small.
+ * Covers the route with a chain of small boxes (south,west,north,east), each widened by
+ * corridorKm. Overpass answers box queries much faster than a search around a long line,
+ * and the query stays short. The boxes overshoot the corridor a little; withRouteDistance
+ * measures every result against the real route and drops the extras.
  */
-export function routeQueryPoints(routeLine: Feature<LineString>): { points: LatLng[]; deviationKm: number } {
-  let tolerance = 0.001
-  let coords = routeLine.geometry.coordinates
-  let usedTolerance = 0
-  while (coords.length > MAX_QUERY_POINTS && tolerance < 1) {
-    coords = simplify(routeLine, { tolerance, highQuality: false }).geometry.coordinates
-    usedTolerance = tolerance
-    tolerance *= 2
+export function routeQueryBoxes(routeLine: Feature<LineString>, corridorKm: number, kmPerBox = 20): string[] {
+  const coords = routeLine.geometry.coordinates
+  const totalKm = length(routeLine, { units: 'kilometers' })
+  const boxCount = Math.max(1, Math.min(MAX_BOXES, Math.ceil(totalKm / kmPerBox)))
+  const perBox = Math.ceil(coords.length / boxCount)
+  const boxes: string[] = []
+
+  for (let i = 0; i < coords.length - 1; i += perBox) {
+    // Overlap by one point so consecutive boxes share their joint.
+    const chunk = coords.slice(i, Math.min(coords.length, i + perBox + 1))
+    const lats = chunk.map((c) => c[1])
+    const lngs = chunk.map((c) => c[0])
+    const midLat = (Math.min(...lats) + Math.max(...lats)) / 2
+    const dLat = corridorKm / 111
+    const dLng = corridorKm / (111 * Math.cos((midLat * Math.PI) / 180))
+    boxes.push(
+      [Math.min(...lats) - dLat, Math.min(...lngs) - dLng, Math.max(...lats) + dLat, Math.max(...lngs) + dLng]
+        .map((v) => v.toFixed(4))
+        .join(','),
+    )
   }
-  return {
-    points: coords.map(([lng, lat]) => ({ lat, lng })),
-    // tolerance is in degrees; one degree is at most ~111 km.
-    deviationKm: usedTolerance * 111,
-  }
+  return boxes
 }

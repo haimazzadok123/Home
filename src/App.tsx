@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois, type RawPoi } from './api/pois'
 import { fetchHikingPois } from './api/hikingPois'
-import { distanceToRoute, routeQueryPoints, toRouteLine } from './utils/corridor'
+import { distanceToRoute, routeQueryBoxes, toRouteLine } from './utils/corridor'
 import { FavoritesMenu } from './components/FavoritesMenu'
 import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
@@ -133,13 +133,22 @@ function App() {
     }
 
     try {
-      // Widen the search by how far the simplified line strays from the road, so nothing
-      // near the real route is missed; withRouteDistance then drops the extras.
-      const { points, deviationKm } = routeQueryPoints(routeLine)
-      const rawPois = await fetchPois(points, corridor + deviationKm + 0.3, todo, signal)
-      if (!isCurrent()) return
-      const withDistance = withRouteDistance(rawPois, routeLine, corridor)
-      setPois((prev) => [...prev, ...withDistance])
+      // Boxes along the route; withRouteDistance then keeps only places inside the corridor.
+      // Results can arrive in parts (and twice, from two sources), so they merge by id.
+      const addPois = (raw: RawPoi[]) => {
+        if (!isCurrent()) return
+        const withDistance = withRouteDistance(raw, routeLine, corridor)
+        setPois((prev) => {
+          const known = new Set(prev.map((p) => p.id))
+          const fresh = withDistance.filter((p) => !known.has(p.id))
+          return fresh.length > 0 ? [...prev, ...fresh] : prev
+        })
+      }
+      const boxes = {
+        overpass: routeQueryBoxes(routeLine, corridor, 20),
+        nominatim: routeQueryBoxes(routeLine, corridor, 40),
+      }
+      addPois(await fetchPois(boxes, todo, addPois, signal))
     } catch {
       if (!isCurrent()) return
       for (const c of todo) fetchedRef.current.delete(c)

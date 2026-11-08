@@ -1,6 +1,6 @@
 import { withTimeout } from '../utils/abort'
 import { firstSuccessful, preferredOrder, rememberPreferred } from '../utils/hedge'
-import type { FoodFilterTag, FuelFilterTag, LatLng, Poi, PoiCategory } from '../types'
+import type { FoodFilterTag, FuelFilterTag, Poi, PoiCategory } from '../types'
 
 /**
  * The public overpass-api.de instance is prone to 504s under load, so fall back to a
@@ -10,6 +10,7 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]
 
 /**
@@ -24,12 +25,12 @@ const CATEGORY_STATEMENTS: Record<PoiCategory, string[]> = {
   camping: ['["tourism"="camp_site"]'],
 }
 
-/** Builds a query for the chosen categories only; `area` is an `around:` filter along the route. */
-function buildQuery(area: string, categories: PoiCategory[]): string {
+/** Builds a query for the chosen categories only, inside the given boxes along the route. */
+function buildQuery(boxes: string[], categories: PoiCategory[]): string {
   // Nodes and ways only: relations are rare for these and their centers are slow to compute.
   const statements = categories
     .flatMap((c) => CATEGORY_STATEMENTS[c])
-    .flatMap((filter) => [`node${filter}(${area});`, `way${filter}(${area});`])
+    .flatMap((filter) => boxes.flatMap((box) => [`node${filter}(${box});`, `way${filter}(${box});`]))
   return `[out:json][timeout:25];(${statements.join('')});out center tags;`
 }
 
@@ -167,7 +168,7 @@ export interface RawPoi {
 
 const OVERPASS_TIMEOUT_MS = 25_000
 /** A normal answer takes a few seconds, so a second mirror only joins after a longer wait. */
-const OVERPASS_STAGGER_MS = 6_000
+const OVERPASS_STAGGER_MS = 4_000
 const PREFERRED_KEY = 'travel-planner:overpass-server'
 
 async function queryOverpassAt(endpoint: string, query: string, signal: AbortSignal): Promise<OverpassElement[]> {
@@ -219,49 +220,159 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
 
 /**
  * Queries Overpass for the chosen categories (viewpoints, kosher food, fuel stations, KKL/Nature
- * Authority camping) within radiusKm of the line through `path`.
+ * Authority camping) inside the boxes that cover the route corridor.
+ */
+/** Turns one OSM object (from either source) into a RawPoi, or null if it is not wanted. */
+function toRawPoi(
+  id: string,
+  lat: number | undefined,
+  lng: number | undefined,
+  tags: Record<string, string>,
+  wanted: Set<PoiCategory>,
+): RawPoi | null {
+  const category = categorize(tags)
+  const name = displayNameFor(tags)
+  // Skip unnamed places — a generic category label isn't a useful name to show.
+  if (!category || !name || !wanted.has(category) || lat == null || lng == null) return null
+  return {
+    id,
+    category,
+    name,
+    lat,
+    lng,
+    phone: phoneFor(tags),
+    openingHours: tags.opening_hours,
+    address: addressFor(tags),
+    foodTags: category === 'kosher-food' ? foodTagsFor(tags) : undefined,
+    brand: category === 'fuel' ? tags.brand : undefined,
+    fuelTags: category === 'fuel' ? fuelTagsFor(tags) : undefined,
+    tags,
+  }
+}
+
+async function fetchFromOverpass(boxes: string[], wanted: Set<PoiCategory>, signal: AbortSignal): Promise<RawPoi[]> {
+  const data = await queryOverpass(buildQuery(boxes, [...wanted]), signal)
+  return data.elements
+    .map((el) => toRawPoi(`${el.type}/${el.id}`, el.lat ?? el.center?.lat, el.lon ?? el.center?.lon, el.tags ?? {}, wanted))
+    .filter((p): p is RawPoi => p !== null)
+}
+
+/**
+ * Nominatim "special phrases" per category. Kosher food has no phrase of its own, so
+ * restaurants and fast food are fetched and the kosher tags in extratags decide.
+ */
+const NOMINATIM_PHRASES: Record<PoiCategory, string[]> = {
+  viewpoint: ['[viewpoint]'],
+  'kosher-food': ['[restaurant]', '[fast_food]'],
+  fuel: ['[fuel]'],
+  camping: ['[camp_site]'],
+}
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
+/** Nominatim's usage policy allows at most one request per second. */
+const NOMINATIM_INTERVAL_MS = 1_100
+
+interface NominatimPlace {
+  osm_type: string
+  osm_id: number
+  lat: string
+  lon: string
+  category: string
+  type: string
+  name?: string
+  extratags?: Record<string, string> | null
+}
+
+/**
+ * Backup source: Nominatim, which the address search already uses and which answers
+ * reliably from the browser. It searches each box for each category's phrase, one
+ * request per second.
+ */
+async function fetchFromNominatim(
+  boxes: string[],
+  wanted: Set<PoiCategory>,
+  signal: AbortSignal,
+  onPartial: (pois: RawPoi[]) => void,
+): Promise<RawPoi[]> {
+  const results = new Map<string, RawPoi>()
+  const phrases = [...wanted].flatMap((c) => NOMINATIM_PHRASES[c])
+  let first = true
+
+  for (const box of boxes) {
+    const [south, west, north, east] = box.split(',')
+    for (const phrase of phrases) {
+      if (!first) await new Promise((resolve) => setTimeout(resolve, NOMINATIM_INTERVAL_MS))
+      first = false
+      if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
+
+      const url = new URL(NOMINATIM_URL)
+      url.searchParams.set('q', phrase)
+      url.searchParams.set('format', 'jsonv2')
+      url.searchParams.set('viewbox', `${west},${north},${east},${south}`)
+      url.searchParams.set('bounded', '1')
+      url.searchParams.set('limit', '40')
+      url.searchParams.set('extratags', '1')
+      url.searchParams.set('accept-language', 'he')
+
+      const attempt = withTimeout(signal, 10_000)
+      try {
+        const res = await fetch(url.toString(), { signal: attempt.signal })
+        if (!res.ok) continue
+        const places = (await res.json()) as NominatimPlace[]
+        const fresh: RawPoi[] = []
+        for (const place of places) {
+          const tags: Record<string, string> = { ...(place.extratags ?? {}), [place.category]: place.type }
+          if (place.name) tags.name = place.name
+          const id = `${place.osm_type}/${place.osm_id}`
+          const poi = toRawPoi(id, Number(place.lat), Number(place.lon), tags, wanted)
+          if (poi && !results.has(id)) {
+            results.set(id, poi)
+            fresh.push(poi)
+          }
+        }
+        // Show each part of the route as soon as it is in, instead of waiting for all of it.
+        if (fresh.length > 0 && !signal.aborted) onPartial(fresh)
+      } catch (err) {
+        if (signal.aborted) throw err
+        // one failed box should not lose the rest
+      } finally {
+        attempt.done()
+      }
+    }
+  }
+  return [...results.values()]
+}
+
+/** How long Overpass gets on its own before the Nominatim backup starts alongside it. */
+const BACKUP_AFTER_MS = 3_000
+
+/**
+ * Finds the chosen categories inside the boxes that cover the route corridor. onPartial
+ * gets results early when the backup source delivers them piece by piece; the returned
+ * list is the full set, so callers should merge by id. Overpass is
+ * tried first (full tag data, one request); if it fails or is silent for a few seconds,
+ * Nominatim starts too, and the first source to answer wins.
  */
 export async function fetchPois(
-  path: LatLng[],
-  radiusKm: number,
+  boxes: { overpass: string[]; nominatim: string[] },
   categories: PoiCategory[],
+  onPartial: (pois: RawPoi[]) => void,
   signal?: AbortSignal,
 ): Promise<RawPoi[]> {
   if (categories.length === 0) return []
-  const coords = path.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(',')
-  const query = buildQuery(`around:${Math.round(radiusKm * 1000)},${coords}`, categories)
   const wanted = new Set(categories)
-
-  const data = await queryOverpass(query, signal)
-
-  const results: RawPoi[] = []
-
-  for (const el of data.elements) {
-    const tags = el.tags ?? {}
-    const category = categorize(tags)
-    const name = displayNameFor(tags)
-    // Skip unnamed places — a generic category label isn't a useful name to show.
-    if (!category || !name || !wanted.has(category)) continue
-
-    const lat = el.lat ?? el.center?.lat
-    const lng = el.lon ?? el.center?.lon
-    if (lat == null || lng == null) continue
-
-    results.push({
-      id: `${el.type}/${el.id}`,
-      category,
-      name,
-      lat,
-      lng,
-      phone: phoneFor(tags),
-      openingHours: tags.opening_hours,
-      address: addressFor(tags),
-      foodTags: category === 'kosher-food' ? foodTagsFor(tags) : undefined,
-      brand: category === 'fuel' ? tags.brand : undefined,
-      fuelTags: category === 'fuel' ? fuelTagsFor(tags) : undefined,
-      tags,
-    })
+  try {
+    const { value } = await firstSuccessful(
+      [
+        (s) => fetchFromOverpass(boxes.overpass, wanted, s),
+        // Bigger boxes for Nominatim: one request per box and category, at one per second.
+        (s) => fetchFromNominatim(boxes.nominatim, wanted, s, onPartial),
+      ],
+      BACKUP_AFTER_MS,
+      signal,
+    )
+    return value
+  } catch (err) {
+    if (signal?.aborted) throw err
+    throw new Error('חיפוש המקומות נכשל.')
   }
-
-  return results
 }

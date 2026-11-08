@@ -107,8 +107,10 @@ export async function fetchRoute(start: Place, end: Place, signal?: AbortSignal)
   const servers = preferredOrder(
     PREFERRED_KEY,
     [
-      ...OSRM_ENDPOINTS.map((base) => ({ id: base, run: (s: AbortSignal) => osrmRoute(base, start, end, s) })),
+      // Valhalla first: in testing from a real browser it answered while both OSRM servers
+      // were refused.
       { id: VALHALLA_ENDPOINT, run: (s: AbortSignal) => valhallaRoute(start, end, s) },
+      ...OSRM_ENDPOINTS.map((base) => ({ id: base, run: (s: AbortSignal) => osrmRoute(base, start, end, s) })),
     ],
     (server) => server.id,
   )
