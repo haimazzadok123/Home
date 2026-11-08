@@ -292,6 +292,32 @@
   }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) scale(.92); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 980px; font-size: 14px; font-weight: 600; transition: transform .3s ease, opacity .3s; z-index: 20; opacity: 0; pointer-events: none; }
   .toast.show { transform: translateX(-50%) scale(1); opacity: 1; }
+  /* Calm mode: fewer boxes, colors and shadows */
+  .more-prefs { margin-top: 2px; }
+  .more-prefs summary, .hotel .info summary { cursor: pointer; list-style: none; color: var(--muted); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+  .more-prefs summary { font-size: 15px; padding: 10px 0 4px; }
+  .more-prefs summary::-webkit-details-marker, .hotel .info summary::-webkit-details-marker { display: none; }
+  .more-prefs summary::after, .hotel .info summary::after { content: "⌄"; font-size: 14px; transition: transform .2s; transform: translateY(-3px); }
+  .more-prefs[open] summary::after, .hotel .info[open] summary::after { transform: rotate(180deg) translateY(-3px); }
+  .more-prefs summary:hover, .hotel .info summary:hover { color: var(--text); }
+  .hotel { box-shadow: none; gap: 12px; padding: 18px 20px; }
+  .hotel:hover { transform: none; box-shadow: var(--shadow); }
+  .hotel .place::before { content: none; }
+  .feats { gap: 4px 14px; }
+  .feat { background: none; padding: 0; font-weight: 500; font-size: 13px; color: var(--muted); }
+  .b { width: 14px; height: 14px; font-size: 9px; }
+  .score { background: none; border-color: var(--line); }
+  .hotel .links { border-top: 0; padding-top: 0; gap: 16px; margin-top: 2px; }
+  .hotel .links .txt { font-size: 14px; font-weight: 600; }
+  .hotel .info { font-size: 13px; }
+  .hotel .info summary { font-size: 13px; }
+  .hotel .info[open] { padding-top: 10px; border-top: 1px solid var(--line); }
+  .hotel .info .co, .hotel .info .nt { display: block; -webkit-line-clamp: unset; overflow: visible; background: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+  .hotel .info .co b { color: var(--text); }
+  .hotel .info .src { display: inline-block; margin-top: 8px; font-size: 13px; }
+  .site, .tip { box-shadow: none; }
+  .site:hover { box-shadow: var(--shadow); transform: none; }
+  .legend { font-size: 12px; }
   .fade { animation: fade .4s ease both; }
   @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -368,11 +394,16 @@
       <div class="toggles">
         <label class="toggle">חצי פנסיון (בוקר + ערב)<input type="checkbox" id="halfboard" checked /><span class="switch"></span></label>
         <label class="toggle">עזיבה בצאת שבת<input type="checkbox" id="lateCheckout" checked /><span class="switch"></span></label>
+      </div>
+      <details class="more-prefs" id="morePrefs">
+        <summary>העדפות נוספות <span id="moreCount"></span></summary>
+        <div class="toggles">
         <label class="toggle">כשרות מהדרין<input type="checkbox" id="mehadrin" /><span class="switch"></span></label>
         <label class="toggle">בית כנסת במלון<input type="checkbox" id="shul" /><span class="switch"></span></label>
         <label class="toggle">מעלית שבת<input type="checkbox" id="elevator" /><span class="switch"></span></label>
         <label class="toggle">שעות רחצה נפרדות<input type="checkbox" id="separate" /><span class="switch"></span></label>
-      </div>
+        </div>
+      </details>
     </div>
 
     <div class="actions">
@@ -514,6 +545,8 @@
 
   const TOGGLES = ["halfboard", "lateCheckout", "mehadrin", "shul", "elevator", "separate"];
   TOGGLES.forEach((t) => { if (typeof state[t] === "boolean") $(t).checked = state[t]; $(t).addEventListener("change", render); });
+  const EXTRA = ["mehadrin", "shul", "elevator", "separate"];
+  if (EXTRA.some((t) => $(t).checked)) $("morePrefs").open = true;
   ["adults", "kids", "rooms"].forEach((k) => { if (state[k]) $(k).value = state[k]; $(k).addEventListener("input", render); });
   regionSel.addEventListener("change", () => { render(); loadShabbat(); });
   wkEl.addEventListener("click", (e) => {
@@ -649,6 +682,8 @@
         </article>`;
       }).join("")}</div>`).join("");
 
+    const n = EXTRA.filter((t) => $(t).checked).length;
+    $("moreCount").textContent = n ? `(${n})` : "";
     $("msg").textContent = hotelMessage(q);
     renderHotels(q);
   }
@@ -702,20 +737,22 @@
       const badge = (ok) => `<i class="b ${ok === true ? "yes" : ok === false ? "no" : "unk"}">${ok === true ? "✓" : ok === false ? "✕" : "?"}</i>`;
       const extra = [];
       if (h.kosher) extra.push(`<span class="feat">${badge(true)}${h.kosher}</span>`);
-      if (typeof h.late === "string") extra.push(`<span class="feat">${badge(null)}${lateTxt[h.late]}</span>`);
       return `<article class="hotel fade${reqs.length && yes === reqs.length ? " top" : ""}">
         <div class="hotel-top">
           <div class="nm"><h3>${h.name}</h3><div class="place">${h.place}</div></div>
           ${reqs.length ? `<span class="score ${yes === reqs.length ? "full" : ""}" title="דרישות שאומתו">${yes}/${reqs.length}</span>` : ""}
         </div>
         <div class="feats">${v.map(([label, ok]) => `<span class="feat">${badge(ok)}${label}</span>`).join("")}${extra.join("")}</div>
-        <div class="co" title="${h.checkout}"><b>שבת:</b> ${h.checkout}</div>
-        <p class="nt" title="${h.note}">${h.note}</p>
         <div class="links">
           <a class="btn" href="${bookingUrl(h.en, q)}" target="_blank" rel="noopener">Booking ‹</a>
-          <a class="btn secondary" href="https://www.google.com/travel/search?q=${enc(h.en)}&hl=iw" target="_blank" rel="noopener">מחירים</a>
-          <a class="src" href="${h.src}" target="_blank" rel="noopener">מקור</a>
+          <a class="txt" href="https://www.google.com/travel/search?q=${enc(h.en)}&hl=iw" target="_blank" rel="noopener">השוואת מחירים</a>
         </div>
+        <details class="info">
+          <summary>פרטים ושבת</summary>
+          <p class="co"><b>שבת:</b> ${h.checkout}</p>
+          <p class="nt">${h.note}</p>
+          <a class="src" href="${h.src}" target="_blank" rel="noopener">מקור המידע ‹</a>
+        </details>
       </article>`;
     }).join("") : `<div class="empty">נסו "כל הארץ", או כבו חלק מהדרישות — או חפשו באתרים למטה.</div>`;
   }
