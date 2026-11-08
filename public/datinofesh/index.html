@@ -269,7 +269,8 @@
 
   /* App layout */
   .layout { background: var(--bg); }
-  .side { padding: 0 16px 8px; margin-top: -44px; position: relative; }
+  .side { padding: 20px 16px 8px; position: relative; }
+  .hero { display: none; } /* the intro screen above already introduces the site */
   .mini-hero { display: none; }
   .main { padding: 24px 16px 0; max-width: 1100px; margin: 0 auto; }
   .tabs { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 5; display: flex; gap: 4px; background: var(--nav); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 10px 0; margin-bottom: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
@@ -295,7 +296,7 @@
     .mini-hero .eyebrow { font-size: 13px; margin-bottom: 2px; color: var(--hero-accent); }
     .mini-hero p { margin: 6px 0 0; font-size: 14px; color: var(--hero-muted); }
     .layout { display: grid; grid-template-columns: 400px 1fr; height: calc(100dvh - 57px); overflow: hidden; background: var(--bg-alt); }
-    .side, .main { overflow-y: auto; height: 100%; overscroll-behavior: contain; }
+    .side, .main { overflow-y: auto; height: 100%; }
     .side { margin: 0; padding: 20px; border-left: 1px solid var(--line); background: var(--bg); }
     .side .search-card { padding: 18px; gap: 18px; border-radius: 20px; box-shadow: none; }
     .side .row:not(.nums) { grid-template-columns: 1fr; gap: 18px; }
@@ -314,11 +315,9 @@
   /* ===== Intro screen: sunset turns to Shabbat night ===== */
   .intro {
     --px: 0; --py: 0;
-    position: fixed; inset: 0; z-index: 100; overflow: hidden; cursor: pointer; color: #F0F9FF; text-align: center;
+    position: relative; height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; color: #F0F9FF; text-align: center;
     background: #050E1E;
   }
-  .intro[hidden] { display: none; }
-  html.intro-on, html.intro-on body { overflow: hidden; }
   .intro .layer { position: absolute; inset: -20px; pointer-events: none; will-change: transform;
     transform: translate3d(calc(var(--px) * var(--d, 0) * 1px), calc(var(--py) * var(--d, 0) * 1px), 0); transition: transform 600ms cubic-bezier(.23,1,.32,1); }
   .sky-dusk { background: linear-gradient(to top, #FDBA74 0%, #FB7185 22%, #A855F7 48%, #1E3A8A 78%, #0B1736 100%); }
@@ -367,8 +366,12 @@
   @keyframes sweep { 60%, 100% { transform: translateX(120%); } }
   @keyframes pulse { 50% { box-shadow: 0 12px 34px rgba(2,132,199,.5), 0 0 0 12px rgba(255,255,255,.06); } }
   .intro-btn:active { transform: scale(.95); }
-  .intro-skip { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; font: inherit; font-size: 13px; font-weight: 600; color: rgba(240,249,255,.7); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 980px; padding: 6px 14px; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fadeUp 500ms 600ms ease-out both; }
-  .intro-hint { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; font-size: 12px; color: rgba(240,249,255,.5); animation: fadeUp 600ms 3.4s ease-out both; }
+  .intro-fade { will-change: opacity, transform; }
+  .intro-cue { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; margin: 0 auto; width: max-content; display: grid; justify-items: center; gap: 6px;
+    font: inherit; font-size: 13px; font-weight: 600; color: rgba(240,249,255,.75); background: none; border: 0; cursor: pointer; animation: fadeUp 600ms 3.2s ease-out both; }
+  .intro-cue .mouse { width: 24px; height: 38px; border: 2px solid rgba(240,249,255,.6); border-radius: 14px; position: relative; }
+  .intro-cue .mouse::after { content: ""; position: absolute; left: 50%; top: 7px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: #BAE6FD; animation: wheel 1.6s ease-in-out infinite; }
+  @keyframes wheel { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
   @media (prefers-reduced-motion: reduce) { .sky-night, #starCanvas { opacity: 1; } .sun { display: none; } }
   .mouse-only { display: none; }
   @media (hover: hover) and (pointer: fine) { .mouse-only { display: inline; } .touch-only { display: none; } }
@@ -406,7 +409,7 @@
 </style>
 </head>
 <body>
-<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle" hidden>
+<section class="intro" id="intro" aria-labelledby="introTitle">
   <div class="layer sky-dusk" aria-hidden="true"></div>
   <div class="layer sun-wrap" aria-hidden="true"><div class="sun"></div></div>
   <div class="layer sky-night" aria-hidden="true"></div>
@@ -423,8 +426,7 @@
       <path fill="#051B30" d="M0 320 C 240 280 420 300 640 318 S 1040 280 1240 300 S 1380 312 1440 300 V400 H0Z"/>
     </svg>
   </div>
-  <button class="intro-skip" id="introSkip" type="button">דילוג</button>
-  <div class="intro-stage">
+  <div class="intro-stage intro-fade" id="introStage">
     <div class="intro-inner">
       <div class="candles" aria-hidden="true">
         <div class="candle"><div class="flame"></div></div>
@@ -433,23 +435,20 @@
       <p class="intro-eyebrow">השבת נכנסת. הגיע הזמן לנוח.</p>
       <h2 class="intro-title" id="introTitle">דתינופש</h2>
       <p class="intro-sub">מלונות עם חצי פנסיון, בריכה מקורה ויציאה במוצאי שבת.</p>
-      <button class="intro-btn" id="introBtn" type="button">כניסה לאתר ‹</button>
+      <button class="intro-btn" id="introBtn" type="button">לחיפוש מלון ↓</button>
     </div>
   </div>
-  <div class="intro-hint"><span class="touch-only">הקישו בכל מקום כדי להיכנס</span><span class="mouse-only">לחצו בכל מקום או על Enter</span></div>
-</div>
+  <button class="intro-cue intro-fade" id="introCue" type="button" aria-label="גללו לאתר"><span class="mouse" aria-hidden="true"></span>גללו למטה</button>
+</section>
 <script>
-  // Show the intro once per browser session, before the page paints.
-  (function () {
-    var seen = false;
-    try { seen = sessionStorage.getItem("datinofesh-intro") === "1"; } catch (e) {}
-    if (!seen) { document.getElementById("intro").hidden = false; document.documentElement.classList.add("intro-on"); }
-  })();
+  // Every load, including a refresh, starts at the intro.
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
 </script>
 
 <nav>
   <div class="nav-inner">
-    <a class="brand" href="#top">דתי<span>נופש</span></a>
+    <a class="brand" href="#intro">דתי<span>נופש</span></a>
     <div class="nav-links">
       <a href="#search">חיפוש</a>
       <a href="#ready" data-tab="ready">תוצאות</a>
@@ -941,7 +940,6 @@
   // ----- Intro screen -----
   (function intro() {
     const el = $("intro");
-    if (el.hidden) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let running = true;
 
@@ -974,7 +972,7 @@
     size(); window.addEventListener("resize", size);
     const flames = [...el.querySelectorAll(".flame")];
     const draw = (t) => {
-      if (!running) return;
+      if (!running) { drawing = false; return; }
       ctx.clearRect(0, 0, W, H);
       for (const st of stars) {
         ctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(st.p + t / 1000 * st.s));
@@ -1005,7 +1003,13 @@
       ctx.globalAlpha = 1;
       requestAnimationFrame(draw);
     };
+    let drawing = true;
     requestAnimationFrame(draw);
+    // Pause the canvas while the intro is scrolled out of view.
+    new IntersectionObserver(([en]) => {
+      running = en.isIntersecting;
+      if (running && !drawing) { drawing = true; requestAnimationFrame(draw); }
+    }).observe(el);
 
     // Parallax: layers drift with the mouse or the phone's tilt.
     const setP = (x, y) => { el.style.setProperty("--px", x.toFixed(3)); el.style.setProperty("--py", y.toFixed(3)); };
@@ -1013,30 +1017,25 @@
     const onTilt = (e) => { if (e.gamma != null) setP(Math.max(-1, Math.min(1, e.gamma / 25)), Math.max(-1, Math.min(1, (e.beta - 45) / 25))); };
     if (!reduce) { el.addEventListener("pointermove", onMove); window.addEventListener("deviceorientation", onTilt); }
 
-    // Exit: a circular portal opens from where you clicked and reveals the site.
-    $("introBtn").focus({ preventScroll: true });
-    let done = false;
-    const close = (x = innerWidth / 2, y = innerHeight / 2) => {
-      if (done) return; done = true;
-      try { sessionStorage.setItem("datinofesh-intro", "1"); } catch { /* storage unavailable */ }
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("deviceorientation", onTilt);
-      document.documentElement.classList.remove("intro-on");
-      const finish = () => { running = false; el.hidden = true; window.removeEventListener("resize", size); };
-      if (reduce) { finish(); return; }
-      const max = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 40, start = performance.now(), dur = 750;
-      const step = (now) => {
-        const k = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - k, 4), r = e * max;
-        const m = `radial-gradient(circle at ${x}px ${y}px, transparent ${r}px, #000 ${r + 24}px)`;
-        el.style.webkitMaskImage = m; el.style.maskImage = m;
-        if (k < 1) requestAnimationFrame(step); else finish();
-      };
-      requestAnimationFrame(step);
+    // Scrolling down moves the scene up slower than the page and fades it out.
+    const fades = [...el.querySelectorAll(".intro-fade")];
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return; ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const k = Math.min(1, scrollY / el.offsetHeight);
+        if (reduce) return;
+        fades.forEach((f) => { f.style.opacity = String(1 - k * 1.4); f.style.translate = `0 ${k * 120}px`; });
+        el.style.setProperty("--sy", k.toFixed(3));
+      });
     };
-    const onKey = (e) => { if (["Enter", " ", "Escape"].includes(e.key)) { e.preventDefault(); close(); } };
-    el.addEventListener("click", (e) => close(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2));
-    document.addEventListener("keydown", onKey);
-    if (reduce) setTimeout(() => close(), 1500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    // The button and the scroll cue glide down to the search.
+    const toSite = () => document.querySelector("nav").scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+    $("introBtn").addEventListener("click", toSite);
+    $("introCue").addEventListener("click", toSite);
   })();
 
   render();
