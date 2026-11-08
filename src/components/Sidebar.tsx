@@ -32,7 +32,7 @@ const FILTERS: Array<{ category: PoiCategory; label: string; emoji: string }> = 
   { category: 'viewpoint', label: 'נקודות תצפייה', emoji: '🏞️' },
   { category: 'kosher-food', label: 'אוכל כשר', emoji: '🍽️' },
   { category: 'fuel', label: 'תחנות דלק', emoji: '⛽' },
-  { category: 'camping', label: 'לינה (קק"ל / רשות הטבע)', emoji: '⛺' },
+  { category: 'camping', label: 'לינה בקק"ל וברט"ג', emoji: '⛺' },
 ]
 
 /** Excludes English-only brand tags from the "by company" filter — Hebrew names only. */
@@ -108,15 +108,22 @@ export function Sidebar({
     <aside className="sidebar">
       {routeSummary && (
         <div className="route-summary">
-          <span>
-            <strong>{routeSummary.distanceKm.toFixed(0)} ק"מ</strong> · {formatDuration(routeSummary.durationMin)}
+          <span className="route-summary-stats">
+            <span>
+              <small>מרחק</small>
+              <b>{routeSummary.distanceKm.toFixed(0)} ק"מ</b>
+            </span>
+            <span>
+              <small>זמן נסיעה</small>
+              <b>{formatDuration(routeSummary.durationMin)}</b>
+            </span>
           </span>
           <span className="route-summary-actions">
-            <button type="button" className="text-button" onClick={onSaveRoute}>
-              💾 שמור מסלול
+            <button type="button" className="pill-button" onClick={onSaveRoute}>
+              שמירה
             </button>
-            <button type="button" className="text-button" onClick={onShare}>
-              🔗 שיתוף
+            <button type="button" className="pill-button" onClick={onShare}>
+              שיתוף
             </button>
           </span>
         </div>
@@ -129,14 +136,15 @@ export function Sidebar({
             key={f.category}
             type="button"
             className={`filter filter--${f.category}${filterState.categories.has(f.category) ? ' active' : ''}`}
+            aria-pressed={filterState.categories.has(f.category)}
             onClick={() => onToggleFilter(f.category)}
           >
-            <span className="filter-label">{f.label}</span>
             <span className="filter-icon">{f.emoji}</span>
+            <span className="filter-label">{f.label}</span>
           </button>
         ))}
-        {pois.length > 0 && <span className="poi-count-badge">{visible.length} מקומות</span>}
       </div>
+      {pois.length > 0 && <div className="poi-count">{visible.length} מקומות בדרך, לפי סדר הנסיעה</div>}
 
       <SubfilterGroup
         title="סינון אוכל כשר לפי סוג"
@@ -163,7 +171,9 @@ export function Sidebar({
       />
 
       <div className="corridor-control">
-        <label htmlFor="corridor">חיפוש עד {corridorKm} ק"מ מהמסלול</label>
+        <label htmlFor="corridor">
+          מרחק מהמסלול <b>עד {corridorKm} ק"מ</b>
+        </label>
         <input
           id="corridor"
           type="range"
@@ -177,22 +187,24 @@ export function Sidebar({
       {loading && <div className="status-message">מחפש מקומות לאורך המסלול…</div>}
       {error && <div className="status-message error">{error}</div>}
       {!loading && !error && pois.length === 0 && (
-        <div className="status-message">תכננו מסלול כדי לראות מקומות מעניינים בדרך.</div>
+        <div className="status-message">אחרי תכנון המסלול יופיעו כאן תצפיות, אוכל כשר, תחנות דלק ולינה לאורך הדרך.</div>
       )}
       {!loading && !error && pois.length > 0 && filterState.categories.size === 0 && (
-        <div className="status-message">בחרו קטגוריה אחת לפחות למעלה כדי לראות מקומות.</div>
+        <div className="status-message">בחרו לפחות סוג מקום אחד למעלה.</div>
       )}
 
       <ul className="poi-list">
         {visible.map((poi) => (
-          <li key={poi.id} onClick={() => onSelectPoi(poi.id)}>
-            <span className="poi-emoji">{CATEGORY_EMOJI[poi.category]}</span>
-            <span className="poi-details">
-              <span className="poi-name">{poi.name}</span>
-              <span className="poi-meta">
-                {poi.distanceAlongRoute.toFixed(0)} ק"מ מההתחלה · {poi.distanceFromRoute.toFixed(1)} ק"מ מהמסלול
+          <li key={poi.id}>
+            <button type="button" className={`poi-item poi-item--${poi.category}`} onClick={() => onSelectPoi(poi.id)}>
+              <span className="poi-emoji">{CATEGORY_EMOJI[poi.category]}</span>
+              <span className="poi-details">
+                <span className="poi-name">{poi.name}</span>
+                <span className="poi-meta">
+                  {poi.distanceAlongRoute.toFixed(0)} ק"מ מההתחלה · {poi.distanceFromRoute.toFixed(1)} ק"מ מהכביש
+                </span>
               </span>
-            </span>
+            </button>
           </li>
         ))}
       </ul>

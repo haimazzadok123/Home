@@ -1,33 +1,29 @@
-import type { FoodFilterTag, FuelFilterTag, Poi } from '../types'
+import type { FoodFilterTag, FuelFilterTag, LatLng, Poi } from '../types'
 
 /**
  * The public overpass-api.de instance is prone to 504s under load, so fall back to a
  * mirror on failure rather than surfacing a dead end to the user.
  */
-const OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']
-
-/** south, west, north, east */
-type BBox = [number, number, number, number]
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
 
 /**
  * Kosher food places aren't consistently tagged in OpenStreetMap, so we cast a wide net:
  * explicit diet:kosher=yes/only, cuisine=kosher, and shop=kosher (kosher grocers/bakeries).
+ * `area` is an Overpass `around:` filter that follows the route line.
  */
-function buildQuery(bboxStr: string): string {
+function buildQuery(area: string): string {
   return `
-    [out:json][timeout:25];
+    [out:json][timeout:60];
     (
-      node["tourism"="viewpoint"](${bboxStr});
-      node["diet:kosher"~"yes|only"](${bboxStr});
-      way["diet:kosher"~"yes|only"](${bboxStr});
-      node["cuisine"~"kosher"](${bboxStr});
-      way["cuisine"~"kosher"](${bboxStr});
-      node["shop"="kosher"](${bboxStr});
-      way["shop"="kosher"](${bboxStr});
-      node["amenity"="fuel"](${bboxStr});
-      way["amenity"="fuel"](${bboxStr});
-      node["tourism"="camp_site"](${bboxStr});
-      way["tourism"="camp_site"](${bboxStr});
+      nwr["tourism"~"^(viewpoint|camp_site)$"](${area});
+      nwr["diet:kosher"~"yes|only"](${area});
+      nwr["cuisine"~"kosher"](${area});
+      nwr["shop"="kosher"](${area});
+      nwr["amenity"="fuel"](${area});
     );
     out center tags;
   `
@@ -165,25 +161,37 @@ export interface RawPoi {
   tags: Record<string, string>
 }
 
-/** Tries each Overpass mirror in turn — the public instances routinely 504 under load. */
+const OVERPASS_TIMEOUT_MS = 45_000
+
+/** Tries each Overpass mirror in turn — the public instances routinely 504 or hang under load. */
 async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
   let lastError: unknown
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    // A hung mirror must not stall the search, so each attempt has its own timeout.
+    const timeout = AbortSignal.timeout(OVERPASS_TIMEOUT_MS)
+    const attemptSignal = signal && 'any' in AbortSignal ? AbortSignal.any([signal, timeout]) : timeout
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         body: `data=${encodeURIComponent(query)}`,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal,
+        signal: attemptSignal,
       })
       if (!res.ok) {
         lastError = new Error(`חיפוש נקודות העניין נכשל (שגיאה ${res.status})`)
         continue
       }
-      return await res.json()
+      const data = (await res.json()) as { elements?: OverpassElement[]; remark?: string }
+      // Overpass reports a server-side timeout as HTTP 200 with a "runtime error" remark.
+      if (!data.elements || (data.elements.length === 0 && data.remark?.includes('error'))) {
+        lastError = new Error('שרת נקודות העניין עמוס כרגע.')
+        continue
+      }
+      return { elements: data.elements }
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') throw err
+      if (signal?.aborted) throw err
       lastError = err
     }
   }
@@ -191,11 +199,13 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
   throw lastError instanceof Error ? lastError : new Error('חיפוש נקודות העניין נכשל.')
 }
 
-/** Queries Overpass for scenic viewpoints, kosher food, fuel stations and KKL/Nature Authority camping within a bounding box. */
-export async function fetchPois(bbox: BBox, signal?: AbortSignal): Promise<RawPoi[]> {
-  const [south, west, north, east] = bbox
-  const bboxStr = `${south},${west},${north},${east}`
-  const query = buildQuery(bboxStr)
+/**
+ * Queries Overpass for scenic viewpoints, kosher food, fuel stations and KKL/Nature Authority
+ * camping within radiusKm of the line through `path`.
+ */
+export async function fetchPois(path: LatLng[], radiusKm: number, signal?: AbortSignal): Promise<RawPoi[]> {
+  const coords = path.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join(',')
+  const query = buildQuery(`around:${Math.round(radiusKm * 1000)},${coords}`)
 
   const data = await queryOverpass(query, signal)
 

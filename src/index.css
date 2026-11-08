@@ -1,52 +1,69 @@
+/* Tokens follow design/style-reference.md (the Datinofesh look): slate text, light blue
+   background, sky-blue accent, Fredoka / Varela Round display font, Assistant for body text. */
 :root {
-  --sky: #29b6e8;
-  --sky-deep: #0288b7;
-  --green: #2ea86b;
-  --green-deep: #1e7a4d;
-  --text: #133a45;
-  --text-muted: #4f7885;
-  --bg: #f3fbfd;
-  --panel-bg: #e6f6fa;
-  --border: #bfe6ef;
-  --accent: var(--sky-deep);
-  --accent-bg: rgba(41, 182, 232, 0.12);
-  --cat-viewpoint: #e2711d;
-  --cat-viewpoint-bg: rgba(226, 113, 29, 0.12);
-  --cat-food: #189a5b;
-  --cat-food-bg: rgba(24, 154, 91, 0.12);
-  --cat-food-badge: #7c4dff;
-  --cat-fuel: #d32f2f;
-  --cat-fuel-bg: rgba(211, 47, 47, 0.12);
-  --cat-camping: #1e3a8a;
-  --cat-camping-bg: rgba(30, 58, 138, 0.12);
+  --bg: #f0f9ff;
+  --bg-alt: #e0f2fe;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --line: #d3e8f5;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-soft: #e0f2fe;
+  --on-accent: #ffffff;
+  --danger: #dc2626;
+  --nav: rgba(240, 249, 255, 0.85);
+  --shadow: 0 1px 2px rgba(30, 41, 59, 0.04), 0 6px 20px rgba(30, 41, 59, 0.06);
+  --shadow-lg: 0 2px 4px rgba(30, 41, 59, 0.05), 0 16px 40px rgba(30, 41, 59, 0.1);
+  --hero: radial-gradient(120% 140% at 50% 0%, #bae6fd 0%, #e0f2fe 45%, #f0f9ff 100%);
+  --display: 'Fredoka', 'Varela Round', 'Assistant', sans-serif;
+
+  --cat-viewpoint: #16a34a;
+  --cat-viewpoint-soft: #dcfce7;
+  --cat-food: #d97706;
+  --cat-food-soft: #fef3c7;
+  --cat-fuel: #dc2626;
+  --cat-fuel-soft: #fee2e2;
+  --cat-camping: #7c3aed;
+  --cat-camping-soft: #ede9fe;
+
   color-scheme: light dark;
-  font: 15px/1.45 system-ui, 'Segoe UI', Arial, sans-serif;
+  font-family: 'Assistant', 'Heebo', -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
   color: var(--text);
   background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --sky: #4dd0f0;
-    --sky-deep: #29b6e8;
-    --green: #4cc98c;
-    --green-deep: #2ea86b;
-    --text: #e3f6fb;
-    --text-muted: #9fc8d3;
-    --bg: #0c2027;
-    --panel-bg: #123039;
-    --border: #1d4753;
-    --accent: var(--sky);
-    --accent-bg: rgba(77, 208, 240, 0.16);
-    --cat-viewpoint: #f0975a;
-    --cat-viewpoint-bg: rgba(240, 151, 90, 0.16);
-    --cat-food: #3fc98a;
-    --cat-food-bg: rgba(63, 201, 138, 0.16);
-    --cat-food-badge: #9d7bff;
-    --cat-fuel: #ef5350;
-    --cat-fuel-bg: rgba(239, 83, 80, 0.16);
-    --cat-camping: #5c7cd6;
-    --cat-camping-bg: rgba(92, 124, 214, 0.16);
+    --bg: #0f172a;
+    --bg-alt: #0b1222;
+    --card: #1e293b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --line: #334155;
+    --accent: #38bdf8;
+    --accent-hover: #7dd3fc;
+    --accent-soft: #0c2a3d;
+    --on-accent: #0f172a;
+    --danger: #f87171;
+    --nav: rgba(15, 23, 42, 0.85);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.4);
+    --hero: radial-gradient(120% 140% at 50% 0%, #0c3a57 0%, #13263f 50%, #0f172a 100%);
+
+    --cat-viewpoint: #22c55e;
+    --cat-viewpoint-soft: #0f2e1d;
+    --cat-food: #f59e0b;
+    --cat-food-soft: #33240a;
+    --cat-fuel: #f87171;
+    --cat-fuel-soft: #3a1414;
+    --cat-camping: #a78bfa;
+    --cat-camping-soft: #251b45;
   }
 }
 
@@ -56,10 +73,37 @@
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+a,
+label {
+  touch-action: manipulation;
+}
+
+button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 #root {
-  height: 100svh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }

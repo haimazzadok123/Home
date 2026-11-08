@@ -6,10 +6,10 @@ import type { LatLng, Place, Poi } from '../types'
 import { CATEGORY_EMOJI, CATEGORY_LABEL, FOOD_FILTER_LABEL, FUEL_FILTER_LABEL } from '../utils/poiDisplay'
 
 const POI_COLOR: Record<Poi['category'], string> = {
-  viewpoint: 'var(--cat-viewpoint, #e2711d)',
-  'kosher-food': 'var(--cat-food-badge, #7c4dff)',
-  fuel: 'var(--cat-fuel, #d32f2f)',
-  camping: 'var(--cat-camping, #1e3a8a)',
+  viewpoint: 'var(--cat-viewpoint)',
+  'kosher-food': 'var(--cat-food)',
+  fuel: 'var(--cat-fuel)',
+  camping: 'var(--cat-camping)',
 }
 
 function poiIcon(category: Poi['category']) {
@@ -24,14 +24,14 @@ function poiIcon(category: Poi['category']) {
 
 const START_ICON = L.divIcon({
   className: 'endpoint-marker',
-  html: `<span class="endpoint-marker-dot start">א</span>`,
+  html: `<span class="endpoint-marker-dot start"><b>א</b></span>`,
   iconSize: [28, 28],
   iconAnchor: [14, 28],
 })
 
 const END_ICON = L.divIcon({
   className: 'endpoint-marker',
-  html: `<span class="endpoint-marker-dot end">ב</span>`,
+  html: `<span class="endpoint-marker-dot end"><b>ב</b></span>`,
   iconSize: [28, 28],
   iconAnchor: [14, 28],
 })
@@ -87,7 +87,7 @@ export function MapView({ start, end, route, pois, focusedPoiId }: MapViewProps)
       />
 
       {route && route.length > 1 && (
-        <Polyline positions={route.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#0288b7', weight: 5, opacity: 0.75 }} />
+        <Polyline positions={route.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#0284C7', weight: 6, opacity: 0.85, lineCap: 'round' }} />
       )}
 
       {start && (
