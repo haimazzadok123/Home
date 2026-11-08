@@ -9,29 +9,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&family=Varela+Round&display=swap" />
-<meta name="theme-color" content="#F97316" />
+<meta name="theme-color" content="#0284C7" />
 <style>
   :root {
-    --bg: #F8FAFC;
-    --bg-alt: #F1F5F9;
+    --bg: #F0F9FF;
+    --bg-alt: #E0F2FE;
     --card: #ffffff;
     --text: #1E293B;
     --muted: #64748B;
-    --line: #E2E8F0;
-    --accent: #F97316;
-    --accent-hover: #EA580C;
-    --accent-soft: #FFEDD5;
+    --line: #D3E8F5;
+    --accent: #0284C7;
+    --accent-hover: #0369A1;
+    --accent-soft: #E0F2FE;
     --on-accent: #ffffff;
-    --gold: #EA580C;
-    --gold-soft: #FFF7ED;
+    --gold: #0284C7;
+    --gold-soft: #E0F2FE;
     --ok: #16A34A; --unk: #F59E0B; --no: #DC2626;
-    --nav: rgba(248, 250, 252, 0.85);
+    --nav: rgba(240, 249, 255, 0.85);
     --shadow: 0 1px 2px rgba(30,41,59,.04), 0 6px 20px rgba(30,41,59,.06);
     --shadow-lg: 0 2px 4px rgba(30,41,59,.05), 0 16px 40px rgba(30,41,59,.08);
-    --hero: radial-gradient(120% 140% at 50% 0%, #FFEDD5 0%, #FFF7ED 45%, #F8FAFC 100%);
+    --hero: radial-gradient(120% 140% at 50% 0%, #BAE6FD 0%, #E0F2FE 45%, #F0F9FF 100%);
     --hero-text: #1E293B;
     --hero-muted: #475569;
-    --hero-accent: #EA580C;
+    --hero-accent: #0369A1;
     --hero-line: rgba(30,41,59,.10);
     --display: "Fredoka", "Varela Round", "Assistant", sans-serif;
   }
@@ -43,20 +43,20 @@
       --text: #F1F5F9;
       --muted: #94A3B8;
       --line: #334155;
-      --accent: #FB923C;
-      --accent-hover: #FDBA74;
-      --accent-soft: #3B2414;
+      --accent: #38BDF8;
+      --accent-hover: #7DD3FC;
+      --accent-soft: #0C2A3D;
       --on-accent: #1E293B;
-      --gold: #FB923C;
-      --gold-soft: #2A1E15;
+      --gold: #38BDF8;
+      --gold-soft: #0C2A3D;
       --ok: #22C55E; --unk: #FBBF24; --no: #F87171;
       --nav: rgba(15, 23, 42, 0.85);
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
       --shadow-lg: 0 2px 4px rgba(0,0,0,.3), 0 16px 40px rgba(0,0,0,.4);
-      --hero: radial-gradient(120% 140% at 50% 0%, #3B2414 0%, #1E293B 50%, #0F172A 100%);
+      --hero: radial-gradient(120% 140% at 50% 0%, #0C3A57 0%, #13263F 50%, #0F172A 100%);
       --hero-text: #F1F5F9;
       --hero-muted: #CBD5E1;
-      --hero-accent: #FB923C;
+      --hero-accent: #38BDF8;
       --hero-line: rgba(255,255,255,.10);
     }
   }
@@ -90,7 +90,7 @@
   .brand { font-family: var(--display); font-weight: 700; font-size: 24px; color: var(--text); display: inline-flex; align-items: center; }
   .brand:hover { text-decoration: none; }
   .brand span { color: var(--gold); }
-  .brand::before { content: ""; margin-inline-end: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft), 0 0 14px 2px rgba(249,115,22,.4); }
+  .brand::before { content: ""; margin-inline-end: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px var(--gold-soft), 0 0 14px 2px rgba(14,165,233,.45); }
   .nav-links { display: flex; gap: 6px; }
   .nav-links a { color: var(--muted); padding: 6px 12px; border-radius: 980px; font-weight: 600; }
   .nav-links a:hover { color: var(--text); background: var(--bg-alt); text-decoration: none; }
@@ -98,7 +98,7 @@
   /* Hero */
   .hero { text-align: center; padding: 56px 16px 72px; background: var(--hero); color: var(--hero-text); position: relative; overflow: hidden; }
   .hero::after { content: ""; position: absolute; inset: auto 0 0 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-soft), transparent); }
-  .hero .glow { width: 120px; height: 120px; margin: -30px auto -70px; border-radius: 50%; background: radial-gradient(circle, rgba(249,115,22,.25), transparent 70%); }
+  .hero .glow { width: 120px; height: 120px; margin: -30px auto -70px; border-radius: 50%; background: radial-gradient(circle, rgba(14,165,233,.30), transparent 70%); }
   .eyebrow { color: var(--gold); font-weight: 700; font-size: 15px; letter-spacing: .04em; margin: 0 0 8px; }
   .hero .eyebrow { color: var(--hero-accent); }
   h1 { font-family: var(--display); font-size: clamp(44px, 9vw, 84px); line-height: 1.05; margin: 0; font-weight: 700; }

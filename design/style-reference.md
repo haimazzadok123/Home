@@ -29,6 +29,11 @@ Book Grooming
 
 ## Notes
 
+- Preference update: the user prefers blue / light blue (tchelet) over orange.
+  Keep the snippet's layout, text color and Fredoka font, but use sky blue for
+  accents: background `#F0F9FF`, alt `#E0F2FE`, buttons `#0284C7`
+  (hover `#0369A1`); dark mode accent `#38BDF8`.
+
 - Fredoka has no Hebrew letters. For Hebrew pages use
   `font-family: "Fredoka", "Varela Round", sans-serif;` so Latin text gets
   Fredoka and Hebrew falls back to the similar rounded Varela Round
@@ -36,4 +41,4 @@ Book Grooming
 - Supporting colors that fit this palette (from Tailwind's slate/orange):
   muted text `#64748B`, borders `#E2E8F0`, alt background `#F1F5F9`,
   soft orange `#FFEDD5`.
-- Applied example: `public/datinofesh/index.html` (includes a dark mode).
+- Applied example (blue version): `public/datinofesh/index.html`, including a dark mode.
