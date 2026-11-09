@@ -134,7 +134,11 @@ export function Sidebar({
           </span>
         </div>
       )}
-      {shareStatus && <div className="status-message">{shareStatus}</div>}
+      {shareStatus && (
+        <div className="status-message" role="status">
+          {shareStatus}
+        </div>
+      )}
 
       <h3 className="filters-title">מה לחפש בדרך?</h3>
       <div className="filters">
@@ -153,7 +157,7 @@ export function Sidebar({
           </button>
         ))}
       </div>
-      {pois.length > 0 && <div className="poi-count">{visible.length} מקומות בדרך, לפי סדר הנסיעה</div>}
+      {pois.length > 0 && <div className="poi-count" role="status">{visible.length} מקומות בדרך, לפי סדר הנסיעה</div>}
 
       <SubfilterGroup
         title="סינון אוכל כשר לפי סוג"
@@ -194,7 +198,7 @@ export function Sidebar({
       </div>
 
       {loading && (
-        <div className="status-message loading-row">
+        <div className="status-message loading-row" role="status">
           <span className="spinner" aria-hidden="true" />
           <span>מחפש לאורך המסלול…</span>
           <button type="button" className="pill-button" onClick={onCancel}>
@@ -202,7 +206,11 @@ export function Sidebar({
           </button>
         </div>
       )}
-      {error && <div className="status-message error">{error}</div>}
+      {error && (
+        <div className="status-message error" role="alert">
+          {error}
+        </div>
+      )}
       {!loading && !error && filterState.categories.size === 0 && (
         <div className="status-message">
           {hasRoute

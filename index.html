@@ -8,12 +8,13 @@
     <meta name="theme-color" content="#F0F9FF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="תכנון מסלול נסיעה בישראל עם תצפיות, אוכל כשר, תחנות דלק ולינה לאורך הדרך." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&family=Varela+Round&display=swap"
+    <!-- Only the site's own code runs, and it may only talk to the map services listed in
+         the privacy policy. Leaflet sets inline styles, hence 'unsafe-inline' for styles. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://nominatim.openstreetmap.org https://valhalla1.openstreetmap.de https://routing.openstreetmap.de https://router.project-osrm.org https://overpass-api.de https://overpass.private.coffee https://overpass.kumi.systems https://israelhiking.osm.org.il https://api.open-meteo.com; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests"
     />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>מטיילים עם דוד חיים</title>
   </head>
   <body>

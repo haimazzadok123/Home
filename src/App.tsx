@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchRoute } from './api/routing'
 import { fetchPois, type RawPoi } from './api/pois'
 import { fetchHikingPois } from './api/hikingPois'
@@ -8,6 +8,8 @@ import { MapView } from './components/MapView'
 import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
 import { TripWeather } from './components/TripWeather'
+import { LegalFooter, LegalPage } from './components/LegalPages'
+import { LEGAL_PAGES, type LegalPageId } from './utils/legalPages'
 import type { FoodFilterTag, FuelFilterTag, LatLng, Place, Poi, PoiCategory } from './types'
 import { matchesActiveFilters } from './utils/poiDisplay'
 import { addSavedRoute, loadSavedRoutes, removeSavedRoute, type SavedRoute } from './utils/savedRoutes'
@@ -42,7 +44,13 @@ function withRouteDistance(raw: RawPoi[], routeLine: ReturnType<typeof toRouteLi
     .filter((p) => p.distanceFromRoute <= corridorKm)
 }
 
+function legalPageFromHash(): LegalPageId | null {
+  const id = window.location.hash.slice(1)
+  return LEGAL_PAGES.some((p) => p.id === id) ? (id as LegalPageId) : null
+}
+
 function App() {
+  const [legalPage, setLegalPage] = useState<LegalPageId | null>(legalPageFromHash)
   const [start, setStart] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
   const [departureDate, setDepartureDate] = useState('')
@@ -218,6 +226,19 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Legal pages open from #privacy, #terms and #accessibility, so they can be linked to.
+  useEffect(() => {
+    const onHashChange = () => setLegalPage(legalPageFromHash())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  const closeLegalPage = useCallback(() => {
+    // Drop the hash without adding a history entry or jumping the page.
+    history.replaceState(null, '', window.location.pathname + window.location.search)
+    setLegalPage(null)
+  }, [])
+
   function handleDepartureDateChange(date: string) {
     setDepartureDate(date)
     // A return date earlier than the new departure date is no longer valid.
@@ -353,6 +374,9 @@ function App() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#route-form" onClick={() => setMobileMenuOpen(true)}>
+        דילוג לחיפוש
+      </a>
       <header className="topbar">
         <div className="topbar-start">
           <button
@@ -381,7 +405,7 @@ function App() {
           >
             ✕
           </button>
-          <div className="route-form">
+          <div className="route-form" id="route-form" tabIndex={-1}>
             <div className="panel-heading">
               <h2>לאן נוסעים?</h2>
               <p>בוחרים מוצא ויעד, ואנחנו מראים מה יש בדרך.</p>
@@ -446,6 +470,7 @@ function App() {
             onShare={handleShare}
             shareStatus={shareStatus}
           />
+          <LegalFooter />
         </div>
         <MapView
           start={start}
@@ -470,6 +495,7 @@ function App() {
           </button>
         )}
       </div>
+      {legalPage && <LegalPage page={legalPage} onClose={closeLegalPage} />}
     </div>
   )
 }
