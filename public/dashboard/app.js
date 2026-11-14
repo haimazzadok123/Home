@@ -181,6 +181,7 @@ const FEEDS = {
   mako: 'https://rcs.mako.co.il/rss/31750a2610f26110VgnVCM1000005201000aRCRD.xml',
   one: 'https://www.one.co.il/rss',
   ynetsport: 'https://www.ynet.co.il/Integration/StoryRss3.xml',
+  flash: 'https://www.ynet.co.il/Integration/StoryRss1854.xml',
 };
 const SOURCE_INFO = {
   ynet: { label: 'ynet', group: 'news' },
@@ -188,6 +189,7 @@ const SOURCE_INFO = {
   one: { label: 'ONE', group: 'sport' },
   sport5: { label: 'ספורט 5', group: 'sport' },
   ynetsport: { label: 'ynet', group: 'sport' },
+  flash: { label: 'ynet', group: 'flash' },
 };
 const viaRelay = (source) => async () => parseRss(await get(`https://api.allorigins.win/raw?url=${encodeURIComponent(FEEDS[source])}`, { type: 'text', timeout: 9000 }), source);
 const htmlParser = new DOMParser();
@@ -233,9 +235,10 @@ const NEWS_SOURCES = {
   ynet: [viaRelay('ynet'), () => viaRss2Json('ynet')],
   one: [async () => parseRss(await get(FEEDS.one, { type: 'text' }), 'one'), () => viaRss2Json('one')],
   ynetsport: [viaRelay('ynetsport'), () => viaRss2Json('ynetsport')],
+  flash: [viaRelay('flash'), () => viaRss2Json('flash')],
 };
 
-const news = { ynet: [], mako: [], one: [], ynetsport: [] };
+const news = { ynet: [], mako: [], one: [], ynetsport: [], flash: [] };
 let newsFilter = 'news';
 let newsLoaded = false;
 
