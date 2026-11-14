@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="לוח הבית" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <!-- Only this page's own code runs; it may talk only to the data services listed in the README. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://rcs.mako.co.il https://api.allorigins.win https://api.rss2json.com https://finnhub.io https://quote.cnbc.com https://api.frankfurter.dev https://www.hebcal.com https://speed.cloudflare.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://rcs.mako.co.il https://api.allorigins.win https://api.rss2json.com https://finnhub.io https://quote.cnbc.com https://api.frankfurter.dev https://www.hebcal.com https://speed.cloudflare.com https://www.one.co.il; media-src https://glzwizzlv.bynetcdn.com https://cdn.cybercdn.live https://playerservices.streamtheworld.com https://*.live.streamtheworld.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" type="image/svg+xml" href="icon.svg" />
 <link rel="apple-touch-icon" href="icon-180.png" />
@@ -82,14 +82,23 @@
 
   <section class="card net" aria-label="חיבור לרשת">
     <header class="card-head"><span class="label">רשת</span><span class="status" id="n-status"><i></i><b>בודק…</b></span></header>
-    <div class="n-speed"><span id="n-down" dir="ltr">--</span><small>Mbps הורדה</small></div>
+    <div class="n-speed"><span id="n-down" dir="ltr">--</span><small>Mbps הורדה</small><button type="button" class="btn" id="n-run">בדיקה</button></div>
     <div class="n-quality" id="n-quality"></div>
     <svg class="spark" id="n-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
     <dl class="n-facts">
       <div><dt>זמן תגובה</dt><dd id="n-ping" dir="ltr">--</dd></div>
       <div><dt>יציבות</dt><dd id="n-jitter" dir="ltr">--</dd></div>
     </dl>
-    <button type="button" class="btn" id="n-run">בדיקת מהירות</button>
+  </section>
+
+  <section class="card radio" aria-label="רדיו">
+    <header class="card-head"><span class="label">רדיו</span><span class="sub" id="r-status" aria-live="polite"></span>
+      <div class="r-ctl">
+        <input type="range" id="r-vol" min="0" max="1" step="0.05" value="1" aria-label="עוצמת קול" />
+        <button type="button" id="r-stop" aria-label="עצירת השידור" title="עצירה" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
+      </div>
+    </header>
+    <div class="r-list" id="r-list"></div>
   </section>
 
   <section class="card today" aria-label="שבת וזמני היום">
@@ -108,7 +117,33 @@
     <a href="../datinofesh/"><b>דתינופש</b><small>סוף שבוע במלון</small></a>
     <a href="../tv/"><b>טלוויזיה</b><small>ערוצים ישראליים במסך אחד</small></a>
   </nav>
+  <button type="button" class="btn" id="b-terms">תנאי שימוש ומקורות מידע</button>
   <button type="button" class="btn ghost" id="sites-close">סגירה</button>
+</dialog>
+
+<dialog id="terms" aria-labelledby="terms-title">
+  <div class="terms">
+    <h2 id="terms-title">תנאי שימוש</h2>
+    <p>לוח הבית הוא דף אישי, ללא מטרת רווח, ללא פרסומות וללא הרשמה. השימוש בו מהווה הסכמה לתנאים האלה.</p>
+    <h3>התוכן והזכויות</h3>
+    <p>הכותרות, התמונות, השידורים והנתונים שמוצגים כאן שייכים לבעליהם. הדף מציג כותרת וקישור בלבד, וכל לחיצה פותחת את הכתבה המלאה באתר המקור. אין להעתיק או להפיץ את התוכן מעבר למה שהמקורות עצמם מתירים.</p>
+    <h3>אחריות</h3>
+    <p>המידע מוצג כפי שהוא מתקבל מהמקורות ועלול להתעכב, להיות חלקי או שגוי. מחירי המניות ושערי המטבע אינם ייעוץ השקעות ואין להסתמך עליהם לביצוע עסקאות. זמני השבת הם לפי המיקום שנבחר ויש לבדוק אותם מול לוח מוסמך.</p>
+    <h3>פרטיות</h3>
+    <p>הדף לא אוסף מידע ולא שומר דבר בשרת. ההגדרות (עיר, רשימת מניות, מפתח Finnhub) נשמרות במכשיר בלבד. כדי להציג נתונים הדפדפן פונה ישירות לשירותים שברשימה למטה, והם רואים את כתובת ה־IP כמו בכל גלישה. המיקום המדויק נשלח רק אם בחרתם ב"המיקום שלי".</p>
+    <h3>מקורות המידע</h3>
+    <ul>
+      <li>מזג אוויר ואיכות אוויר: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (רישיון CC BY 4.0)</li>
+      <li>זמני שבת ופרשת השבוע: <a href="https://www.hebcal.com/" target="_blank" rel="noopener">Hebcal</a> (רישיון CC BY 4.0)</li>
+      <li>שערי מטבע: <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a>, שערים יומיים</li>
+      <li>מחירי מניות: <a href="https://finnhub.io/" target="_blank" rel="noopener">Finnhub</a>, עם המפתח האישי שלכם</li>
+      <li>חדשות וספורט: פידי ה־RSS הפומביים של ynet, mako ו־ONE (חלקם דרך rss2json או allorigins)</li>
+      <li>רדיו: שידורי האינטרנט הרשמיים של התחנות</li>
+      <li>בדיקת מהירות: Cloudflare</li>
+    </ul>
+    <p>השימוש בכל מקור כפוף לתנאי השימוש שלו. בעל תוכן שמבקש להסיר את התוכן שלו מהדף מוזמן לפנות ונסיר אותו.</p>
+    <button type="button" class="btn primary" id="terms-close">סגירה</button>
+  </div>
 </dialog>
 
 <dialog id="settings" aria-labelledby="set-title">

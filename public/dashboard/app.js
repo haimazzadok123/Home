@@ -35,7 +35,7 @@ const hhmm = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digi
 // ---------- settings ----------
 const DEFAULTS = {
   lat: 32.0853, lon: 34.7818, city: 'תל אביב',
-  symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'SPY', 'QQQ'],
+  symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
   finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true,
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
@@ -182,8 +182,7 @@ function renderToday() {
 const FEEDS = {
   ynet: 'https://www.ynet.co.il/Integration/StoryRss2.xml',
   mako: 'https://rcs.mako.co.il/rss/31750a2610f26110VgnVCM1000005201000aRCRD.xml',
-  one: 'https://www.one.co.il/cat/coop/xml/rss/newsfeed.aspx',
-  sport5: 'https://www.sport5.co.il/rss.aspx?FolderID=252',
+  one: 'https://www.one.co.il/rss',
   ynetsport: 'https://www.ynet.co.il/Integration/StoryRss3.xml',
 };
 const SOURCE_INFO = {
@@ -230,17 +229,16 @@ async function viaRss2Json(source) {
   });
 }
 
-// mako allows direct reading; the other sites do not, so they go through a relay.
-// The sport feeds try rss2json first because it also handles their text encoding.
+// mako and ONE allow direct reading; ynet does not, so it goes through a relay.
+// Sport5 has no feed of its own: its articles arrive through mako (see loadNews).
 const NEWS_SOURCES = {
   mako: [async () => parseRss(await get(FEEDS.mako, { type: 'text' }), 'mako'), () => viaRss2Json('mako')],
   ynet: [viaRelay('ynet'), () => viaRss2Json('ynet')],
-  one: [() => viaRss2Json('one'), viaRelay('one')],
-  sport5: [() => viaRss2Json('sport5'), viaRelay('sport5')],
+  one: [async () => parseRss(await get(FEEDS.one, { type: 'text' }), 'one'), () => viaRss2Json('one')],
   ynetsport: [viaRelay('ynetsport'), () => viaRss2Json('ynetsport')],
 };
 
-const news = { ynet: [], mako: [], one: [], sport5: [], ynetsport: [] };
+const news = { ynet: [], mako: [], one: [], ynetsport: [] };
 let newsFilter = 'news';
 let newsLoaded = false;
 
@@ -290,6 +288,29 @@ const NAMES = {
   CHKP: 'Check Point', NICE: 'NICE', WIX: 'Wix', MNDY: 'monday.com', AVGO: 'Broadcom', 'BRK.B': 'Berkshire Hathaway',
 };
 
+// The S&P 500 tile sits next to the exchange rates. Finnhub's free plan has no index quotes,
+// so with a key it shows SPY, the fund that tracks the index.
+const SP_FINNHUB = 'SPY';
+const SP_CNBC = '.SPX';
+const fxTiles = { rates: [], sp: null };
+
+function renderFx() {
+  const tiles = [...fxTiles.rates, fxTiles.sp].filter(Boolean);
+  $('fx').replaceChildren(...tiles.map((t) => el('div', null, t.name,
+    el('b', { text: t.value, dir: 'ltr' }),
+    el('em', { class: t.pct < 0 ? 'neg' : 'pos', text: `${t.pct > 0 ? '+' : ''}${t.pct.toFixed(2)}%`, dir: 'ltr' }))));
+}
+
+function takeSp(rows, symbol, name) {
+  const i = rows.findIndex((r) => r.symbol === symbol);
+  const row = i < 0 ? null : rows[i];
+  if (row && !settings.symbols.includes(symbol)) rows.splice(i, 1);
+  if (row && Number.isFinite(row.pct)) {
+    fxTiles.sp = { name, value: row.price.toLocaleString('en-US', { maximumFractionDigits: 2 }), pct: row.pct };
+    renderFx();
+  }
+}
+
 async function quotesFinnhub(symbols) {
   const rows = await Promise.all(symbols.map(async (symbol) => {
     try {
@@ -313,7 +334,13 @@ async function loadStocks() {
   const symbols = settings.symbols;
   let rows = [];
   try {
-    rows = settings.finnhubKey ? await quotesFinnhub(symbols) : await quotesCnbc(symbols);
+    if (settings.finnhubKey) {
+      rows = await quotesFinnhub([...new Set([...symbols, SP_FINNHUB])]);
+      takeSp(rows, SP_FINNHUB, 'S&P 500 · SPY');
+    } else {
+      rows = await quotesCnbc([...symbols, SP_CNBC]);
+      takeSp(rows, SP_CNBC, 'S&P 500');
+    }
   } catch { /* handled below */ }
   if (rows.length) {
     store('dash.stocks', { rows, at: Date.now() });
@@ -347,13 +374,11 @@ async function loadFx() {
     const days = Object.keys(data.rates).sort();
     const last = data.rates[days.at(-1)];
     const prev = data.rates[days.at(-2)] || last;
-    $('fx').replaceChildren(...[['USD', 'דולר'], ['EUR', 'אירו']].map(([code, name]) => {
+    fxTiles.rates = [['USD', 'דולר'], ['EUR', 'אירו']].map(([code, name]) => {
       const now = 1 / last[code];
-      const pct = (now / (1 / prev[code]) - 1) * 100;
-      return el('div', null, `${name} `,
-        el('em', { class: pct < 0 ? 'neg' : 'pos', text: `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`, dir: 'ltr' }),
-        el('b', { text: `₪${now.toFixed(3)}`, dir: 'ltr' }));
-    }));
+      return { name, value: `₪${now.toFixed(3)}`, pct: (now / (1 / prev[code]) - 1) * 100 };
+    });
+    renderFx();
   } catch { /* the tile stays as it was */ }
 }
 
@@ -452,7 +477,67 @@ async function speedTest() {
   } catch { /* leave the previous reading */ }
   testing = false;
   btn.disabled = false;
-  btn.textContent = 'בדיקת מהירות';
+  btn.textContent = 'בדיקה';
+}
+
+// ---------- radio ----------
+const KAN = 'https://playerservices.streamtheworld.com/api/livestream-redirect/';
+const STATIONS = [
+  ['גלגלצ', 'https://glzwizzlv.bynetcdn.com/glglz_mp3'],
+  ['גל״צ', 'https://glzwizzlv.bynetcdn.com/glz_mp3'],
+  ['כאן ב', `${KAN}KAN_BET.mp3`],
+  ['כאן גימל', `${KAN}KAN_GIMMEL.mp3`],
+  ['כאן 88', `${KAN}KAN_88.mp3`],
+  ['103FM', 'https://cdn.cybercdn.live/103FM/Live/icecast.audio'],
+  ['רדיוס 100', 'https://cdn.cybercdn.live/Radios_100FM/Audio/icecast.audio'],
+  ['קול ברמה', 'https://cdn.cybercdn.live/Kol_Barama/Live_Audio/icecast.audio'],
+];
+
+function setupRadio() {
+  const audio = new Audio();
+  audio.preload = 'none';
+  let current = -1;
+  const status = (text) => { $('r-status').textContent = text; };
+  const buttons = STATIONS.map(([name], i) => {
+    const btn = el('button', { type: 'button', text: name, 'aria-pressed': 'false' });
+    btn.addEventListener('click', () => (i === current ? stop() : play(i)));
+    return btn;
+  });
+  $('r-list').replaceChildren(...buttons);
+  const mark = () => {
+    buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(i === current)));
+    $('r-stop').disabled = current < 0;
+  };
+  $('r-stop').addEventListener('click', () => stop());
+
+  // iPhone and iPad let only the hardware buttons change the volume, so the slider is hidden there.
+  const vol = $('r-vol');
+  const saved = store('dash.volume');
+  audio.volume = 0.5;
+  if (audio.volume !== 0.5) vol.hidden = true;
+  audio.volume = typeof saved === 'number' && !vol.hidden ? saved : 1;
+  vol.value = String(audio.volume);
+  vol.addEventListener('input', () => { audio.volume = Number(vol.value); store('dash.volume', audio.volume); });
+
+  function stop() {
+    current = -1;
+    audio.pause();
+    audio.removeAttribute('src'); // otherwise the stream keeps downloading in the background
+    audio.load();
+    mark();
+    status('');
+  }
+  function play(i) {
+    current = i;
+    mark();
+    status('מתחבר…');
+    audio.src = STATIONS[i][1];
+    audio.play().catch(() => { if (current === i) { stop(); status('התחנה לא זמינה כרגע'); } });
+    if ('mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: STATIONS[i][0], artist: 'רדיו' });
+  }
+  audio.addEventListener('playing', () => { if (current >= 0) status(`מתנגן: ${STATIONS[current][0]}`); });
+  audio.addEventListener('waiting', () => { if (current >= 0) status('טוען…'); });
+  audio.addEventListener('error', () => { if (current >= 0) { stop(); status('התחנה לא זמינה כרגע'); } });
 }
 
 // ---------- screen: theme, wake lock, full screen ----------
@@ -491,6 +576,8 @@ function setupScreen() {
   const sites = $('sites');
   $('b-sites').addEventListener('click', () => sites.showModal());
   $('sites-close').addEventListener('click', () => sites.close());
+  $('b-terms').addEventListener('click', () => { sites.close(); $('terms').showModal(); });
+  $('terms-close').addEventListener('click', () => $('terms').close());
   sites.addEventListener('click', (e) => { if (e.target === sites) sites.close(); }); // tap outside the list
 
   document.addEventListener('pointerdown', keepAwake);
@@ -591,6 +678,7 @@ tickClock();
 setInterval(tickClock, 1000);
 setupScreen();
 setupSettings();
+setupRadio();
 
 $('news-chips').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
