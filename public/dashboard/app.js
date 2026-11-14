@@ -36,7 +36,7 @@ const hhmm = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digi
 const DEFAULTS = {
   lat: 32.0853, lon: 34.7818, city: 'תל אביב',
   symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
-  finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true,
+  finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true, hiddenSites: [],
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
 const saveSettings = () => store('dash.settings', settings);
@@ -84,7 +84,7 @@ function tickClock() {
 // ---------- weather (Open-Meteo) ----------
 const WMO = [
   [[0], 'בהיר', '☀️', '🌙'], [[1], 'בהיר ברובו', '🌤️', '🌙'], [[2], 'מעונן חלקית', '⛅', '☁️'], [[3], 'מעונן', '☁️', '☁️'],
-  [[45, 48], 'ערפל', '🌫️', '🌫️'], [[51, 53, 55, 56, 57], 'טפטוף', '🌦️', '🌧️'], [[61, 63, 65, 66, 67], 'גשם', '🌧️', '🌧️'],
+  [[45, 48], 'ערפל', '☁️', '☁️'], [[51, 53, 55, 56, 57], 'טפטוף', '🌦️', '🌧️'], [[61, 63, 65, 66, 67], 'גשם', '🌧️', '🌧️'],
   [[71, 73, 75, 77, 85, 86], 'שלג', '❄️', '❄️'], [[80, 81, 82], 'ממטרים', '🌦️', '🌧️'], [[95, 96, 99], 'סופת רעמים', '⛈️', '⛈️'],
 ];
 function wmo(code, isDay = 1) {
@@ -182,6 +182,12 @@ const FEEDS = {
   one: 'https://www.one.co.il/rss',
   ynetsport: 'https://www.ynet.co.il/Integration/StoryRss3.xml',
   flash: 'https://www.ynet.co.il/Integration/StoryRss1854.xml',
+  walla: 'https://rss.walla.co.il/feed/1?type=main',
+  israelhayom: 'https://www.israelhayom.co.il/rss.xml',
+  haaretz: 'https://www.haaretz.co.il/srv/rss---feedly',
+  maariv: 'https://www.maariv.co.il/Rss/RssChadashot',
+  maarivflash: 'https://www.maariv.co.il/Rss/RssFeedsMivzakiChadashot',
+  globes: 'https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=2',
 };
 const SOURCE_INFO = {
   ynet: { label: 'ynet', group: 'news' },
@@ -190,7 +196,20 @@ const SOURCE_INFO = {
   sport5: { label: 'ספורט 5', group: 'sport' },
   ynetsport: { label: 'ynet', group: 'sport' },
   flash: { label: 'ynet', group: 'flash' },
+  walla: { label: 'וואלה', group: 'news' },
+  israelhayom: { label: 'ישראל היום', group: 'news' },
+  haaretz: { label: 'הארץ', group: 'news' },
+  maariv: { label: 'מעריב', group: 'news' },
+  maarivflash: { label: 'מעריב', group: 'flash' },
+  globes: { label: 'גלובס', group: 'news' },
 };
+// The switches in the settings, and the feeds each one turns on or off.
+const SITES = [
+  ['ynet', 'ynet', ['ynet', 'flash', 'ynetsport']], ['mako', 'mako', ['mako']], ['walla', 'וואלה', ['walla']],
+  ['israelhayom', 'ישראל היום', ['israelhayom']], ['haaretz', 'הארץ', ['haaretz']], ['maariv', 'מעריב', ['maariv', 'maarivflash']],
+  ['globes', 'גלובס', ['globes']], ['one', 'ONE', ['one']], ['sport5', 'ספורט 5', ['sport5']],
+];
+const hiddenSources = () => new Set(SITES.filter(([id]) => settings.hiddenSites.includes(id)).flatMap((site) => site[2]));
 const viaRelay = (source) => async () => parseRss(await get(`https://api.allorigins.win/raw?url=${encodeURIComponent(FEEDS[source])}`, { type: 'text', timeout: 9000 }), source);
 const htmlParser = new DOMParser();
 const safeUrl = (u) => (typeof u === 'string' && /^https:\/\//.test(u.trim()) ? u.trim() : '');
@@ -213,7 +232,14 @@ function parseRss(xml, source) {
 }
 
 // rss2json returns the feed as JSON; its dates are UTC.
-async function viaRss2Json(source) {
+let rss2jsonQueue = Promise.resolve();
+function viaRss2Json(source) {
+  const turn = rss2jsonQueue.then(() => readRss2Json(source));
+  rss2jsonQueue = turn.then(() => {}, () => {}).then(() => new Promise((done) => { setTimeout(done, 350); }));
+  return turn;
+}
+
+async function readRss2Json(source) {
   const data = await get(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(FEEDS[source])}`);
   if (data.status !== 'ok') throw new Error('rss2json failed');
   return data.items.map((i) => {
@@ -236,14 +262,19 @@ const NEWS_SOURCES = {
   one: [async () => parseRss(await get(FEEDS.one, { type: 'text' }), 'one'), () => viaRss2Json('one')],
   ynetsport: [viaRelay('ynetsport'), () => viaRss2Json('ynetsport')],
   flash: [viaRelay('flash'), () => viaRss2Json('flash')],
+  ...Object.fromEntries(['walla', 'israelhayom', 'haaretz', 'maariv', 'maarivflash', 'globes']
+    .map((source) => [source, [() => viaRss2Json(source), viaRelay(source)]])),
 };
 
-const news = { ynet: [], mako: [], one: [], ynetsport: [], flash: [] };
+const news = Object.fromEntries(Object.keys(FEEDS).map((source) => [source, []]));
 let newsFilter = 'news';
 let newsLoaded = false;
 
 async function loadNews() {
+  const hidden = hiddenSources();
   await Promise.all(Object.entries(NEWS_SOURCES).map(async ([source, attempts]) => {
+    // Sport5's articles come through mako's feed, so that feed is needed while either is shown
+    if (hidden.has(source) && !(source === 'mako' && !hidden.has('sport5'))) return;
     for (const attempt of attempts) {
       try {
         const items = (await attempt()).filter((i) => i.title && i.link && !Number.isNaN(i.date.getTime()));
@@ -259,8 +290,9 @@ async function loadNews() {
 
 function renderNews() {
   const seen = new Set();
+  const hidden = hiddenSources();
   const all = Object.values(news).flat()
-    .filter((n) => SOURCE_INFO[n.source].group === newsFilter && !seen.has(n.link) && seen.add(n.link))
+    .filter((n) => SOURCE_INFO[n.source].group === newsFilter && !hidden.has(n.source) && !seen.has(n.link) && seen.add(n.link))
     .sort((a, b) => b.date - a.date).slice(0, 40);
   const list = $('news-list');
   if (!all.length) {
@@ -619,6 +651,8 @@ function setupSettings() {
   let picked = null;
   let searchTimer = 0;
 
+  $('set-sites').replaceChildren(...SITES.map(([id, label]) => el('label', null, el('input', { type: 'checkbox', value: id }), label)));
+
   const showCity = () => { $('set-city-now').textContent = `נבחר: ${(picked || settings).city}`; };
 
   $('b-settings').addEventListener('click', () => {
@@ -628,6 +662,7 @@ function setupSettings() {
     $('set-city-results').replaceChildren();
     $('set-symbols').value = settings.symbols.join(', ');
     $('set-key').value = settings.finnhubKey;
+    for (const box of $('set-sites').querySelectorAll('input')) box.checked = !settings.hiddenSites.includes(box.value);
     $('set-wake').checked = settings.wake;
     $('set-speed').checked = settings.autoSpeed;
     showCity();
@@ -669,6 +704,8 @@ function setupSettings() {
     const stocksChanged = symbols.join() !== settings.symbols.join() || $('set-key').value.trim() !== settings.finnhubKey;
     if (symbols.length) settings.symbols = symbols;
     settings.finnhubKey = $('set-key').value.trim();
+    settings.hiddenSites = [...$('set-sites').querySelectorAll('input')].filter((box) => !box.checked).map((box) => box.value);
+    run('news', true);
     settings.wake = $('set-wake').checked;
     settings.autoSpeed = $('set-speed').checked;
     if (picked) Object.assign(settings, picked);

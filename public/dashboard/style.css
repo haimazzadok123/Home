@@ -440,6 +440,9 @@ dialog .row { display: flex; gap: 8px; }
 dialog .row.end { justify-content: flex-end; margin-top: 12px; }
 dialog .check { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 15px; min-height: 32px; }
 dialog .check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.set-sites { display: flex; flex-wrap: wrap; gap: 6px; }
+.set-sites label { display: inline-flex; align-items: center; gap: 6px; margin: 0; background: var(--accent-soft); border-radius: 980px; padding: 6px 12px; color: var(--text); font-size: 14px; }
+.set-sites input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 .hint { font-size: 13px; color: var(--muted); }
 .city-results { display: grid; gap: 4px; }
 .city-results button { text-align: start; border: 0; background: var(--accent-soft); border-radius: 12px; padding: 9px 14px; }

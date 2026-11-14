@@ -131,7 +131,7 @@
       <li>זמני שבת ופרשת השבוע: <a href="https://www.hebcal.com/" target="_blank" rel="noopener">Hebcal</a> (רישיון CC BY 4.0)</li>
       <li>שערי מטבע: <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a>, שערים יומיים</li>
       <li>מחירי מניות: <a href="https://finnhub.io/" target="_blank" rel="noopener">Finnhub</a>, עם המפתח האישי שלכם</li>
-      <li>חדשות וספורט: פידי ה־RSS הפומביים של ynet, mako ו־ONE (חלקם דרך rss2json או allorigins)</li>
+      <li>חדשות וספורט: פידי ה־RSS הפומביים של ynet, mako, וואלה, ישראל היום, הארץ, מעריב, גלובס ו־ONE (רובם דרך rss2json או allorigins)</li>
       <li>רדיו: שידורי האינטרנט הרשמיים של התחנות</li>
       <li>בדיקת מהירות: Cloudflare</li>
     </ul>
@@ -158,6 +158,9 @@
     <label for="set-key">מפתח Finnhub למחירי מניות</label>
     <input id="set-key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" dir="ltr" />
     <p class="hint">מפתח חינמי מ־<a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a>. הוא נשמר רק במכשיר הזה.</p>
+
+    <label id="set-sites-label">אתרי חדשות וספורט</label>
+    <div class="set-sites" id="set-sites" role="group" aria-labelledby="set-sites-label"></div>
 
     <label class="check"><input id="set-wake" type="checkbox" /> להשאיר את המסך דולק כשהלוח פתוח</label>
     <label class="check"><input id="set-speed" type="checkbox" /> בדיקת מהירות אוטומטית כל חצי שעה</label>
