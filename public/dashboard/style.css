@@ -17,6 +17,7 @@
   --pad: 18px;
   --radius: 28px;
   --display: "Fredoka", "Varela Round", system-ui, sans-serif;
+  --z: 1; /* page zoom on large desktop screens, see the end of the file */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -128,7 +129,9 @@ dl, dd, dt, p, h2 { margin: 0; }
 @media (min-width: 960px) and (min-height: 600px) {
   body { overflow: hidden; }
   .grid {
-    height: 100dvh;
+    height: calc(100dvh / var(--z));
+    max-width: 1440px;
+    margin-inline: auto;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas: "clock weather stocks" "news weather stocks" "news net radio" "news net today";
@@ -393,7 +396,7 @@ dialog {
   border-radius: 28px;
   padding: 22px;
   width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh / var(--z) - 32px);
   background: var(--card);
   color: var(--text);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
@@ -404,7 +407,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 dialog.drawer {
   margin: 0;
   margin-inline-end: auto;
-  height: 100dvh;
+  height: calc(100dvh / var(--z));
   max-height: none;
   width: min(320px, 86vw);
   border-radius: 0;
@@ -447,5 +450,24 @@ dialog .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 .city-results { display: grid; gap: 4px; }
 .city-results button { text-align: start; border: 0; background: var(--accent-soft); border-radius: 12px; padding: 9px 14px; }
 .city-results small { color: var(--muted); margin-inline-start: 6px; }
+
+/* ---------- large desktop screens ----------
+   The layout is designed around a tablet. On a big monitor it is zoomed as a whole instead of
+   stretched, and kept to a comfortable width with the background showing at the sides. */
+@media (min-width: 1500px) and (min-height: 860px) { :root { --z: 1.2; } }
+@media (min-width: 1800px) and (min-height: 1000px) { :root { --z: 1.4; } }
+@media (min-width: 2400px) and (min-height: 1300px) { :root { --z: 1.8; } }
+@media (min-width: 3200px) and (min-height: 1700px) { :root { --z: 2.4; } }
+body { zoom: var(--z); }
+
+/* computers: roomier radio controls */
+@media (min-width: 1200px) and (min-height: 600px) {
+  .radio { gap: 12px; }
+  .r-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .r-list button { min-height: 44px; font-size: 15px; padding: 8px 6px; }
+  .r-ctl input { width: 150px; }
+  .r-ctl button { width: 40px; height: 40px; }
+  .r-ctl svg { width: 18px; height: 18px; }
+}
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
