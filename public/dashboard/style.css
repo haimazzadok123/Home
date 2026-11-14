@@ -311,7 +311,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 .n-facts div { flex: 1; }
 .n-link { font-size: 13px; color: var(--accent); align-self: flex-start; padding: 4px 0; }
 .n-facts dt { font-size: 12px; color: var(--muted); }
-.n-facts dd { font-size: 16px; font-variant-numeric: tabular-nums; }
+.n-facts dd { font-size: 15px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- radio ---------- */
 .radio { gap: 8px; padding-block: 14px; }

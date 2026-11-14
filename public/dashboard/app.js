@@ -382,6 +382,7 @@ async function loadFx() {
 // ---------- network ----------
 // A web page cannot read the Wi-Fi name or signal, so the card measures the connection itself.
 const SPEED = 'https://speed.cloudflare.com/__down';
+const SPEED_UP = 'https://speed.cloudflare.com/__up';
 const pings = [];
 let lastDown = null;
 let lastDownAt = 0;
@@ -440,6 +441,29 @@ function renderQuality() {
   $('n-quality').textContent = text;
 }
 
+// A page cannot watch an upload's progress without extra permission from the server, so this
+// times whole uploads: a small one to estimate the speed, then one sized to take about 3 seconds.
+async function uploadTest() {
+  const lag = (pings.at(-1) || 0) / 1000; // the round trip itself is not upload time
+  const send = async (bytes) => {
+    const body = new Blob([new Uint8Array(bytes)], { type: 'text/plain' });
+    const t = performance.now();
+    const res = await fetch(`${SPEED_UP}?r=${Math.random()}`, { method: 'POST', body, cache: 'no-store', signal: AbortSignal.timeout(20000) });
+    await res.arrayBuffer();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return Math.max(0.02, (performance.now() - t) / 1000 - lag);
+  };
+  let bytes = 250000;
+  let secs = await send(bytes);
+  const target = Math.min(8000000, Math.round((bytes / secs) * 3));
+  if (target > bytes * 2) {
+    bytes = target;
+    secs = await send(bytes);
+  }
+  const mbps = (bytes * 8) / secs / 1e6;
+  $('n-up').textContent = `${mbps >= 100 ? Math.round(mbps) : mbps.toFixed(1)} Mbps`;
+}
+
 async function speedTest() {
   if (testing || !navigator.onLine) return;
   testing = true;
@@ -472,6 +496,9 @@ async function speedTest() {
       renderQuality();
     }
   } catch { /* leave the previous reading */ }
+  try {
+    await uploadTest();
+  } catch { /* leave the previous upload reading */ }
   testing = false;
   btn.disabled = false;
   btn.textContent = 'בדיקה';
