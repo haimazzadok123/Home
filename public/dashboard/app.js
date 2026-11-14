@@ -38,6 +38,11 @@ async function get(url, { type = 'json', timeout = 12000 } = {}) {
   }
 }
 
+// This copy's version, from the ?v= that index.html loads it with.
+const APP_VERSION = (() => {
+  try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch { return ''; }
+})();
+
 const hhmm = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 // ---------- settings ----------
@@ -561,6 +566,32 @@ async function speedTest() {
   btn.textContent = 'בדיקה';
 }
 
+// ---------- updates ----------
+// When a newer version is published (version.json differs from this copy), reload to pick it up.
+// It waits while the radio plays or a window is open, and reloads at most once per version so a
+// stale cached page can never cause a reload loop.
+let radioPlaying = false;
+let pendingVersion = '';
+
+async function checkVersion() {
+  if (!APP_VERSION) return;
+  try {
+    const data = await get(`version.json?r=${Date.now()}`);
+    if (data && data.v && String(data.v) !== APP_VERSION) pendingVersion = String(data.v);
+  } catch { /* offline: try again later */ }
+  reloadIfIdle();
+}
+
+function reloadIfIdle() {
+  if (!pendingVersion || radioPlaying || document.querySelector('dialog[open]')) return;
+  const key = `dash.reloaded.${pendingVersion}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch { return; } // without storage there is no loop guard, so do not reload
+  location.reload();
+}
+
 // ---------- radio ----------
 const KAN = 'https://playerservices.streamtheworld.com/api/livestream-redirect/';
 const STATIONS = [
@@ -602,6 +633,7 @@ function setupRadio() {
 
   function stop() {
     current = -1;
+    radioPlaying = false;
     audio.pause();
     audio.removeAttribute('src'); // otherwise the stream keeps downloading in the background
     audio.load();
@@ -616,7 +648,7 @@ function setupRadio() {
     audio.play().catch(() => { if (current === i) { stop(); status('התחנה לא זמינה כרגע'); } });
     if ('mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: STATIONS[i][0], artist: 'רדיו' });
   }
-  audio.addEventListener('playing', () => { if (current >= 0) status(`מתנגן: ${STATIONS[current][0]}`); });
+  audio.addEventListener('playing', () => { radioPlaying = true; if (current >= 0) status(`מתנגן: ${STATIONS[current][0]}`); });
   audio.addEventListener('waiting', () => { if (current >= 0) status('טוען…'); });
   audio.addEventListener('error', () => { if (current >= 0) { stop(); status('התחנה לא זמינה כרגע'); } });
 }
@@ -746,6 +778,7 @@ function setupSettings() {
     if (picked) Object.assign(settings, picked);
     saveSettings();
     if (!settings.wake && wakeLock) wakeLock.release();
+    setTimeout(reloadIfIdle, 500);
     keepAwake();
     if (picked) { run('weather', true); run('shabbat', true); }
     if (stocksChanged) { store('dash.stocks', null); run('stocks', true); }
@@ -762,6 +795,7 @@ const TASKS = {
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.5 * MIN },
   speed: { fn: () => (settings.autoSpeed ? speedTest() : null), every: 30 * MIN },
+  version: { fn: checkVersion, every: 5 * MIN },
 };
 
 function run(name, force) {
