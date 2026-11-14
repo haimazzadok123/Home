@@ -24,8 +24,15 @@ export function FavoritesMenu({ savedRoutes, onLoadRoute, onDeleteRoute }: Favor
 
   return (
     <div className="favorites-menu" ref={containerRef}>
-      <button type="button" className="favorites-button" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        ⭐ מועדפים{savedRoutes.length > 0 ? ` (${savedRoutes.length})` : ''}
+      <button
+        type="button"
+        className="favorites-button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="מועדפים"
+      >
+        ⭐ <span className="fav-label">מועדפים</span>
+        {savedRoutes.length > 0 ? ` (${savedRoutes.length})` : ''}
       </button>
       {open && (
         <div className="favorites-dropdown">

@@ -1236,6 +1236,7 @@
   }
   .legal-dialog {
     max-height: 92vh;
+    max-height: 92dvh;
     border-radius: 24px 24px 0 0;
     animation: sheet-up 240ms cubic-bezier(0.32, 0.72, 0, 1);
   }
@@ -1263,5 +1264,28 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* ---------- Foldables: narrow cover screens (Galaxy Z Fold outer display, 280-360px) ---------- */
+@media (max-width: 380px) {
+  /* Two date pickers side by side truncate the date at this width. */
+  .date-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand {
+    font-size: 17px;
+  }
+
+  /* Keep the star, drop the word, so the site name fits next to it. */
+  .fav-label {
+    display: none;
+  }
+
+  .favorites-button {
+    padding: 7px 10px;
   }
 }
