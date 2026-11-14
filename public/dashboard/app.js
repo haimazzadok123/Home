@@ -636,7 +636,20 @@ async function keepAwake() {
   } catch { /* the browser wants a tap first; the tap handler below retries */ }
 }
 
+// On a computer, zoom the whole page so the tablet layout fills the window. It is measured from the
+// window itself because browser bars, the taskbar and display scaling make it smaller than the screen.
+function fitToWindow() {
+  const w = innerWidth;
+  const h = innerHeight;
+  let z = w >= 1200 && h >= 600 && w > h ? Math.min(w / 1366, h / 768, 2.6) : 1;
+  z = Math.round(z * 20) / 20;
+  if (z > 1) document.documentElement.style.setProperty('--z', String(z));
+  else document.documentElement.style.removeProperty('--z');
+}
+
 function setupScreen() {
+  fitToWindow();
+  addEventListener('resize', fitToWindow);
   applyTheme();
   $('b-theme').addEventListener('click', () => {
     const dark = settings.theme === 'dark' || (settings.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
