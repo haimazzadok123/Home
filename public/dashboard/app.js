@@ -27,7 +27,15 @@ function store(key, value) {
 async function get(url, { type = 'json', timeout = 12000 } = {}) {
   const res = await fetch(url, { signal: AbortSignal.timeout(timeout), cache: 'no-store' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return type === 'json' ? res.json() : res.text();
+  if (type === 'json') return res.json();
+  // Some feeds (Rotter) are not UTF-8, so decode with the encoding the XML declares.
+  const bytes = await res.arrayBuffer();
+  const declared = /encoding=["']([\w-]+)["']/i.exec(new TextDecoder('ascii').decode(bytes.slice(0, 200)));
+  try {
+    return new TextDecoder(declared ? declared[1] : 'utf-8').decode(bytes);
+  } catch {
+    return new TextDecoder().decode(bytes);
+  }
 }
 
 const hhmm = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -188,6 +196,8 @@ const FEEDS = {
   maariv: 'https://www.maariv.co.il/Rss/RssChadashot',
   maarivflash: 'https://www.maariv.co.il/Rss/RssFeedsMivzakiChadashot',
   globes: 'https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=2',
+  rotter: 'https://rotter.net/rss/rotternews.xml',
+  inn: 'https://www.inn.co.il/Rss.aspx?act=0.1',
 };
 const SOURCE_INFO = {
   ynet: { label: 'ynet', group: 'news' },
@@ -202,16 +212,24 @@ const SOURCE_INFO = {
   maariv: { label: 'מעריב', group: 'news' },
   maarivflash: { label: 'מעריב', group: 'flash' },
   globes: { label: 'גלובס', group: 'news' },
+  rotter: { label: 'רוטר', group: 'flash' },
+  inn: { label: 'ערוץ 7', group: 'news' },
 };
 // The switches in the settings, and the feeds each one turns on or off.
 const SITES = [
   ['ynet', 'ynet', ['ynet', 'flash', 'ynetsport']], ['mako', 'mako', ['mako']], ['walla', 'וואלה', ['walla']],
   ['israelhayom', 'ישראל היום', ['israelhayom']], ['haaretz', 'הארץ', ['haaretz']], ['maariv', 'מעריב', ['maariv', 'maarivflash']],
-  ['globes', 'גלובס', ['globes']], ['one', 'ONE', ['one']], ['sport5', 'ספורט 5', ['sport5']],
+  ['globes', 'גלובס', ['globes']], ['inn', 'ערוץ 7', ['inn']], ['rotter', 'רוטר', ['rotter']], ['one', 'ONE', ['one']], ['sport5', 'ספורט 5', ['sport5']],
 ];
 const hiddenSources = () => new Set(SITES.filter(([id]) => settings.hiddenSites.includes(id)).flatMap((site) => site[2]));
 const viaRelay = (source) => async () => parseRss(await get(`https://api.allorigins.win/raw?url=${encodeURIComponent(FEEDS[source])}`, { type: 'text', timeout: 9000 }), source);
 const htmlParser = new DOMParser();
+// Titles arrive with HTML entities, sometimes escaped twice (Rotter), so decode until stable.
+function plain(text) {
+  let out = text || '';
+  for (let i = 0; i < 2 && /[&<]/.test(out); i++) out = htmlParser.parseFromString(out, 'text/html').body.textContent;
+  return out.trim();
+}
 const safeUrl = (u) => (typeof u === 'string' && /^https:\/\//.test(u.trim()) ? u.trim() : '');
 
 function parseRss(xml, source) {
@@ -223,10 +241,10 @@ function parseRss(xml, source) {
     const inDescription = /<img[^>]+src=['"]([^'"]+)['"]/i.exec(text('description'));
     return {
       source,
-      title: text('title'),
+      title: plain(text('title')),
       link: safeUrl(text('link')),
       date: new Date(text('pubDate')),
-      image: safeUrl(text('image139X80') || text('image') || (inDescription ? inDescription[1] : '')),
+      image: safeUrl(text('image139X80') || text('image') || item.querySelector('enclosure')?.getAttribute('url') || (inDescription ? inDescription[1] : '')),
     };
   });
 }
@@ -246,7 +264,7 @@ async function readRss2Json(source) {
     const inDescription = /<img[^>]+src=['"]([^'"]+)['"]/i.exec(i.description || '');
     return {
       source,
-      title: htmlParser.parseFromString(i.title || '', 'text/html').body.textContent.trim(),
+      title: plain(i.title),
       link: safeUrl(i.link),
       date: new Date(`${i.pubDate.replace(' ', 'T')}Z`),
       image: safeUrl(i.thumbnail || (inDescription ? inDescription[1] : '')),
@@ -264,15 +282,19 @@ const NEWS_SOURCES = {
   flash: [viaRelay('flash'), () => viaRss2Json('flash')],
   ...Object.fromEntries(['walla', 'israelhayom', 'haaretz', 'maariv', 'maarivflash', 'globes']
     .map((source) => [source, [() => viaRss2Json(source), viaRelay(source)]])),
+  // Rotter goes through the relay first: rss2json would return only 10 items, an hour late
+  rotter: [viaRelay('rotter'), () => viaRss2Json('rotter')],
+  inn: [async () => parseRss(await get(FEEDS.inn, { type: 'text' }), 'inn'), () => viaRss2Json('inn')],
 };
 
 const news = Object.fromEntries(Object.keys(FEEDS).map((source) => [source, []]));
 let newsFilter = 'news';
 let newsLoaded = false;
 
-async function loadNews() {
+async function loadNews(group) {
   const hidden = hiddenSources();
   await Promise.all(Object.entries(NEWS_SOURCES).map(async ([source, attempts]) => {
+    if (group && SOURCE_INFO[source].group !== group) return;
     // Sport5's articles come through mako's feed, so that feed is needed while either is shown
     if (hidden.has(source) && !(source === 'mako' && !hidden.has('sport5'))) return;
     for (const attempt of attempts) {
@@ -284,7 +306,7 @@ async function loadNews() {
       } catch { /* try the next route */ }
     }
   }));
-  newsLoaded = true;
+  if (!group) newsLoaded = true;
   renderNews();
 }
 
@@ -293,7 +315,7 @@ function renderNews() {
   const hidden = hiddenSources();
   const all = Object.values(news).flat()
     .filter((n) => SOURCE_INFO[n.source].group === newsFilter && !hidden.has(n.source) && !seen.has(n.link) && seen.add(n.link))
-    .sort((a, b) => b.date - a.date).slice(0, 40);
+    .sort((a, b) => b.date - a.date).slice(0, 60);
   const list = $('news-list');
   if (!all.length) {
     if (newsLoaded) list.replaceChildren(el('p', { class: 'empty', text: 'לא הצלחתי לטעון כותרות כרגע. ננסה שוב בעוד כמה דקות.' }));
@@ -721,7 +743,8 @@ function setupSettings() {
 const TASKS = {
   weather: { fn: loadWeather, every: 15 * MIN },
   shabbat: { fn: loadShabbat, every: 180 * MIN },
-  news: { fn: loadNews, every: 5 * MIN },
+  news: { fn: () => loadNews(), every: 5 * MIN },
+  flash: { fn: () => loadNews('flash'), every: 1.5 * MIN },
   stocks: { fn: loadStocks, every: 2 * MIN },
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.5 * MIN },
