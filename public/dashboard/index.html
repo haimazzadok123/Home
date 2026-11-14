@@ -30,23 +30,9 @@
     <div class="clock-time" dir="ltr"><span id="time">--:--</span><span class="clock-sec" id="sec"></span></div>
     <div class="clock-date" id="date"></div>
     <div class="clock-heb" id="hebdate"></div>
-    <div class="clock-foot">
-      <div class="world" id="world"></div>
-      <nav class="dock" aria-label="פעולות">
-        <button type="button" id="b-sites" title="האתרים שלי" aria-label="האתרים שלי">
-          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-        </button>
-      <button type="button" id="b-full" title="מסך מלא" aria-label="מסך מלא">
-        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-      </button>
-      <button type="button" id="b-theme" title="מצב תצוגה" aria-label="החלפת מצב בהיר / כהה">
-        <svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>
-      </button>
-      <button type="button" id="b-settings" title="הגדרות" aria-label="הגדרות">
-        <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
-      </button>
-    </nav>
-    </div>
+    <button type="button" class="dock" id="b-sites" title="תפריט" aria-label="תפריט">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
   </section>
 
   <section class="card weather" aria-label="מזג אוויר">
@@ -89,6 +75,7 @@
       <div><dt>זמן תגובה</dt><dd id="n-ping" dir="ltr">--</dd></div>
       <div><dt>יציבות</dt><dd id="n-jitter" dir="ltr">--</dd></div>
     </dl>
+    <a class="n-link" href="https://www.speedtest.net/" target="_blank" rel="noopener noreferrer">בדיקה מלאה ב־Speedtest ↗</a>
   </section>
 
   <section class="card radio" aria-label="רדיו">
@@ -117,7 +104,12 @@
     <a href="../datinofesh/"><b>דתינופש</b><small>סוף שבוע במלון</small></a>
     <a href="../tv/"><b>טלוויזיה</b><small>ערוצים ישראליים במסך אחד</small></a>
   </nav>
-  <button type="button" class="btn" id="b-terms">תנאי שימוש ומקורות מידע</button>
+  <div class="menu-actions">
+    <button type="button" class="btn" id="b-settings">הגדרות</button>
+    <button type="button" class="btn" id="b-theme">מצב בהיר / כהה</button>
+    <button type="button" class="btn" id="b-full">מסך מלא</button>
+    <button type="button" class="btn" id="b-terms">תנאי שימוש ומקורות מידע</button>
+  </div>
   <button type="button" class="btn ghost" id="sites-close">סגירה</button>
 </dialog>
 

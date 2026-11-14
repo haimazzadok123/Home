@@ -130,10 +130,9 @@ dl, dd, dt, p, h2 { margin: 0; }
   .grid {
     height: 100dvh;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1.2fr) minmax(0, .7fr) minmax(0, .5fr) auto auto;
-    grid-template-areas: "clock weather stocks" "news weather stocks" "news weather stocks" "news net radio" "news net today";
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "clock weather stocks" "news weather stocks" "news net radio" "news net today";
   }
-  .clock { min-height: 0; }
   .news { max-height: none; }
 }
 /* iPhone on its side (StandBy-like): two panels per screen, swipe sideways */
@@ -151,7 +150,9 @@ dl, dd, dt, p, h2 { margin: 0; }
   }
   .grid::-webkit-scrollbar { display: none; }
   .card { flex: 0 0 calc(50% - 5px); scroll-snap-align: start; max-height: none; }
-  .w-days, .world { display: none !important; }
+  .clock { flex-basis: calc(30% - 5px); }
+  .weather { flex-basis: calc(70% - 5px); scroll-snap-align: none; }
+  .w-days { display: none; }
 }
 
 /* ---------- clock ---------- */
@@ -164,7 +165,7 @@ dl, dd, dt, p, h2 { margin: 0; }
   text-align: center;
   gap: 2px;
   container-type: inline-size;
-  min-height: 210px;
+  padding-block: 14px;
 }
 .clock::before {
   content: "";
@@ -179,7 +180,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 .clock-time {
   font-family: var(--display);
   font-weight: 500;
-  font-size: clamp(64px, 22cqw, 150px);
+  font-size: clamp(46px, 15cqw, 84px);
   line-height: 1;
   letter-spacing: -.02em;
   font-variant-numeric: tabular-nums;
@@ -195,22 +196,8 @@ dl, dd, dt, p, h2 { margin: 0; }
   min-width: 1.3em;
   text-align: start;
 }
-.clock-date { font-family: var(--display); font-size: clamp(24px, 8.4cqw, 44px); font-weight: 500; line-height: 1.15; margin-top: 8px; position: relative; }
-.clock-heb { font-size: clamp(15px, 4.4cqw, 21px); opacity: .88; position: relative; }
-.clock-foot { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px; position: relative; }
-.world { display: flex; gap: 6px; min-width: 0; }
-@container (max-width: 520px) { .world span:nth-child(n+3) { display: none; } }
-@container (max-width: 380px) { .world span:nth-child(n+2) { display: none; } }
-.world span {
-  background: rgba(255, 255, 255, .18);
-  border-radius: 980px;
-  padding: 4px 12px;
-  font-size: 13px;
-  white-space: nowrap;
-  display: inline-flex;
-  gap: 6px;
-}
-.world b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.clock-date { font-family: var(--display); font-size: clamp(19px, 6cqw, 30px); font-weight: 500; line-height: 1.15; margin-top: 4px; position: relative; }
+.clock-heb { font-size: clamp(13px, 3.8cqw, 17px); opacity: .88; position: relative; }
 
 /* ---------- weather ---------- */
 .w-now { display: flex; align-items: center; gap: 12px; }
@@ -322,6 +309,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 .spark path { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
 .n-facts { display: flex; gap: 8px; }
 .n-facts div { flex: 1; }
+.n-link { font-size: 13px; color: var(--accent); align-self: flex-start; padding: 4px 0; }
 .n-facts dt { font-size: 12px; color: var(--muted); }
 .n-facts dd { font-size: 16px; font-variant-numeric: tabular-nums; }
 
@@ -380,19 +368,25 @@ dl, dd, dt, p, h2 { margin: 0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #06203A; } }
 
 .dock {
-  margin-inline-start: auto;
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 980px;
-  background: rgba(255, 255, 255, .14);
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  display: grid;
+  place-items: center;
 }
-.dock button { width: 36px; height: 36px; border: 0; background: transparent; border-radius: 50%; display: grid; place-items: center; color: rgba(255, 255, 255, .9); }
-.dock button:active { background: rgba(255, 255, 255, .22); }
-.dock button:focus-visible { outline-color: #fff; }
-.dock svg, .dock circle { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.dock svg { width: 19px; height: 19px; }
-.dock [hidden] { display: none; }
+.dock:active { background: rgba(255, 255, 255, .28); }
+.dock:focus-visible { outline-color: #fff; }
+.dock svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.menu-actions { display: grid; gap: 6px; }
+.menu-actions .btn { text-align: start; border-radius: 14px; }
+.menu-actions [hidden] { display: none; }
 
 dialog {
   border: 1px solid var(--card-line);

@@ -44,8 +44,6 @@ const saveSettings = () => store('dash.settings', settings);
 // ---------- clock ----------
 const dateFmt = new Intl.DateTimeFormat('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
 const hebFmt = new Intl.DateTimeFormat('he-IL-u-ca-hebrew-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
-const WORLD = [['ניו יורק', 'America/New_York'], ['לונדון', 'Europe/London'], ['טוקיו', 'Asia/Tokyo']]
-  .map(([name, timeZone]) => ({ name, fmt: new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone }) }));
 
 // Hebrew numerals: 4 -> ד׳, 15 -> ט״ו, 787 -> תשפ״ז
 function gematria(n) {
@@ -81,7 +79,6 @@ function tickClock() {
   $('time').textContent = minute;
   $('date').textContent = dateFmt.format(now);
   $('hebdate').textContent = hebrewDate(now);
-  $('world').replaceChildren(...WORLD.map((w) => el('span', { text: w.name }, el('b', { text: w.fmt.format(now), dir: 'ltr' }))));
 }
 
 // ---------- weather (Open-Meteo) ----------
@@ -352,7 +349,7 @@ async function loadStocks() {
   $('s-time').textContent = '';
   $('s-list').replaceChildren(settings.finnhubKey
     ? el('p', { class: 'empty', text: 'לא התקבלו מחירים. כדאי לבדוק את המפתח ואת הסימולים בהגדרות.' })
-    : el('p', { class: 'empty', text: 'כדי להציג מחירי מניות צריך מפתח חינמי של Finnhub. מוסיפים אותו בהגדרות (הכפתור בפינה).' }));
+    : el('p', { class: 'empty', text: 'כדי להציג מחירי מניות צריך מפתח חינמי של Finnhub. מוסיפים אותו בהגדרות, דרך התפריט שבפינת השעון.' }));
 }
 
 function renderStocks(rows, at) {
@@ -562,6 +559,7 @@ function setupScreen() {
     settings.theme = dark ? 'light' : 'dark';
     applyTheme();
     saveSettings();
+    $('sites').close();
   });
 
   const root = document.documentElement;
@@ -569,6 +567,7 @@ function setupScreen() {
   const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
   if (!enter || standalone) $('b-full').hidden = true;
   $('b-full').addEventListener('click', () => {
+    $('sites').close();
     if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     else enter.call(root);
   });
@@ -593,6 +592,7 @@ function setupSettings() {
   const showCity = () => { $('set-city-now').textContent = `נבחר: ${(picked || settings).city}`; };
 
   $('b-settings').addEventListener('click', () => {
+    $('sites').close();
     picked = null;
     $('set-city').value = '';
     $('set-city-results').replaceChildren();
