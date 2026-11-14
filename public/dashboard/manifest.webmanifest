@@ -1,0 +1,15 @@
+{
+  "name": "לוח הבית",
+  "short_name": "לוח הבית",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#E0F2FE",
+  "theme_color": "#0284C7",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

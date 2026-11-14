@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>לוח הבית</title>
+<meta name="description" content="לוח בית לאייפד ולאייפון: שעון, מזג אוויר, חדשות, מניות ומצב הרשת." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#E0F2FE" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#060B18" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="לוח הבית" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<!-- Only this page's own code runs; it may talk only to the data services listed in the README. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://rcs.mako.co.il https://api.allorigins.win https://api.rss2json.com https://finnhub.io https://quote.cnbc.com https://api.frankfurter.dev https://www.hebcal.com https://speed.cloudflare.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="grid" id="grid">
+
+  <section class="card clock" aria-label="שעון">
+    <div class="clock-time" dir="ltr"><span id="time">--:--</span><span class="clock-sec" id="sec"></span></div>
+    <div class="clock-date" id="date"></div>
+    <div class="clock-heb" id="hebdate"></div>
+    <div class="clock-foot">
+      <div class="world" id="world"></div>
+      <nav class="dock" aria-label="פעולות">
+        <button type="button" id="b-sites" title="האתרים שלי" aria-label="האתרים שלי">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      <button type="button" id="b-full" title="מסך מלא" aria-label="מסך מלא">
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button type="button" id="b-theme" title="מצב תצוגה" aria-label="החלפת מצב בהיר / כהה">
+        <svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>
+      </button>
+      <button type="button" id="b-settings" title="הגדרות" aria-label="הגדרות">
+        <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      </button>
+    </nav>
+    </div>
+  </section>
+
+  <section class="card weather" aria-label="מזג אוויר">
+    <header class="card-head"><span class="label">מזג אוויר</span><span class="sub" id="w-city"></span></header>
+    <div class="w-now">
+      <div class="w-icon" id="w-icon" aria-hidden="true"></div>
+      <div class="w-main">
+        <div class="w-temp" id="w-temp" dir="ltr">--°</div>
+        <div class="w-desc" id="w-desc">טוען…</div>
+      </div>
+      <dl class="w-facts" id="w-facts"></dl>
+    </div>
+    <div class="w-hours" id="w-hours"></div>
+    <div class="w-days" id="w-days"></div>
+  </section>
+
+  <section class="card news" aria-label="חדשות">
+    <header class="card-head">
+      <span class="label">חדשות</span>
+      <div class="chips" id="news-chips" role="group" aria-label="מקור">
+        <button type="button" data-src="news" aria-pressed="true">חדשות</button>
+        <button type="button" data-src="sport" aria-pressed="false">ספורט</button>
+      </div>
+    </header>
+    <div class="list" id="news-list"><p class="empty">טוען כותרות…</p></div>
+  </section>
+
+  <section class="card stocks" aria-label="מניות">
+    <header class="card-head"><span class="label">מניות</span><span class="sub" id="s-time"></span></header>
+    <div class="list" id="s-list"><p class="empty">טוען…</p></div>
+    <div class="fx" id="fx"></div>
+  </section>
+
+  <section class="card net" aria-label="חיבור לרשת">
+    <header class="card-head"><span class="label">רשת</span><span class="status" id="n-status"><i></i><b>בודק…</b></span></header>
+    <div class="n-speed"><span id="n-down" dir="ltr">--</span><small>Mbps הורדה</small></div>
+    <div class="n-quality" id="n-quality"></div>
+    <svg class="spark" id="n-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <dl class="n-facts">
+      <div><dt>זמן תגובה</dt><dd id="n-ping" dir="ltr">--</dd></div>
+      <div><dt>יציבות</dt><dd id="n-jitter" dir="ltr">--</dd></div>
+    </dl>
+    <button type="button" class="btn" id="n-run">בדיקת מהירות</button>
+  </section>
+
+  <section class="card today" aria-label="שבת וזמני היום">
+    <header class="card-head"><span class="label">שבת וזמנים</span><span class="sub" id="t-parasha"></span></header>
+    <dl class="t-rows" id="t-rows"></dl>
+  </section>
+
+</main>
+
+
+
+<dialog id="sites" class="drawer" aria-labelledby="sites-title">
+  <h2 id="sites-title">האתרים שלי</h2>
+  <nav class="sites">
+    <a href="../"><b>מטיילים עם דוד חיים</b><small>תכנון מסלולי טיול</small></a>
+    <a href="../datinofesh/"><b>דתינופש</b><small>סוף שבוע במלון</small></a>
+    <a href="../tv/"><b>טלוויזיה</b><small>ערוצים ישראליים במסך אחד</small></a>
+    <a href="../lomda/"><b>לומדה</b><small>פורטל BI</small></a>
+  </nav>
+  <button type="button" class="btn ghost" id="sites-close">סגירה</button>
+</dialog>
+
+<dialog id="settings" aria-labelledby="set-title">
+  <form method="dialog" id="set-form">
+    <h2 id="set-title">הגדרות</h2>
+
+    <label for="set-city">עיר למזג האוויר ולזמני השבת</label>
+    <div class="row">
+      <input id="set-city" type="search" autocomplete="off" placeholder="חיפוש עיר…" />
+      <button type="button" class="btn" id="set-geo">המיקום שלי</button>
+    </div>
+    <div class="city-results" id="set-city-results"></div>
+    <p class="hint" id="set-city-now"></p>
+
+    <label for="set-symbols">מניות (סימולים באנגלית, מופרדים בפסיק)</label>
+    <input id="set-symbols" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" dir="ltr" />
+
+    <label for="set-key">מפתח Finnhub למחירי מניות</label>
+    <input id="set-key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" dir="ltr" />
+    <p class="hint">מפתח חינמי מ־<a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a>. הוא נשמר רק במכשיר הזה.</p>
+
+    <label class="check"><input id="set-wake" type="checkbox" /> להשאיר את המסך דולק כשהלוח פתוח</label>
+    <label class="check"><input id="set-speed" type="checkbox" /> בדיקת מהירות אוטומטית כל חצי שעה</label>
+
+    <div class="row end">
+      <button type="button" class="btn ghost" id="set-cancel">ביטול</button>
+      <button type="submit" class="btn primary">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js" defer></script>
+</body>
+</html>
