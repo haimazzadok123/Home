@@ -175,7 +175,12 @@ function renderNightTicker() {
     .sort((a, b) => b.date - a.date)
     .slice(0, 10);
   $('night-ticker').hidden = !items.length;
+  $('night-list').hidden = !items.length;
   if (!items.length) return;
+  // column on the right (wide screens): newest first
+  $('night-list').replaceChildren(...items.slice(0, 8).map((n) => el('div', null,
+    el('small', null, el('b', { text: SOURCE_INFO[n.source].label }), ` · ${hhmm.format(n.date)}`),
+    el('p', { text: n.title }))));
   const copy = () => items.map((n) => el('span', null, el('b', { text: `${hhmm.format(n.date)} ${SOURCE_INFO[n.source].label}` }), n.title));
   const track = $('night-track');
   track.replaceChildren(...copy(), ...copy()); // two copies make the loop seamless
