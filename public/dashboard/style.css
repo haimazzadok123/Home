@@ -274,11 +274,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 .n-title {
   font-size: 15px;
   line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-wrap: pretty;
+  text-wrap: pretty; /* full headline, never cut off with an ellipsis */
 }
 
 /* ---------- stocks ---------- */
