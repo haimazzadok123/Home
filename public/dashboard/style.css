@@ -58,7 +58,7 @@
 html { height: 100%; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  min-height: calc(100dvh / var(--z)); /* zoom multiplies it back to one screen */
+  min-height: 100dvh;
   background: var(--bg) fixed;
   background-color: #F5F6F8;
   color: var(--text);
@@ -144,11 +144,19 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 /* tablet landscape, unfolded phone on its side, desktop: one screen, no page scroll */
 @media (min-width: 960px) and (min-height: 600px), (orientation: landscape) and (min-width: 700px) and (min-height: 521px) {
-  body { overflow: hidden; width: calc(100vw / var(--z)); } /* Safari shrinks a zoomed page's width too; set it as for the height */
+  body { overflow: hidden; }
+  /* Laid out at a virtual size and scaled to the window. transform behaves the same in every
+     browser; CSS zoom did not (Safari shrank the width and left an empty strip). */
   .grid {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) scale(var(--z));
+    transform-origin: top center;
+  }
+  .grid {
+    width: min(1600px, calc(100vw / var(--z)));
     height: calc(100dvh / var(--z));
-    max-width: 1600px;
-    margin-inline: auto;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     grid-template-areas: "clock weather stocks" "news weather stocks" "news net radio" "news net today";
@@ -157,8 +165,18 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 /* tablet or unfolded phone held upright: one screen in two columns, no page scroll */
 @media (orientation: portrait) and (min-width: 600px) and (min-height: 740px) {
-  body { overflow: hidden; width: calc(100vw / var(--z)); } /* Safari shrinks a zoomed page's width too; set it as for the height */
+  body { overflow: hidden; }
+  /* Laid out at a virtual size and scaled to the window. transform behaves the same in every
+     browser; CSS zoom did not (Safari shrank the width and left an empty strip). */
   .grid {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) scale(var(--z));
+    transform-origin: top center;
+  }
+  .grid {
+    width: calc(100vw / var(--z));
     height: calc(100dvh / var(--z));
     grid-template-columns: repeat(2, minmax(0, 1fr));
     /* fixed proportions: rows sized by content let one tall card (weather, stocks) squeeze the others */
@@ -174,7 +192,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 /* iPhone on its side (StandBy-like): two panels per screen, swipe sideways */
 @media (orientation: landscape) and (max-height: 520px) {
-  body { overflow: hidden; width: calc(100vw / var(--z)); } /* Safari shrinks a zoomed page's width too; set it as for the height */
+  body { overflow: hidden; }
   .grid {
     display: flex;
     height: 100dvh;
@@ -434,7 +452,7 @@ dialog {
   border-radius: 28px;
   padding: 22px;
   width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh / var(--z) - 32px);
+  max-height: calc(100dvh - 32px);
   background: var(--card);
   color: var(--text);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
@@ -443,13 +461,12 @@ dialog {
 }
 dialog::backdrop { background: rgba(6, 11, 24, .45); }
 /* ---------- night mode ---------- */
-/* A dim clock on pure black for the hours the room is dark. The page is zoomed on some screens,
-   so the overlay sizes itself in the page's own units. */
+/* A dim clock on pure black for the hours the room is dark. */
 .night {
   position: fixed;
   inset: 0 auto auto 0;
-  width: calc(100vw / var(--z));
-  height: calc(100dvh / var(--z));
+  width: 100vw;
+  height: 100dvh;
   z-index: 900;
   background: #000;
   display: grid;
@@ -528,8 +545,8 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .frame {
   position: fixed;
   inset: 0 auto auto 0;
-  width: calc(100vw / var(--z));
-  height: calc(100dvh / var(--z));
+  width: 100vw;
+  height: 100dvh;
   z-index: 880;
   background: #000;
   overflow: hidden;
@@ -562,7 +579,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 dialog.drawer {
   margin: 0;
   margin-inline-end: auto;
-  height: calc(100dvh / var(--z));
+  height: 100dvh;
   max-height: none;
   width: min(320px, 86vw);
   border-radius: 0;
@@ -716,11 +733,10 @@ body.enter .grid > :nth-child(n+8) { animation-delay: .8s; }
   body.enter .grid > * { animation: none; }
 }
 
-/* ---------- page zoom ----------
+/* ---------- page scale ----------
    The layout is designed around a tablet. On computers app.js sets --z from the real window size so
    the whole page grows evenly instead of stretching; the rules below shrink it on small one-screen
-   layouts (unfolded phones, short windows). */
-body { zoom: var(--z); }
+   layouts (unfolded phones, short windows). The one-screen layouts apply it with transform: scale. */
 
 /* ---------- small one-screen layouts (unfolded phones, short laptop windows) ----------
    Same idea in the other direction: shrink the whole page so every card fits without scrolling. */
