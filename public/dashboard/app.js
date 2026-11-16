@@ -74,6 +74,7 @@ const DEFAULTS = {
   lat: 32.0853, lon: 34.7818, city: 'תל אביב',
   symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
   finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true, hiddenSites: [],
+  night: true, nightFrom: '23:00', nightTo: '06:30',
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
 const saveSettings = () => store('dash.settings', settings);
@@ -116,6 +117,70 @@ function tickClock() {
   $('time').textContent = minute;
   $('date').textContent = dateFmt.format(now);
   $('hebdate').textContent = hebrewDate(now);
+  $('night-time').textContent = minute;
+  $('night-date').textContent = dateFmt.format(now);
+  driftNightClock();
+}
+
+// ---------- night mode ----------
+// Between the chosen hours (or when switched on from the menu) the page shows only a dim clock on
+// black. A tap shows the dashboard for a minute. The clock drifts a little every minute so the same
+// pixels are not lit all night.
+let manualNight = false;
+let peekUntil = 0;
+let nightActive = false;
+
+const toMinutes = (hhmmText) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmmText || '');
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+
+function inNightHours(now = new Date()) {
+  const from = toMinutes(settings.nightFrom);
+  const to = toMinutes(settings.nightTo);
+  if (from == null || to == null || from === to) return false;
+  const t = now.getHours() * 60 + now.getMinutes();
+  return from < to ? t >= from && t < to : t >= from || t < to; // the window may cross midnight
+}
+
+function updateNight() {
+  const on = (manualNight || (settings.night && inNightHours())) && Date.now() >= peekUntil;
+  if (on === nightActive) return;
+  nightActive = on;
+  $('night').hidden = !on;
+  if (on) {
+    document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+    $('night-hint').classList.remove('gone');
+    setTimeout(() => $('night-hint').classList.add('gone'), 5000);
+    driftNightClock();
+  }
+}
+
+function driftNightClock() {
+  if (!nightActive) return;
+  const dx = Math.round((Math.random() - 0.5) * 8);
+  const dy = Math.round((Math.random() - 0.5) * 8);
+  $('night-box').style.transform = `translate(${dx}vw, ${dy}vh)`;
+}
+
+function setupNight() {
+  // a tap shows the dashboard for a minute; one switched on from the menu stays off until asked again
+  const peek = () => {
+    if (!nightActive) return;
+    manualNight = false;
+    peekUntil = Date.now() + MIN;
+    updateNight();
+  };
+  $('night').addEventListener('pointerdown', peek);
+  addEventListener('keydown', peek);
+  $('b-night').addEventListener('click', () => {
+    $('sites').close();
+    manualNight = true;
+    peekUntil = 0;
+    updateNight();
+  });
+  setInterval(updateNight, 5000);
+  updateNight();
 }
 
 // ---------- icons (Kubai Icons, bundled in vendor/kubai.js) ----------
@@ -146,7 +211,7 @@ function setupIcons() {
   };
   swap($('b-sites'), 'menu', { size: 30, color: '#7DD3FC' }); // light tile that reads on the clock's blue
   swap($('r-stop'), 'stop', { size: 32 }); // follows the accent colour through CSS
-  const actions = { 'b-settings': 'settings', 'b-theme': 'moon', 'b-full': 'maximize', 'b-terms': 'shield-check' };
+  const actions = { 'b-settings': 'settings', 'b-theme': 'sun', 'b-night': 'moon', 'b-full': 'maximize', 'b-terms': 'shield-check' };
   for (const [id, name] of Object.entries(actions)) {
     const svg = icon(name, { size: 20, trigger: 'parent' });
     if (svg) $(id).prepend(svg);
@@ -207,6 +272,7 @@ async function loadWeather() {
   const now = wmo(c.weather_code, c.is_day);
   $('w-icon').replaceChildren(weatherIcon(c.weather_code, c.is_day, 58));
   $('w-temp').textContent = deg(c.temperature_2m);
+  $('night-temp').textContent = `${deg(c.temperature_2m)} · ${now.text}`;
   $('ht-temp').textContent = deg(c.temperature_2m);
   $('ht-temp-label').textContent = `${now.text} ב${settings.city}`;
   $('w-desc').textContent = `${now.text} · מרגיש כמו ${deg(c.apparent_temperature)}`;
@@ -895,6 +961,9 @@ function setupSettings() {
     for (const box of $('set-sites').querySelectorAll('input')) box.checked = !settings.hiddenSites.includes(box.value);
     $('set-wake').checked = settings.wake;
     $('set-speed').checked = settings.autoSpeed;
+    $('set-night').checked = settings.night;
+    $('set-night-from').value = settings.nightFrom;
+    $('set-night-to').value = settings.nightTo;
     showCity();
     dialog.showModal();
   });
@@ -938,6 +1007,11 @@ function setupSettings() {
     run('news', true);
     settings.wake = $('set-wake').checked;
     settings.autoSpeed = $('set-speed').checked;
+    settings.night = $('set-night').checked;
+    if (toMinutes($('set-night-from').value) != null) settings.nightFrom = $('set-night-from').value;
+    if (toMinutes($('set-night-to').value) != null) settings.nightTo = $('set-night-to').value;
+    peekUntil = 0;
+    setTimeout(updateNight, 300);
     if (picked) Object.assign(settings, picked);
     saveSettings();
     if (!settings.wake && wakeLock) wakeLock.release();
@@ -957,7 +1031,7 @@ const TASKS = {
   stocks: { fn: loadStocks, every: 2 * MIN },
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.25 * MIN },
-  speed: { fn: () => (settings.autoSpeed ? speedTest(false) : null), every: 120 * MIN },
+  speed: { fn: () => (settings.autoSpeed && !nightActive ? speedTest(false) : null), every: 120 * MIN }, // not at night
   version: { fn: checkVersion, every: 5 * MIN },
 };
 
@@ -980,6 +1054,7 @@ setupScreen();
 setupSettings();
 setupRadio();
 setupIcons();
+setupNight();
 setupLatencyChart();
 
 $('news-chips').addEventListener('click', (e) => {

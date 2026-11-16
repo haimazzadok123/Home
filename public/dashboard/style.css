@@ -437,6 +437,50 @@ dialog {
   box-shadow: 0 30px 80px rgba(2, 20, 50, .35);
 }
 dialog::backdrop { background: rgba(6, 11, 24, .45); }
+/* ---------- night mode ---------- */
+/* A dim clock on pure black for the hours the room is dark. The page is zoomed on some screens,
+   so the overlay sizes itself in the page's own units. */
+.night {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: calc(100vw / var(--z));
+  height: calc(100dvh / var(--z));
+  z-index: 900;
+  background: #000;
+  display: grid;
+  place-items: center;
+  cursor: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.night[hidden] { display: none; }
+.night-box { text-align: center; transition: transform 1.5s ease; }
+.night-time {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(88px, 24vw, 300px);
+  line-height: 1;
+  color: #5B6B8C;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+.night-date, .night-temp { color: #44516C; font-size: clamp(16px, 3.4vw, 34px); margin-top: .4em; }
+.night-temp:empty { display: none; }
+.night-hint {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  inset-inline: 0;
+  text-align: center;
+  color: #2E3850;
+  font-size: 14px;
+  transition: opacity 1s;
+}
+.night-hint.gone { opacity: 0; }
+.night-hours { align-items: center; flex-wrap: wrap; }
+.night-hours label { margin: 0; }
+.night-hours input { width: auto; flex: 1; min-width: 110px; }
+@media (prefers-reduced-motion: reduce) { .night-box { transition: none; } }
+
 dialog.drawer {
   margin: 0;
   margin-inline-end: auto;

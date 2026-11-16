@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=16" />
+<link rel="stylesheet" href="style.css?v=17" />
 </head>
 <body>
 <!-- Intro screen: the logo builds itself while the page loads, then opens onto the board (style.css "intro", app.js "intro"). -->
@@ -118,6 +118,15 @@
 
 </main>
 
+<div class="night" id="night" hidden>
+  <div class="night-box" id="night-box">
+    <div class="night-time" id="night-time" dir="ltr">--:--</div>
+    <div class="night-date" id="night-date"></div>
+    <div class="night-temp" id="night-temp"></div>
+  </div>
+  <p class="night-hint" id="night-hint">נגיעה במסך מציגה את הלוח לדקה</p>
+</div>
+
 
 
 <dialog id="sites" class="drawer" aria-labelledby="sites-title">
@@ -132,6 +141,7 @@
   <div class="menu-actions">
     <button type="button" class="btn" id="b-settings">הגדרות</button>
     <button type="button" class="btn" id="b-theme">מצב בהיר / כהה</button>
+    <button type="button" class="btn" id="b-night">מצב לילה עכשיו</button>
     <button type="button" class="btn" id="b-full">מסך מלא</button>
     <button type="button" class="btn" id="b-terms">תנאי שימוש ומקורות מידע</button>
   </div>
@@ -190,6 +200,12 @@
     <label class="check"><input id="set-wake" type="checkbox" /> להשאיר את המסך דולק כשהלוח פתוח</label>
     <label class="check"><input id="set-speed" type="checkbox" /> בדיקת מהירות אוטומטית כל שעתיים</label>
 
+    <label class="check"><input id="set-night" type="checkbox" /> מצב לילה אוטומטי: שעון גדול ועמום על רקע שחור</label>
+    <div class="row night-hours">
+      <label for="set-night-from">משעה</label><input id="set-night-from" type="time" dir="ltr" />
+      <label for="set-night-to">עד</label><input id="set-night-to" type="time" dir="ltr" />
+    </div>
+
     <div class="row end">
       <button type="button" class="btn ghost" id="set-cancel">ביטול</button>
       <button type="submit" class="btn primary">שמירה</button>
@@ -197,8 +213,8 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=16" defer></script>
-<script src="vendor/kubai.js?v=16" defer></script>
-<script src="app.js?v=16" defer></script>
+<script src="vendor/liveline.js?v=17" defer></script>
+<script src="vendor/kubai.js?v=17" defer></script>
+<script src="app.js?v=17" defer></script>
 </body>
 </html>
