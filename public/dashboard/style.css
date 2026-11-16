@@ -465,18 +465,18 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
   font-weight: 500;
   font-size: clamp(88px, 24vw, 300px);
   line-height: 1;
-  color: #5B6B8C;
+  color: #9AAACB;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.02em;
 }
-.night-date, .night-temp { color: #44516C; font-size: clamp(16px, 3.4vw, 34px); margin-top: .4em; }
+.night-date, .night-temp { color: #8494B5; font-size: clamp(16px, 3.4vw, 34px); margin-top: .4em; }
 .night-temp:empty { display: none; }
 .night-hint {
   position: absolute;
   bottom: calc(max(24px, env(safe-area-inset-bottom)) + 44px);
   inset-inline: 0;
   text-align: center;
-  color: #2E3850;
+  color: #5E6B88;
   font-size: 14px;
   transition: opacity 1s;
 }
@@ -488,7 +488,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
   bottom: max(16px, env(safe-area-inset-bottom));
   overflow: hidden;
   white-space: nowrap;
-  color: #3E4A63;
+  color: #8494B5;
   font-size: clamp(15px, 2.2vw, 20px);
   mask-image: linear-gradient(to left, transparent, #000 6%, #000 94%, transparent);
   -webkit-mask-image: linear-gradient(to left, transparent, #000 6%, #000 94%, transparent);
@@ -496,7 +496,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .night-ticker[hidden] { display: none; }
 .night-track { display: inline-flex; animation: ticker var(--ticker-time, 120s) linear infinite; }
 .night-track span { padding-inline: 2em; }
-.night-track b { font-weight: 600; color: #52607E; margin-inline-end: .5em; }
+.night-track b { font-weight: 600; color: #7FA6E6; margin-inline-end: .5em; }
 /* latest flashes as a column on the right of wide screens; narrow screens keep the bottom ticker */
 .night-list { display: none; }
 @media (orientation: landscape) and (min-width: 700px) {
@@ -509,7 +509,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
     grid-row: 1;
     align-self: stretch;
     padding: 7vh 3vw 7vh 2.5vw;
-    border-inline-end: 1px solid #111827;
+    border-inline-end: 1px solid #1C2536;
     overflow: hidden;
     mask-image: linear-gradient(to bottom, #000 80%, transparent);
     -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
@@ -518,9 +518,9 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
   .night-time { font-size: clamp(80px, 17vw, 260px); }
   .night .night-ticker { display: none; }
 }
-.night-list small { display: block; font-size: 13px; color: #3E4A63; margin-bottom: 2px; }
-.night-list small b { color: #52607E; font-weight: 600; }
-.night-list p { margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.35; color: #52607E; text-wrap: pretty; }
+.night-list small { display: block; font-size: 13px; color: #6F7E9E; margin-bottom: 2px; }
+.night-list small b { color: #7FA6E6; font-weight: 600; }
+.night-list p { margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.35; color: #9AAACB; text-wrap: pretty; }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(50%); } }
 @media (prefers-reduced-motion: reduce) { .night-track { animation-duration: calc(var(--ticker-time, 120s) * 3); } }
 
