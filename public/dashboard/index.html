@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=7" />
+<link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
 <main class="grid" id="grid">
@@ -51,7 +51,7 @@
 
   <section class="card news" aria-label="חדשות">
     <header class="card-head">
-      <span class="label">חדשות</span>
+      <div class="head-title"><span class="label">חדשות</span><span class="sub" id="news-time" aria-live="off"></span></div>
       <div class="chips" id="news-chips" role="group" aria-label="מקור">
         <button type="button" data-src="news" aria-pressed="true">חדשות</button>
         <button type="button" data-src="flash" aria-pressed="false">מבזקים</button>
@@ -175,7 +175,7 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=7" defer></script>
-<script src="app.js?v=7" defer></script>
+<script src="vendor/liveline.js?v=8" defer></script>
+<script src="app.js?v=8" defer></script>
 </body>
 </html>

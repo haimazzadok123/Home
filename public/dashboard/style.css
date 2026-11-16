@@ -104,6 +104,9 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
 .label { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+.head-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+#news-time { flex: none; }
+@media (max-width: 420px) { .nt-word { display: none; } }
 .sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 .empty a, .hint a { color: var(--accent); text-decoration: underline; }

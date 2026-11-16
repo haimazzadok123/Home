@@ -295,6 +295,8 @@ const NEWS_SOURCES = {
 const news = Object.fromEntries(Object.keys(FEEDS).map((source) => [source, []]));
 let newsFilter = 'news';
 let newsLoaded = false;
+// When each tab (news / flash / sport) last received fresh headlines, shown in the card header.
+const newsUpdated = {};
 
 async function loadNews(group) {
   const hidden = hiddenSources();
@@ -307,7 +309,12 @@ async function loadNews(group) {
         const items = (await attempt()).filter((i) => i.title && i.link && !Number.isNaN(i.date.getTime()));
         // mako publishes Sport5's articles under /news-sport/, so they belong to the sport tab
         for (const i of items) if (i.source === 'mako' && i.link.includes('/news-sport')) i.source = 'sport5';
-        if (items.length) { news[source] = items; renderNews(); return; }
+        if (items.length) {
+          news[source] = items;
+          newsUpdated[SOURCE_INFO[source].group] = Date.now();
+          renderNews();
+          return;
+        }
       } catch { /* try the next route */ }
     }
   }));
@@ -316,6 +323,8 @@ async function loadNews(group) {
 }
 
 function renderNews() {
+  const at = newsUpdated[newsFilter];
+  $('news-time').replaceChildren(...(at ? [el('span', { class: 'nt-word', text: 'עודכן ' }), hhmm.format(new Date(at))] : []));
   const seen = new Set();
   const hidden = hiddenSources();
   const all = Object.values(news).flat()
