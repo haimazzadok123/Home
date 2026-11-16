@@ -639,53 +639,81 @@ function renderQuality() {
 
 // A page cannot watch an upload's progress without extra permission from the server, so this
 // times whole uploads: a small one to estimate the speed, then one sized to take about 3 seconds.
-async function uploadTest() {
+// Like speed-test sites, both directions use several connections at once: a single connection rarely
+// fills a fast line, which made this card read lower than Speedtest. The button runs the full test;
+// the automatic one is lighter to keep the data it uses down.
+const FULL_TEST = { streams: 6, seconds: 8, maxDown: 300e6, upStreams: 4, maxUp: 40e6 };
+const LIGHT_TEST = { streams: 4, seconds: 5, maxDown: 60e6, upStreams: 3, maxUp: 10e6 };
+const fmtMbps = (mbps) => (mbps >= 100 ? String(Math.round(mbps)) : mbps.toFixed(1));
+
+async function downloadTest({ streams, seconds, maxDown }) {
+  const ctrl = new AbortController();
+  const start = performance.now();
+  const WARM_UP = 1000; // connections ramp up first; count bytes only after that
+  let total = 0;
+  let counted = 0;
+  let measureFrom = 0;
+  let mbps = 0;
+  const stream = async () => {
+    while (!ctrl.signal.aborted) {
+      const res = await fetch(`${SPEED}?bytes=25000000&r=${Math.random()}`, { cache: 'no-store', signal: ctrl.signal });
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const now = performance.now();
+        total += value.length;
+        if (now - start >= WARM_UP) {
+          if (!measureFrom) measureFrom = now;
+          else counted += value.length;
+          const secs = (now - measureFrom) / 1000;
+          if (secs > 0.3) {
+            mbps = (counted * 8) / secs / 1e6;
+            $('n-down').textContent = fmtMbps(mbps);
+          }
+        }
+        if (now - start > seconds * 1000 || total > maxDown) {
+          ctrl.abort();
+          return;
+        }
+      }
+    }
+  };
+  await Promise.allSettled(Array.from({ length: streams }, stream));
+  return mbps;
+}
+
+async function uploadTest({ upStreams, maxUp }) {
   const lag = (pings.at(-1) || 0) / 1000; // the round trip itself is not upload time
   const send = async (bytes) => {
     const body = new Blob([new Uint8Array(bytes)], { type: 'text/plain' });
-    const t = performance.now();
-    const res = await fetch(`${SPEED_UP}?r=${Math.random()}`, { method: 'POST', body, cache: 'no-store', signal: AbortSignal.timeout(20000) });
+    const res = await fetch(`${SPEED_UP}?r=${Math.random()}`, { method: 'POST', body, cache: 'no-store', signal: AbortSignal.timeout(30000) });
     await res.arrayBuffer();
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return Math.max(0.02, (performance.now() - t) / 1000 - lag);
   };
-  let bytes = 250000;
-  let secs = await send(bytes);
-  const target = Math.min(8000000, Math.round((bytes / secs) * 3));
-  if (target > bytes * 2) {
-    bytes = target;
-    secs = await send(bytes);
-  }
-  const mbps = (bytes * 8) / secs / 1e6;
-  $('n-up').textContent = `${mbps >= 100 ? Math.round(mbps) : mbps.toFixed(1)} Mbps`;
+  // A small upload to estimate the speed, then parallel uploads sized to take about 4 seconds in all.
+  // The first upload also sets up the connection, which can take seconds, so it is not timed.
+  const probe = 500000;
+  await send(probe);
+  let t = performance.now();
+  await send(probe);
+  const estimate = probe / Math.max(0.02, (performance.now() - t) / 1000 - lag);
+  const each = Math.round(Math.min(maxUp, Math.max(estimate * 4, 2e6 * upStreams)) / upStreams); // at least 2 MB each
+  t = performance.now();
+  await Promise.all(Array.from({ length: upStreams }, () => send(each)));
+  const secs = Math.max(0.05, (performance.now() - t) / 1000 - lag);
+  $('n-up').textContent = `${fmtMbps((each * upStreams * 8) / secs / 1e6)} Mbps`;
 }
 
-async function speedTest() {
+async function speedTest(full = false) {
   if (testing || !navigator.onLine) return;
   testing = true;
+  const plan = full ? FULL_TEST : LIGHT_TEST;
   const btn = $('n-run');
   btn.disabled = true;
   btn.textContent = 'בודק…';
   try {
-    const ctrl = new AbortController();
-    const res = await fetch(`${SPEED}?bytes=15000000&r=${Math.random()}`, { cache: 'no-store', signal: ctrl.signal });
-    const reader = res.body.getReader();
-    let bytes = 0;
-    let started = 0;
-    let mbps = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const now = performance.now();
-      if (!started) { started = now; continue; } // skip the first chunk: it includes the connection setup
-      bytes += value.length;
-      const secs = (now - started) / 1000;
-      if (secs > 0.2) {
-        mbps = (bytes * 8) / secs / 1e6;
-        $('n-down').textContent = mbps >= 100 ? Math.round(mbps) : mbps.toFixed(1);
-      }
-      if (secs > 5) { ctrl.abort(); break; } // five seconds is enough for a stable reading
-    }
+    const mbps = await downloadTest(plan);
     if (mbps) {
       lastDown = mbps;
       lastDownAt = Date.now();
@@ -693,7 +721,7 @@ async function speedTest() {
     }
   } catch { /* leave the previous reading */ }
   try {
-    await uploadTest();
+    await uploadTest(plan);
   } catch { /* leave the previous upload reading */ }
   testing = false;
   btn.disabled = false;
@@ -929,7 +957,7 @@ const TASKS = {
   stocks: { fn: loadStocks, every: 2 * MIN },
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.25 * MIN },
-  speed: { fn: () => (settings.autoSpeed ? speedTest() : null), every: 30 * MIN },
+  speed: { fn: () => (settings.autoSpeed ? speedTest(false) : null), every: 120 * MIN },
   version: { fn: checkVersion, every: 5 * MIN },
 };
 
@@ -962,7 +990,7 @@ $('news-chips').addEventListener('click', (e) => {
   renderNews();
   $('news-list').scrollTop = 0;
 });
-$('n-run').addEventListener('click', speedTest);
+$('n-run').addEventListener('click', () => speedTest(true));
 addEventListener('online', () => { setStatus(true); refresh(); });
 addEventListener('offline', () => setStatus(false));
 document.addEventListener('visibilitychange', () => { keepAwake(); refresh(); });
