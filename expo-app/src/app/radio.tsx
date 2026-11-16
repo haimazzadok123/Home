@@ -17,7 +17,7 @@ export default function RadioScreen() {
     <View style={[styles.root, { backgroundColor: c.bg }]}>
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={[styles.player, { backgroundColor: c.accent }]}>
+          <View style={[styles.player, { backgroundColor: c.brand }]}>
             <Text style={styles.playerLabel}>{station ? (radio.buffering ? 'טוען…' : 'מתנגן עכשיו') : 'רדיו'}</Text>
             <Text style={styles.playerName}>{station ? station.name : 'בחרו תחנה'}</Text>
             <Pressable
@@ -26,7 +26,7 @@ export default function RadioScreen() {
               accessibilityRole="button"
               accessibilityLabel="עצירה"
               style={({ pressed }) => [styles.stop, { opacity: !station ? 0.4 : pressed ? 0.7 : 1 }]}>
-              <View style={[styles.stopSquare, { backgroundColor: c.accent }]} />
+              <View style={[styles.stopSquare, { backgroundColor: c.brand }]} />
             </Pressable>
           </View>
 

@@ -7,7 +7,7 @@ import { usePalette } from '@/constants/palette';
 export function Card({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
   const c = usePalette();
   return (
-    <View style={[styles.card, { backgroundColor: c.card }]}>
+    <View style={[styles.card, { backgroundColor: c.card, boxShadow: c.shadow }]}>
       <View style={styles.head}>
         <Text style={[styles.title, { color: c.accent }]}>{title}</Text>
         {typeof aside === 'string' ? <Text style={[styles.aside, { color: c.muted }]}>{aside}</Text> : aside}
@@ -23,7 +23,7 @@ export function Muted({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 24, padding: 18, gap: 8 },
+  card: { borderRadius: 18, padding: 18, gap: 8 },
   head: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 28 },
   title: { fontSize: 14, fontWeight: '700' },
   aside: { fontSize: 14, textAlign: 'right' },

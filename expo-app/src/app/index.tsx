@@ -1,11 +1,12 @@
 import { Link } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Muted } from '@/components/card';
-import { topInset, usePalette } from '@/constants/palette';
+import { usePalette } from '@/constants/palette';
 import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import {
   describeWeather,
@@ -63,6 +64,7 @@ function Dashboard() {
   const now = useNow();
   const { settings, loaded } = useSettings();
   const radio = useRadio();
+  const insets = useSafeAreaInsets();
 
   const [weather, setWeather] = useState<Weather | null>(null);
   const [weatherError, setWeatherError] = useState(false);
@@ -131,14 +133,31 @@ function Dashboard() {
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
-      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+      <StatusBar style="light" />
+      <SafeAreaView style={styles.root} edges={['left', 'right']}>
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
-          {/* clock */}
-          <View style={styles.clock}>
+          {/* blue header: clock, date and two tiles, edge to edge under the status bar */}
+          <View
+            style={[
+              styles.header,
+              { backgroundColor: c.brand, paddingTop: Platform.OS === 'web' ? 100 : insets.top + 18 },
+            ]}>
             <Text style={styles.time}>{timeFmt.format(now)}</Text>
             <Text style={styles.date}>{dateFmt.format(now)}</Text>
+            <View style={styles.tiles}>
+              <View style={styles.tile}>
+                <Text style={styles.tileLabel} numberOfLines={1}>
+                  {current ? `${current.text} ב${settings.city.name}` : settings.city.name}
+                </Text>
+                <Text style={styles.tileValue}>{weather ? `${Math.round(weather.temp)}°` : '--°'}</Text>
+              </View>
+              <View style={styles.tile}>
+                <Text style={styles.tileLabel}>דולר</Text>
+                <Text style={styles.tileValue}>{rates[0] ? `₪${rates[0].value.toFixed(3)}` : '--'}</Text>
+              </View>
+            </View>
             {radio.current >= 0 && (
               <Pressable onPress={radio.stop} style={styles.nowPlaying} accessibilityRole="button" accessibilityLabel="עצירת הרדיו">
                 <Text style={styles.nowPlayingText}>
@@ -278,18 +297,29 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   content: {
-    padding: 16,
-    paddingTop: topInset,
+    paddingHorizontal: 20,
     paddingBottom: BottomTabInset + 24,
     gap: 14,
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
-  clock: { backgroundColor: '#0284C7', borderRadius: 28, paddingVertical: 24, alignItems: 'center', gap: 2 },
+  header: {
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+    paddingBottom: 22,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    alignItems: 'center',
+    gap: 2,
+  },
   time: { color: '#FFFFFF', fontSize: 72, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  date: { color: '#E0F2FE', fontSize: 22, fontWeight: '500' },
-  nowPlaying: { marginTop: 10, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  date: { color: '#FFFFFF', fontSize: 22, fontWeight: '600' },
+  tiles: { flexDirection: 'row-reverse', gap: 10, alignSelf: 'stretch', marginTop: 16 },
+  tile: { flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
+  tileLabel: { color: '#D6E2FB', fontSize: 12, textAlign: 'right' },
+  tileValue: { color: '#FFFFFF', fontSize: 22, fontWeight: '700', textAlign: 'right', fontVariant: ['tabular-nums'] },
+  nowPlaying: { marginTop: 12, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
   nowPlayingText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   now: { flexDirection: 'row-reverse', alignItems: 'center', gap: 14, paddingVertical: 4 },
   bigIcon: { fontSize: 52 },
