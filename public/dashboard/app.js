@@ -43,6 +43,30 @@ const APP_VERSION = (() => {
   try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch { return ''; }
 })();
 
+// ---------- intro ----------
+// The splash in index.html plays its logo animation, then opens once the page has loaded and the
+// animation has had time to finish. A tap skips it, and it never waits longer than 5 seconds.
+(() => {
+  const splash = $('splash');
+  if (!splash) return;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const minShow = calm ? 500 : 2300; // ms since the page started loading
+  let gone = false;
+  const open = () => {
+    if (gone) return;
+    gone = true;
+    splash.classList.add('out');
+    document.body.classList.add('enter');
+    setTimeout(() => splash.remove(), 1300);
+    setTimeout(() => document.body.classList.remove('enter'), 2200);
+  };
+  const whenLoaded = () => setTimeout(open, Math.max(0, minShow - performance.now()));
+  if (document.readyState === 'complete') whenLoaded();
+  else addEventListener('load', whenLoaded, { once: true });
+  splash.addEventListener('click', open);
+  setTimeout(open, 5000);
+})();
+
 const hhmm = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 // ---------- settings ----------

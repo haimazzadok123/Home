@@ -21,9 +21,25 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=10" />
+<link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
+<!-- Intro screen: the logo builds itself while the page loads, then opens onto the board (style.css "intro", app.js "intro"). -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-glow"></div>
+  <div class="splash-mark">
+    <span class="splash-ring"></span>
+    <span class="splash-ring r2"></span>
+    <svg viewBox="0 0 336 336" class="splash-logo">
+      <rect class="s-tile" width="336" height="336" rx="70" fill="#2F5BEA"/>
+      <path class="s-arch" pathLength="1" d="M84 268V84h168v184h-32V116H116v152z"/>
+      <rect class="s-dot" x="152" y="200" width="32" height="32" fill="#FFB020"/>
+    </svg>
+  </div>
+  <div class="splash-name" lang="he"><b>חיים</b><span lang="en">HAIM</span></div>
+  <div class="splash-bar"><i></i></div>
+</div>
+
 <main class="grid" id="grid">
 
   <section class="card clock" aria-label="שעון">
@@ -177,8 +193,8 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=10" defer></script>
-<script src="vendor/kubai.js?v=10" defer></script>
-<script src="app.js?v=10" defer></script>
+<script src="vendor/liveline.js?v=11" defer></script>
+<script src="vendor/kubai.js?v=11" defer></script>
+<script src="app.js?v=11" defer></script>
 </body>
 </html>
