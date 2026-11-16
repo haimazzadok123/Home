@@ -94,15 +94,72 @@ function tickClock() {
   $('hebdate').textContent = hebrewDate(now);
 }
 
+// ---------- icons (Kubai Icons, bundled in vendor/kubai.js) ----------
+// Returns an animated <svg>, or null when the bundle did not load or the name is unknown.
+function icon(name, options = {}) {
+  if (!name || typeof window.kubai !== 'function') return null;
+  try {
+    const svg = window.kubai(name, options);
+    if (!svg) return null;
+    svg.classList.add('kb');
+    svg.setAttribute('aria-hidden', 'true');
+    return svg;
+  } catch {
+    return null;
+  }
+}
+
+function setupIcons() {
+  const labels = { weather: 'cloud-sun', news: 'newspaper', stocks: 'chart-candlestick', net: 'wifi', radio: 'radio', today: 'candle' };
+  for (const [card, name] of Object.entries(labels)) {
+    const label = document.querySelector(`.${card} .label`);
+    const svg = icon(name, { size: 18 });
+    if (label && svg) label.prepend(svg);
+  }
+  const swap = (button, name, options) => {
+    const svg = icon(name, { trigger: 'parent', ...options });
+    if (svg) button.querySelector('svg')?.replaceWith(svg);
+  };
+  swap($('b-sites'), 'menu', { size: 30, color: '#7DD3FC' }); // light tile that reads on the clock's blue
+  swap($('r-stop'), 'stop', { size: 32 }); // follows the accent colour through CSS
+  const actions = { 'b-settings': 'settings', 'b-theme': 'moon', 'b-full': 'maximize', 'b-terms': 'shield-check' };
+  for (const [id, name] of Object.entries(actions)) {
+    const svg = icon(name, { size: 20, trigger: 'parent' });
+    if (svg) $(id).prepend(svg);
+  }
+  const sites = ['route', 'hotel', 'tv', 'shopping-cart'];
+  document.querySelectorAll('.sites a').forEach((a, i) => {
+    const svg = icon(sites[i], { size: 30, trigger: 'parent' });
+    if (svg) a.prepend(svg);
+  });
+}
+
 // ---------- weather (Open-Meteo) ----------
+// codes, description, emoji day/night (fallback), Kubai icon day/night
 const WMO = [
-  [[0], 'בהיר', '☀️', '🌙'], [[1], 'בהיר ברובו', '🌤️', '🌙'], [[2], 'מעונן חלקית', '⛅', '☁️'], [[3], 'מעונן', '☁️', '☁️'],
-  [[45, 48], 'ערפל', '☁️', '☁️'], [[51, 53, 55, 56, 57], 'טפטוף', '🌦️', '🌧️'], [[61, 63, 65, 66, 67], 'גשם', '🌧️', '🌧️'],
-  [[71, 73, 75, 77, 85, 86], 'שלג', '❄️', '❄️'], [[80, 81, 82], 'ממטרים', '🌦️', '🌧️'], [[95, 96, 99], 'סופת רעמים', '⛈️', '⛈️'],
+  [[0], 'בהיר', '☀️', '🌙', 'sun', 'moon'],
+  [[1], 'בהיר ברובו', '🌤️', '🌙', 'cloud-sun', 'cloud-moon'],
+  [[2], 'מעונן חלקית', '⛅', '☁️', 'cloud-sun', 'cloud-moon'],
+  [[3], 'מעונן', '☁️', '☁️', 'cloud', 'cloud'],
+  [[45, 48], 'ערפל', '☁️', '☁️', 'cloud-fog', 'cloud-fog'],
+  [[51, 53, 55, 56, 57], 'טפטוף', '🌦️', '🌧️', 'cloud-drizzle', 'cloud-drizzle'],
+  [[61, 63, 65, 66, 67], 'גשם', '🌧️', '🌧️', 'cloud-rain', 'cloud-rain'],
+  [[71, 73, 75, 77, 85, 86], 'שלג', '❄️', '❄️', 'cloud-snow', 'cloud-snow'],
+  [[80, 81, 82], 'ממטרים', '🌦️', '🌧️', 'cloud-rain', 'cloud-rain'],
+  [[95, 96, 99], 'סופת רעמים', '⛈️', '⛈️', 'cloud-lightning', 'cloud-lightning'],
 ];
 function wmo(code, isDay = 1) {
   const row = WMO.find((r) => r[0].includes(code));
-  return row ? { text: row[1], icon: isDay ? row[2] : row[3] } : { text: '', icon: '🌡️' };
+  return row ? { text: row[1], icon: isDay ? row[2] : row[3], kubai: isDay ? row[4] : row[5] } : { text: '', icon: '🌡️', kubai: '' };
+}
+const WEATHER_COLORS = {
+  sun: '#F59E0B', moon: '#FACC15', 'cloud-sun': '#F59E0B', 'cloud-moon': '#818CF8', cloud: '#94A3B8', 'cloud-fog': '#94A3B8',
+  'cloud-drizzle': '#38BDF8', 'cloud-rain': '#0284C7', 'cloud-snow': '#7DD3FC', 'cloud-lightning': '#8B5CF6',
+};
+// A Kubai weather icon, or the emoji when the icon bundle did not load.
+function weatherIcon(code, isDay, size) {
+  const w = wmo(code, isDay);
+  return icon(w.kubai, { size, color: WEATHER_COLORS[w.kubai] }) || document.createTextNode(w.icon);
 }
 const deg = (n) => `${Math.round(n)}°`;
 const aqiText = (v) => (v <= 20 ? 'טובה מאוד' : v <= 40 ? 'טובה' : v <= 60 ? 'בינונית' : v <= 80 ? 'ירודה' : 'גרועה');
@@ -124,7 +181,7 @@ async function loadWeather() {
   }
   const c = w.current;
   const now = wmo(c.weather_code, c.is_day);
-  $('w-icon').textContent = now.icon;
+  $('w-icon').replaceChildren(weatherIcon(c.weather_code, c.is_day, 58));
   $('w-temp').textContent = deg(c.temperature_2m);
   $('w-desc').textContent = `${now.text} · מרגיש כמו ${deg(c.apparent_temperature)}`;
 
@@ -141,7 +198,7 @@ async function loadWeather() {
     const i = start + off;
     return el('div', null,
       el('time', { text: off === 0 ? 'עכשיו' : w.hourly.time[i].slice(11, 16), dir: off === 0 ? null : 'ltr' }),
-      el('i', { text: wmo(w.hourly.weather_code[i], w.hourly.is_day[i]).icon }),
+      el('i', null, weatherIcon(w.hourly.weather_code[i], w.hourly.is_day[i], 24)),
       el('b', { text: deg(w.hourly.temperature_2m[i]), dir: 'ltr' }));
   }));
 
@@ -155,7 +212,7 @@ async function loadWeather() {
     fill.style.insetInlineEnd = `${100 - ((d.temperature_2m_max[i] - lo) / span) * 100}%`;
     return el('div', null,
       el('span', { text: i === 0 ? 'היום' : dayName.format(new Date(`${t}T12:00`)) }),
-      el('span', { text: wmo(d.weather_code[i]).icon }),
+      el('span', { class: 'd-ico' }, weatherIcon(d.weather_code[i], 1, 20)),
       el('span', { class: 'lo', text: deg(d.temperature_2m_min[i]), dir: 'ltr' }),
       el('span', { class: 'bar' }, fill),
       el('span', { class: 'hi', text: deg(d.temperature_2m_max[i]), dir: 'ltr' }));
@@ -864,6 +921,7 @@ setInterval(tickClock, 1000);
 setupScreen();
 setupSettings();
 setupRadio();
+setupIcons();
 setupLatencyChart();
 
 $('news-chips').addEventListener('click', (e) => {

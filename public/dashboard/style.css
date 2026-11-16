@@ -103,7 +103,8 @@ dl, dd, dt, p, h2 { margin: 0; }
   overflow: hidden;
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
-.label { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+.label { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; display: inline-flex; align-items: center; gap: 6px; }
+.label .kb { flex: none; }
 .head-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 #news-time { flex: none; }
 @media (max-width: 420px) { .nt-word { display: none; } }
@@ -218,7 +219,7 @@ dl, dd, dt, p, h2 { margin: 0; }
 
 /* ---------- weather ---------- */
 .w-now { display: flex; align-items: center; gap: 12px; }
-.w-icon { font-size: 52px; line-height: 1; }
+.w-icon { font-size: 52px; line-height: 1; display: grid; place-items: center; }
 .w-main { flex: 1; min-width: 0; }
 .w-temp { font-family: var(--display); font-size: 54px; font-weight: 500; line-height: 1; text-align: end; letter-spacing: -.02em; }
 .w-desc { color: var(--muted); font-size: 14px; }
@@ -234,7 +235,8 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 .w-hours div { display: grid; justify-items: center; gap: 2px; font-size: 13px; min-width: 0; }
 .w-hours time { color: var(--muted); font-size: 12px; }
-.w-hours i { font-style: normal; font-size: 20px; line-height: 1.2; }
+.w-hours i { font-style: normal; font-size: 20px; line-height: 1.2; display: grid; place-items: center; height: 26px; }
+.d-ico { display: grid; place-items: center; }
 .w-hours b { font-weight: 500; }
 .w-days { flex: 1; min-height: 0; display: grid; grid-auto-rows: minmax(26px, 1fr); overflow: hidden; }
 .w-days > div {
@@ -341,8 +343,12 @@ dl, dd, dt, p, h2 { margin: 0; }
 .r-ctl input[hidden] { display: none; }
 .r-ctl button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--accent); display: grid; place-items: center; flex: none; }
 .r-ctl button:disabled { background: var(--accent-soft); cursor: default; }
-.r-ctl svg { width: 16px; height: 16px; fill: #fff; }
-.r-ctl button:disabled svg { fill: var(--muted); opacity: .6; }
+.r-ctl svg:not(.kb) { width: 16px; height: 16px; fill: #fff; }
+.r-ctl button:disabled svg:not(.kb) { fill: var(--muted); opacity: .6; }
+.r-ctl button:has(.kb) { background: transparent; color: var(--accent); }
+.r-ctl button:disabled .kb { opacity: .35; filter: grayscale(1); }
+.dock:has(.kb) { background: transparent; }
+.sites a > .kb { color: var(--accent); }
 .r-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .r-list button { flex: none; }
 .r-list button {
@@ -403,9 +409,9 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 .dock:active { background: rgba(255, 255, 255, .28); }
 .dock:focus-visible { outline-color: #fff; }
-.dock svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.dock svg:not(.kb) { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .menu-actions { display: grid; gap: 6px; }
-.menu-actions .btn { text-align: start; border-radius: 14px; }
+.menu-actions .btn { text-align: start; border-radius: 14px; display: flex; align-items: center; gap: 10px; }
 .menu-actions [hidden] { display: none; }
 
 dialog {
@@ -434,8 +440,10 @@ dialog.drawer {
 }
 dialog.drawer[open] { display: flex; flex-direction: column; gap: 12px; }
 .sites { display: grid; gap: 8px; flex: 1; align-content: start; overflow-y: auto; }
-.sites a { display: grid; gap: 1px; background: var(--accent-soft); border-radius: 16px; padding: 12px 16px; }
+.sites a { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 12px; gap: 1px 12px; background: var(--accent-soft); border-radius: 16px; padding: 12px 16px; }
 .sites a:active { opacity: .7; }
+.sites a > .kb { grid-row: span 2; }
+.sites a > b, .sites a > small { grid-column: 2; }
 .sites b { font-weight: 500; font-size: 17px; }
 .sites small { color: var(--muted); font-size: 13px; }
 .terms { display: grid; gap: 8px; font-size: 14px; line-height: 1.5; }
