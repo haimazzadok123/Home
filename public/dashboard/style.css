@@ -515,6 +515,11 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .night-track { display: inline-flex; animation: ticker var(--ticker-time, 120s) linear infinite; }
 .night-track span { padding-inline: 2em; }
 .night-track b { font-weight: 600; color: #7FA6E6; margin-inline-end: .5em; }
+.night-ticker.waiting .night-track { animation: none; display: flex; justify-content: center; width: 100%; }
+.night-loading { margin: 0; color: #6F7E9E; font-size: clamp(15px, 1.6vw, 19px); }
+.night-loading.busy { animation: night-pulse 1.6s ease-in-out infinite; }
+@keyframes night-pulse { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .night-loading.busy { animation: none; } }
 /* latest flashes as a column on the right (phones held upright too); only very narrow screens keep
    the bottom ticker */
 .night-list { display: none; }

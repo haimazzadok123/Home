@@ -172,6 +172,7 @@ function updateNight() {
 // The latest flashes: a column on the right of wide screens, a ticker along the bottom of narrow ones.
 // Tapping a flash shows it large, with a link to the article.
 let nightFlashKey = '';
+let flashLoaded = false; // a first round of flash requests has finished
 function renderNightTicker() {
   const hidden = hiddenSources();
   const items = Object.values(news).flat()
@@ -180,11 +181,24 @@ function renderNightTicker() {
     .slice(0, 10);
   const at = newsUpdated.flash;
   $('night-updated').textContent = at ? `מבזקים · עודכן ${hhmm.format(new Date(at))}` : '';
-  $('night-ticker').hidden = !items.length;
-  $('night-list').hidden = !items.length;
+  $('night-ticker').hidden = false;
+  $('night-list').hidden = false;
+  if (!items.length) {
+    // until the first flashes arrive, say so instead of leaving the space empty
+    const text = flashLoaded ? 'אין מבזקים כרגע. ננסה שוב בעוד רגע.' : 'טוען מבזקים…';
+    const key = `empty:${text}`;
+    if (key === nightFlashKey) return;
+    nightFlashKey = key;
+    const msg = () => el('p', { class: `night-loading${flashLoaded ? '' : ' busy'}`, text });
+    $('night-list').replaceChildren(msg());
+    $('night-track').replaceChildren(msg());
+    $('night-ticker').classList.add('waiting');
+    return;
+  }
+  $('night-ticker').classList.remove('waiting');
   // redraw only when the flashes changed, so the ticker does not jump back on every refresh
   const key = items.map((n) => n.link).join('|');
-  if (!items.length || key === nightFlashKey) return;
+  if (key === nightFlashKey) return;
   nightFlashKey = key;
   const open = (n) => () => showNightFlash(n);
   $('night-list').replaceChildren(...items.slice(0, 8).map((n) => {
@@ -685,12 +699,15 @@ async function loadNews(group) {
           news[source] = items;
           newsUpdated[SOURCE_INFO[source].group] = Date.now();
           renderNews();
+          // show flashes as soon as the first source answers, without waiting for the slow ones
+          if (nightActive && SOURCE_INFO[source].group === 'flash') renderNightTicker();
           return;
         }
       } catch { /* try the next route */ }
     }
   }));
   if (!group) newsLoaded = true;
+  if (!group || group === 'flash') flashLoaded = true;
   renderNews();
   if (nightActive) renderNightTicker();
 }
