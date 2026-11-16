@@ -498,6 +498,7 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
   transition: opacity 1s;
 }
 .night-hint.gone { opacity: 0; }
+.night-hint { pointer-events: none; } /* never blocks the button under it */
 /* latest flashes scrolling along the bottom; new text enters from the left as in Hebrew tickers */
 .night-ticker {
   position: absolute;
@@ -514,9 +515,10 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .night-track { display: inline-flex; animation: ticker var(--ticker-time, 120s) linear infinite; }
 .night-track span { padding-inline: 2em; }
 .night-track b { font-weight: 600; color: #7FA6E6; margin-inline-end: .5em; }
-/* latest flashes as a column on the right of wide screens; narrow screens keep the bottom ticker */
+/* latest flashes as a column on the right (phones held upright too); only very narrow screens keep
+   the bottom ticker */
 .night-list { display: none; }
-@media (orientation: landscape) and (min-width: 700px) {
+@media (min-width: 360px) {
   .night { grid-template-columns: minmax(240px, 32%) minmax(0, 1fr); }
   .night-list:not([hidden]) {
     display: flex;
@@ -534,6 +536,18 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
   .night-box { grid-column: 2; grid-row: 1; }
   .night-time { font-size: clamp(80px, 17vw, 260px); }
   .night .night-ticker { display: none; }
+}
+/* phones held upright: a narrower column, smaller clock and button so both fit side by side */
+@media (orientation: portrait) and (min-width: 360px) and (max-width: 599.9px) {
+  .night { grid-template-columns: 46% minmax(0, 1fr); }
+  .night-list:not([hidden]) { padding: 9vh 14px 9vh 12px; gap: 16px; }
+  .night-list p { font-size: 14px; }
+  .night-list small { font-size: 11px; }
+  .night-box { padding-inline: 8px; }
+  .night-time { font-size: clamp(56px, 19vw, 110px); }
+  .night-date, .night-temp { font-size: 15px; }
+  .night-show { font-size: 15px; padding: 10px 16px; min-height: 48px; }
+  .night-updated { inset-inline-start: 12px; font-size: 11px; }
 }
 .night-list small { display: block; font-size: 13px; color: #6F7E9E; margin-bottom: 2px; }
 .night-list small b { color: #7FA6E6; font-weight: 600; }
@@ -561,8 +575,8 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .night-show:active { background: #17223D; }
 .night-show:focus-visible { outline: 2px solid #7FA6E6; outline-offset: 3px; }
 .night-updated { position: absolute; top: max(24px, env(safe-area-inset-top)); inset-inline-start: max(20px, env(safe-area-inset-right)); margin: 0; font-size: 13px; color: #6F7E9E; }
-@media (orientation: landscape) and (min-width: 700px) {
-  /* above the flashes column on wide screens */
+@media (min-width: 360px) {
+  /* above the flashes column */
   .night-updated { top: max(16px, env(safe-area-inset-top)); inset-inline-start: 2.5vw; }
 }
 .night-flash { position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, .78); display: grid; place-items: center; padding: 24px; }
@@ -795,3 +809,7 @@ body.enter .grid > :nth-child(n+8) { animation-delay: .8s; }
    (kept last so it overrides the card's own display rules) */
 @container net-card (max-height: 340px) { .net.has-chart .n-chart, .net .spark { display: none; } }
 @container net-card (max-height: 250px) { .net .n-link { display: none; } }
+
+/* leave room for the 'updated' line above the flashes column on short screens */
+@media (min-width: 360px) { .night-list:not([hidden]) { padding-top: max(7vh, 44px); } }
+@media (max-height: 520px) { .night-hint { display: none; } } /* no room for it on a phone on its side */
