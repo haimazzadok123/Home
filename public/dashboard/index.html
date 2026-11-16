@@ -14,14 +14,14 @@
 <meta name="apple-mobile-web-app-title" content="לוח הבית" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <!-- Only this page's own code runs; it may talk only to the data services listed in the README. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://rcs.mako.co.il https://api.allorigins.win https://api.rss2json.com https://finnhub.io https://quote.cnbc.com https://api.frankfurter.dev https://www.hebcal.com https://speed.cloudflare.com https://www.one.co.il https://www.inn.co.il; media-src https://glzwizzlv.bynetcdn.com https://cdn.cybercdn.live https://playerservices.streamtheworld.com https://*.live.streamtheworld.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://rcs.mako.co.il https://api.allorigins.win https://api.rss2json.com https://finnhub.io https://quote.cnbc.com https://api.frankfurter.dev https://www.hebcal.com https://speed.cloudflare.com https://www.one.co.il https://www.inn.co.il https://marine-api.open-meteo.com; media-src https://glzwizzlv.bynetcdn.com https://cdn.cybercdn.live https://playerservices.streamtheworld.com https://*.live.streamtheworld.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" type="image/svg+xml" href="icon.svg" />
 <link rel="apple-touch-icon" href="icon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=17" />
+<link rel="stylesheet" href="style.css?v=18" />
 </head>
 <body>
 <!-- Intro screen: the logo builds itself while the page loads, then opens onto the board (style.css "intro", app.js "intro"). -->
@@ -53,6 +53,9 @@
     <button type="button" class="dock" id="b-sites" title="תפריט" aria-label="תפריט">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
+    <button type="button" class="dock dock-night" id="b-night2" title="מצב לילה" aria-label="מצב לילה">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>
+    </button>
   </section>
 
   <section class="card weather" aria-label="מזג אוויר">
@@ -65,6 +68,7 @@
       </div>
       <dl class="w-facts" id="w-facts"></dl>
     </div>
+    <div class="w-sea" id="w-sea" hidden></div>
     <div class="w-hours" id="w-hours"></div>
     <div class="w-days" id="w-days"></div>
   </section>
@@ -125,6 +129,14 @@
     <div class="night-temp" id="night-temp"></div>
   </div>
   <p class="night-hint" id="night-hint">נגיעה במסך מציגה את הלוח לדקה</p>
+  <div class="night-ticker" id="night-ticker" hidden><div class="night-track" id="night-track"></div></div>
+</div>
+
+<div class="frame" id="frame" hidden>
+  <img class="frame-bg" id="frame-bg" alt="" />
+  <img class="frame-img" id="frame-a" alt="" />
+  <img class="frame-img" id="frame-b" alt="" />
+  <div class="frame-clock"><b id="frame-time" dir="ltr"></b><span id="frame-date"></span></div>
 </div>
 
 
@@ -142,6 +154,7 @@
     <button type="button" class="btn" id="b-settings">הגדרות</button>
     <button type="button" class="btn" id="b-theme">מצב בהיר / כהה</button>
     <button type="button" class="btn" id="b-night">מצב לילה עכשיו</button>
+    <button type="button" class="btn" id="b-frame">מסגרת תמונות עכשיו</button>
     <button type="button" class="btn" id="b-full">מסך מלא</button>
     <button type="button" class="btn" id="b-terms">תנאי שימוש ומקורות מידע</button>
   </div>
@@ -157,7 +170,7 @@
     <h3>אחריות</h3>
     <p>המידע מוצג כפי שהוא מתקבל מהמקורות ועלול להתעכב, להיות חלקי או שגוי. מחירי המניות ושערי המטבע אינם ייעוץ השקעות ואין להסתמך עליהם לביצוע עסקאות. זמני השבת הם לפי המיקום שנבחר ויש לבדוק אותם מול לוח מוסמך.</p>
     <h3>פרטיות</h3>
-    <p>הדף לא אוסף מידע ולא שומר דבר בשרת. ההגדרות (עיר, רשימת מניות, מפתח Finnhub) נשמרות במכשיר בלבד. כדי להציג נתונים הדפדפן פונה ישירות לשירותים שברשימה למטה, והם רואים את כתובת ה־IP כמו בכל גלישה. המיקום המדויק נשלח רק אם בחרתם ב"המיקום שלי".</p>
+    <p>הדף לא אוסף מידע ולא שומר דבר בשרת. ההגדרות (עיר, רשימת מניות, מפתח Finnhub) והתמונות של מסגרת התמונות נשמרות במכשיר בלבד. כדי להציג נתונים הדפדפן פונה ישירות לשירותים שברשימה למטה, והם רואים את כתובת ה־IP כמו בכל גלישה. המיקום המדויק נשלח רק אם בחרתם ב"המיקום שלי".</p>
     <h3>מקורות המידע</h3>
     <ul>
       <li>מזג אוויר ואיכות אוויר: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (רישיון CC BY 4.0)</li>
@@ -168,6 +181,7 @@
       <li>רדיו: שידורי האינטרנט הרשמיים של התחנות</li>
       <li>בדיקת מהירות: Cloudflare</li>
       <li>אייקונים: <a href="https://icons.kubai.design/" target="_blank" rel="noopener">Kubai Icons</a> (רישיון MIT)</li>
+      <li>גלים וטמפרטורת מים: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo Marine</a> (רישיון CC BY 4.0)</li>
       <li>גרף זמן התגובה: <a href="https://github.com/benjitaylor/liveline" target="_blank" rel="noopener">Liveline</a> מאת Benji Taylor (רישיון MIT)</li>
     </ul>
     <p>השימוש בכל מקור כפוף לתנאי השימוש שלו. בעל תוכן שמבקש להסיר את התוכן שלו מהדף מוזמן לפנות ונסיר אותו.</p>
@@ -206,6 +220,18 @@
       <label for="set-night-to">עד</label><input id="set-night-to" type="time" dir="ltr" />
     </div>
 
+    <label>מסגרת תמונות</label>
+    <div class="row">
+      <label class="btn file-btn">הוספת תמונות<input id="set-photos" type="file" accept="image/*" multiple hidden /></label>
+      <button type="button" class="btn ghost" id="set-photos-clear">מחיקת כל התמונות</button>
+    </div>
+    <p class="hint" id="set-photos-count"></p>
+    <div class="row frame-row">
+      <label class="check"><input id="set-frame" type="checkbox" /> להציג אותן אחרי</label>
+      <select id="set-frame-idle" aria-label="דקות בלי נגיעה"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option></select>
+      <span>דקות בלי נגיעה</span>
+    </div>
+
     <div class="row end">
       <button type="button" class="btn ghost" id="set-cancel">ביטול</button>
       <button type="submit" class="btn primary">שמירה</button>
@@ -213,8 +239,8 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=17" defer></script>
-<script src="vendor/kubai.js?v=17" defer></script>
-<script src="app.js?v=17" defer></script>
+<script src="vendor/liveline.js?v=18" defer></script>
+<script src="vendor/kubai.js?v=18" defer></script>
+<script src="app.js?v=18" defer></script>
 </body>
 </html>

@@ -74,10 +74,17 @@ const DEFAULTS = {
   lat: 32.0853, lon: 34.7818, city: 'תל אביב',
   symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
   finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true, hiddenSites: [],
-  night: true, nightFrom: '23:00', nightTo: '06:30',
+  night: true, nightFrom: '20:00', nightTo: '06:30',
+  frame: true, frameIdle: 10,
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
 const saveSettings = () => store('dash.settings', settings);
+// Night mode used to start at 23:00 by default; move a setting still on that old default to 20:00.
+if (!settings.nightV2) {
+  if (settings.nightFrom === '23:00') settings.nightFrom = '20:00';
+  settings.nightV2 = true;
+  saveSettings();
+}
 
 // ---------- clock ----------
 const dateFmt = new Intl.DateTimeFormat('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -119,6 +126,8 @@ function tickClock() {
   $('hebdate').textContent = hebrewDate(now);
   $('night-time').textContent = minute;
   $('night-date').textContent = dateFmt.format(now);
+  $('frame-time').textContent = minute;
+  $('frame-date').textContent = dateFmt.format(now);
   driftNightClock();
 }
 
@@ -149,11 +158,31 @@ function updateNight() {
   nightActive = on;
   $('night').hidden = !on;
   if (on) {
+    stopFrame();
+    renderNightTicker();
     document.querySelectorAll('dialog[open]').forEach((d) => d.close());
     $('night-hint').classList.remove('gone');
     setTimeout(() => $('night-hint').classList.add('gone'), 5000);
     driftNightClock();
   }
+}
+
+// The latest flashes scroll along the bottom of the night screen.
+function renderNightTicker() {
+  const hidden = hiddenSources();
+  const items = Object.values(news).flat()
+    .filter((n) => SOURCE_INFO[n.source].group === 'flash' && !hidden.has(n.source))
+    .sort((a, b) => b.date - a.date)
+    .slice(0, 10);
+  $('night-ticker').hidden = !items.length;
+  if (!items.length) return;
+  const copy = () => items.map((n) => el('span', null, el('b', { text: `${hhmm.format(n.date)} ${SOURCE_INFO[n.source].label}` }), n.title));
+  const track = $('night-track');
+  track.replaceChildren(...copy(), ...copy()); // two copies make the loop seamless
+  requestAnimationFrame(() => {
+    const half = track.scrollWidth / 2;
+    track.style.setProperty('--ticker-time', `${Math.max(40, Math.round(half / 45))}s`); // about 45px a second
+  });
 }
 
 function driftNightClock() {
@@ -173,12 +202,14 @@ function setupNight() {
   };
   $('night').addEventListener('pointerdown', peek);
   addEventListener('keydown', peek);
-  $('b-night').addEventListener('click', () => {
+  const nightNow = () => {
     $('sites').close();
     manualNight = true;
     peekUntil = 0;
     updateNight();
-  });
+  };
+  $('b-night').addEventListener('click', nightNow);
+  $('b-night2').addEventListener('click', nightNow);
   setInterval(updateNight, 5000);
   updateNight();
 }
@@ -210,8 +241,9 @@ function setupIcons() {
     if (svg) button.querySelector('svg')?.replaceWith(svg);
   };
   swap($('b-sites'), 'menu', { size: 30, color: '#7DD3FC' }); // light tile that reads on the clock's blue
+  swap($('b-night2'), 'moon-star', { size: 30, color: '#7DD3FC' });
   swap($('r-stop'), 'stop', { size: 32 }); // follows the accent colour through CSS
-  const actions = { 'b-settings': 'settings', 'b-theme': 'sun', 'b-night': 'moon', 'b-full': 'maximize', 'b-terms': 'shield-check' };
+  const actions = { 'b-settings': 'settings', 'b-theme': 'sun', 'b-night': 'moon', 'b-frame': 'photo-frame', 'b-full': 'maximize', 'b-terms': 'shield-check' };
   for (const [id, name] of Object.entries(actions)) {
     const svg = icon(name, { size: 20, trigger: 'parent' });
     if (svg) $(id).prepend(svg);
@@ -312,6 +344,155 @@ async function loadWeather() {
 
   sunTimes = { rise: d.sunrise[0].slice(11, 16), set: d.sunset[0].slice(11, 16) };
   renderToday();
+}
+
+// ---------- sea (Open-Meteo marine) ----------
+// Waves and water temperature at the beach nearest the chosen city.
+const BEACHES = [
+  ['נהריה', 33.01, 35.08], ['עכו', 32.92, 35.06], ['חיפה', 32.80, 34.95], ['עתלית', 32.69, 34.93], ['קיסריה', 32.50, 34.88],
+  ['חדרה', 32.45, 34.87], ['נתניה', 32.33, 34.84], ['הרצליה', 32.17, 34.79], ['תל אביב', 32.08, 34.76], ['בת ים', 32.02, 34.74],
+  ['ראשון לציון', 31.98, 34.73], ['אשדוד', 31.80, 34.63], ['אשקלון', 31.67, 34.55], ['אילת', 29.54, 34.95],
+];
+function nearestBeach(lat, lon) {
+  const dist = ([, la, lo]) => (la - lat) ** 2 + ((lo - lon) * Math.cos((lat * Math.PI) / 180)) ** 2;
+  return BEACHES.reduce((best, b) => (dist(b) < dist(best) ? b : best));
+}
+const waveWord = (m) => (m < 0.3 ? 'ים שקט' : m < 0.6 ? 'גלים נמוכים' : m < 1.2 ? 'גלים בינוניים' : m < 2 ? 'גלים גבוהים' : 'ים סוער');
+
+async function loadSea() {
+  const [name, lat, lon] = nearestBeach(settings.lat, settings.lon);
+  try {
+    const m = await get(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&timezone=auto&current=wave_height,sea_surface_temperature&daily=wave_height_max&forecast_days=1`);
+    const wave = m.current?.wave_height;
+    if (wave == null) throw new Error('no sea data');
+    const water = m.current.sea_surface_temperature;
+    const max = m.daily?.wave_height_max?.[0];
+    const line = $('w-sea');
+    line.replaceChildren(...[
+      icon('waves', { size: 18 }),
+      el('span', null, `ים ב${name}: `, el('b', { text: `${waveWord(wave)} · ${wave.toFixed(1)} מ׳` }),
+        max != null ? ` (עד ${max.toFixed(1)} היום)` : '',
+        water != null ? ` · מים ${deg(water)}` : ''),
+    ].filter(Boolean));
+    line.hidden = false;
+  } catch {
+    // keep the last reading, if any
+  }
+}
+
+// ---------- photo frame ----------
+// Photos are added in the settings, shrunk, and kept on this device in IndexedDB. After some minutes
+// without a touch (and never at night) they play full screen with a small clock; a tap returns.
+const PHOTO_DB = 'dash-photos';
+let photoKeys = [];
+let frameActive = false;
+let frameTimer = 0;
+let frameIndex = 0;
+let frameUrl = '';
+let lastActivity = Date.now();
+
+function photoStore(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(PHOTO_DB, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('photos', { autoIncrement: true });
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction('photos', mode);
+      const req = fn(tx.objectStore('photos'));
+      tx.oncomplete = () => { db.close(); resolve(req && req.result); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    };
+  });
+}
+
+async function loadPhotoKeys() {
+  try { photoKeys = (await photoStore('readonly', (st) => st.getAllKeys())) || []; } catch { photoKeys = []; }
+  $('set-photos-count').textContent = photoKeys.length ? `${photoKeys.length} תמונות שמורות במכשיר הזה.` : 'אין עדיין תמונות.';
+}
+
+async function shrinkPhoto(file) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, 2048 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+}
+
+async function showNextPhoto() {
+  if (!frameActive || !photoKeys.length) return;
+  const key = photoKeys[frameIndex % photoKeys.length];
+  frameIndex += 1;
+  let blob;
+  try { blob = await photoStore('readonly', (st) => st.get(key)); } catch { return; }
+  if (!blob || !frameActive) return;
+  const url = URL.createObjectURL(blob);
+  const [a, b] = [$('frame-a'), $('frame-b')];
+  const next = a.classList.contains('on') ? b : a;
+  next.onload = () => {
+    $('frame-bg').src = url;
+    next.classList.add('on');
+    (next === a ? b : a).classList.remove('on');
+    if (frameUrl) setTimeout(((old) => () => URL.revokeObjectURL(old))(frameUrl), 2000);
+    frameUrl = url;
+  };
+  next.src = url;
+}
+
+function startFrame() {
+  if (frameActive || !photoKeys.length || nightActive) return;
+  frameActive = true;
+  // shuffle so the show starts somewhere different each time
+  photoKeys = photoKeys.map((k) => [Math.random(), k]).sort((x, y) => x[0] - y[0]).map(([, k]) => k);
+  frameIndex = 0;
+  document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  $('frame').hidden = false;
+  showNextPhoto();
+  frameTimer = setInterval(showNextPhoto, 12000);
+}
+
+function stopFrame() {
+  if (!frameActive) return;
+  frameActive = false;
+  clearInterval(frameTimer);
+  $('frame').hidden = true;
+  $('frame-a').classList.remove('on');
+  $('frame-b').classList.remove('on');
+}
+
+function setupFrame() {
+  const touched = () => { lastActivity = Date.now(); };
+  ['pointerdown', 'keydown', 'wheel', 'touchmove'].forEach((t) => addEventListener(t, touched, { passive: true }));
+  $('frame').addEventListener('pointerdown', () => stopFrame());
+  $('b-frame').addEventListener('click', () => {
+    $('sites').close();
+    if (photoKeys.length) startFrame();
+    else { $('b-settings').click(); }
+  });
+  $('set-photos').addEventListener('change', async (e) => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    $('set-photos-count').textContent = `מוסיף ${files.length} תמונות…`;
+    for (const file of files) {
+      try {
+        const blob = await shrinkPhoto(file);
+        if (blob) await photoStore('readwrite', (st) => st.add(blob));
+      } catch { /* skip a file the browser cannot read */ }
+    }
+    await loadPhotoKeys();
+  });
+  $('set-photos-clear').addEventListener('click', async () => {
+    try { await photoStore('readwrite', (st) => st.clear()); } catch { /* ignore */ }
+    await loadPhotoKeys();
+  });
+  setInterval(() => {
+    const idle = Date.now() - lastActivity > (Number(settings.frameIdle) || 10) * MIN;
+    if (settings.frame && idle && !document.querySelector('dialog[open]')) startFrame();
+  }, 10000);
+  loadPhotoKeys();
 }
 
 // ---------- Shabbat times (Hebcal) ----------
@@ -473,6 +654,7 @@ async function loadNews(group) {
   }));
   if (!group) newsLoaded = true;
   renderNews();
+  if (nightActive) renderNightTicker();
 }
 
 function renderNews() {
@@ -962,6 +1144,8 @@ function setupSettings() {
     $('set-wake').checked = settings.wake;
     $('set-speed').checked = settings.autoSpeed;
     $('set-night').checked = settings.night;
+    $('set-frame').checked = settings.frame;
+    $('set-frame-idle').value = String(settings.frameIdle);
     $('set-night-from').value = settings.nightFrom;
     $('set-night-to').value = settings.nightTo;
     showCity();
@@ -1008,6 +1192,8 @@ function setupSettings() {
     settings.wake = $('set-wake').checked;
     settings.autoSpeed = $('set-speed').checked;
     settings.night = $('set-night').checked;
+    settings.frame = $('set-frame').checked;
+    settings.frameIdle = Number($('set-frame-idle').value) || 10;
     if (toMinutes($('set-night-from').value) != null) settings.nightFrom = $('set-night-from').value;
     if (toMinutes($('set-night-to').value) != null) settings.nightTo = $('set-night-to').value;
     peekUntil = 0;
@@ -1017,7 +1203,7 @@ function setupSettings() {
     if (!settings.wake && wakeLock) wakeLock.release();
     setTimeout(reloadIfIdle, 500);
     keepAwake();
-    if (picked) { run('weather', true); run('shabbat', true); }
+    if (picked) { run('weather', true); run('shabbat', true); run('sea', true); }
     if (stocksChanged) { store('dash.stocks', null); run('stocks', true); }
   });
 }
@@ -1032,6 +1218,7 @@ const TASKS = {
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.25 * MIN },
   speed: { fn: () => (settings.autoSpeed && !nightActive ? speedTest(false) : null), every: 120 * MIN }, // not at night
+  sea: { fn: loadSea, every: 60 * MIN },
   version: { fn: checkVersion, every: 5 * MIN },
 };
 
@@ -1055,6 +1242,7 @@ setupSettings();
 setupRadio();
 setupIcons();
 setupNight();
+setupFrame();
 setupLatencyChart();
 
 $('news-chips').addEventListener('click', (e) => {
