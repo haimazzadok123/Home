@@ -32,6 +32,19 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "המיקום משמש רק כדי להציג את מזג האוויר באזור שלך."
+        }
       ]
     ],
     "experiments": {

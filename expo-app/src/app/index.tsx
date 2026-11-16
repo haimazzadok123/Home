@@ -1,120 +1,37 @@
+import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Card, Muted } from '@/components/card';
+import { topInset, usePalette } from '@/constants/palette';
 import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
+import {
+  describeWeather,
+  fetchHeadlines,
+  fetchQuotes,
+  fetchRates,
+  type Headline,
+  type NewsTab,
+  type Quote,
+  type Rate,
+  type Weather,
+  fetchWeather,
+} from '@/lib/data';
+import { useRadio } from '@/state/radio';
+import { useSettings } from '@/state/settings';
+import { STATIONS } from '@/lib/data';
 
-// First version of the home dashboard as an app: clock, weather and news.
-// Data: Open-Meteo (weather) and the ynet / mako RSS feeds through rss2json.
+// The home dashboard: clock, weather, stocks and exchange rates, and news / flashes / sport.
 
-const CITY = { name: 'תל אביב', lat: 32.0853, lon: 34.7818 };
 const MIN = 60 * 1000;
-
-const palette = {
-  light: { bg: '#F0F9FF', card: '#FFFFFF', text: '#1E293B', muted: '#64748B', line: '#E2E8F0', accent: '#0284C7' },
-  dark: { bg: '#060B18', card: '#111A2E', text: '#F1F5F9', muted: '#94A3B8', line: '#1E293B', accent: '#38BDF8' },
-};
-
-// ---------- clock ----------
 const timeFmt = new Intl.DateTimeFormat('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
 const dateFmt = new Intl.DateTimeFormat('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
 const dayFmt = new Intl.DateTimeFormat('he-IL', { weekday: 'short' });
 
-function useNow() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
-
-// ---------- weather ----------
-type Weather = {
-  temp: number;
-  feels: number;
-  code: number;
-  isDay: number;
-  days: { date: string; code: number; min: number; max: number }[];
-};
-
-const WMO: [number[], string, string, string][] = [
-  [[0], 'בהיר', '☀️', '🌙'],
-  [[1, 2], 'מעונן חלקית', '⛅', '☁️'],
-  [[3, 45, 48], 'מעונן', '☁️', '☁️'],
-  [[51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82], 'גשם', '🌧️', '🌧️'],
-  [[71, 73, 75, 77, 85, 86], 'שלג', '❄️', '❄️'],
-  [[95, 96, 99], 'סופת רעמים', '⛈️', '⛈️'],
-];
-function describe(code: number, isDay = 1) {
-  const row = WMO.find((r) => r[0].includes(code));
-  return row ? { text: row[1], icon: isDay ? row[2] : row[3] } : { text: '', icon: '🌡️' };
-}
-
-async function fetchWeather(): Promise<Weather> {
-  const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${CITY.lat}&longitude=${CITY.lon}&timezone=auto&forecast_days=5` +
-    '&current=temperature_2m,apparent_temperature,weather_code,is_day' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`weather ${res.status}`);
-  const w = await res.json();
-  return {
-    temp: w.current.temperature_2m,
-    feels: w.current.apparent_temperature,
-    code: w.current.weather_code,
-    isDay: w.current.is_day,
-    days: w.daily.time.map((date: string, i: number) => ({
-      date,
-      code: w.daily.weather_code[i],
-      min: w.daily.temperature_2m_min[i],
-      max: w.daily.temperature_2m_max[i],
-    })),
-  };
-}
-
-// ---------- news ----------
-type Headline = { source: string; title: string; link: string; date: Date };
-
-const FEEDS = [
-  { source: 'ynet', url: 'https://www.ynet.co.il/Integration/StoryRss2.xml' },
-  { source: 'mako', url: 'https://rcs.mako.co.il/rss/31750a2610f26110VgnVCM1000005201000aRCRD.xml' },
-];
-
-const decode = (s: string) =>
-  s.replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').trim();
-
-async function fetchFeed(source: string, url: string): Promise<Headline[]> {
-  try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
-    const data = await res.json();
-    if (data.status !== 'ok') return [];
-    // rss2json dates are UTC without a zone marker
-    return data.items.map((i: { title: string; link: string; pubDate: string }) => ({
-      source,
-      title: decode(i.title || ''),
-      link: i.link,
-      date: new Date(`${String(i.pubDate).replace(' ', 'T')}Z`),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchNews(): Promise<Headline[]> {
-  const lists = await Promise.all(FEEDS.map((f) => fetchFeed(f.source, f.url)));
-  return lists
-    .flat()
-    .filter((n) => n.title && /^https:\/\//.test(n.link) && !Number.isNaN(n.date.getTime()))
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 20);
-}
-
-// ---------- screen ----------
 // On the web the page is first rendered on the server, whose clock, time zone and colour scheme
-// differ from the device's. Drawing the dashboard only after it mounts on the device keeps the two
-// renders identical and avoids a hydration error.
+// differ from the device's. Drawing the dashboard only after it mounts keeps the two renders identical.
 function useMounted() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -126,56 +43,91 @@ export default function HomeScreen() {
   return mounted ? <Dashboard /> : <View style={styles.root} />;
 }
 
+function useNow() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+const NEWS_TABS: { id: NewsTab; label: string }[] = [
+  { id: 'news', label: 'חדשות' },
+  { id: 'flash', label: 'מבזקים' },
+  { id: 'sport', label: 'ספורט' },
+];
+
 function Dashboard() {
-  const c = palette[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = usePalette();
   const now = useNow();
+  const { settings, loaded } = useSettings();
+  const radio = useRadio();
+
   const [weather, setWeather] = useState<Weather | null>(null);
   const [weatherError, setWeatherError] = useState(false);
-  const [news, setNews] = useState<Headline[]>([]);
-  const [newsLoaded, setNewsLoaded] = useState(false);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [tab, setTab] = useState<NewsTab>('news');
+  const [news, setNews] = useState<Partial<Record<NewsTab, Headline[]>>>({});
+  const [newsAt, setNewsAt] = useState<Partial<Record<NewsTab, Date>>>({});
   const [refreshing, setRefreshing] = useState(false);
 
   const loadWeather = useCallback(
     () =>
-      fetchWeather().then(
+      fetchWeather(settings.city).then(
         (w) => {
           setWeather(w);
           setWeatherError(false);
         },
         () => setWeatherError(true),
       ),
-    [],
+    [settings.city],
   );
-  const loadNews = useCallback(
-    () =>
-      fetchNews().then((n) => {
-        if (n.length) setNews(n);
-        setNewsLoaded(true);
-      }),
-    [],
-  );
+  const loadStocks = useCallback(async () => {
+    fetchRates().then(setRates, () => {});
+    if (settings.finnhubKey) setQuotes(await fetchQuotes(settings.symbols, settings.finnhubKey));
+    else setQuotes([]);
+  }, [settings.finnhubKey, settings.symbols]);
+  const loadNews = useCallback(async (which: NewsTab) => {
+    const items = await fetchHeadlines(which);
+    if (items.length) {
+      setNews((n) => ({ ...n, [which]: items }));
+      setNewsAt((t) => ({ ...t, [which]: new Date() }));
+    }
+  }, []);
 
+  // weather follows the chosen city; stocks follow the key and symbols
   useEffect(() => {
+    if (!loaded) return;
     loadWeather();
-    loadNews();
-    const w = setInterval(loadWeather, 15 * MIN);
-    const n = setInterval(loadNews, 5 * MIN);
-    return () => {
-      clearInterval(w);
-      clearInterval(n);
-    };
-  }, [loadWeather, loadNews]);
+    const id = setInterval(loadWeather, 15 * MIN);
+    return () => clearInterval(id);
+  }, [loaded, loadWeather]);
+  useEffect(() => {
+    if (!loaded) return;
+    loadStocks();
+    const id = setInterval(loadStocks, 2 * MIN);
+    return () => clearInterval(id);
+  }, [loaded, loadStocks]);
+  // the open news tab refreshes every 5 minutes, flashes every 90 seconds
+  useEffect(() => {
+    loadNews(tab);
+    const id = setInterval(() => loadNews(tab), tab === 'flash' ? 1.5 * MIN : 5 * MIN);
+    return () => clearInterval(id);
+  }, [tab, loadNews]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadWeather(), loadNews()]);
+    await Promise.all([loadWeather(), loadStocks(), loadNews(tab)]);
     setRefreshing(false);
   };
 
   const lo = weather ? Math.min(...weather.days.map((d) => d.min)) : 0;
   const span = weather ? Math.max(1, Math.max(...weather.days.map((d) => d.max)) - lo) : 1;
   const today = now.toDateString();
-  const current = weather ? describe(weather.code, weather.isDay) : null;
+  const current = weather ? describeWeather(weather.code, weather.isDay) : null;
+  const headlines = news[tab] ?? [];
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
@@ -187,31 +139,34 @@ function Dashboard() {
           <View style={styles.clock}>
             <Text style={styles.time}>{timeFmt.format(now)}</Text>
             <Text style={styles.date}>{dateFmt.format(now)}</Text>
+            {radio.current >= 0 && (
+              <Pressable onPress={radio.stop} style={styles.nowPlaying} accessibilityRole="button" accessibilityLabel="עצירת הרדיו">
+                <Text style={styles.nowPlayingText}>
+                  {radio.buffering ? 'טוען' : '■'} {STATIONS[radio.current].name}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* weather */}
-          <View style={[styles.card, { backgroundColor: c.card }]}>
-            <View style={styles.head}>
-              <Text style={[styles.label, { color: c.accent }]}>מזג אוויר</Text>
-              <Text style={[styles.muted, { color: c.muted }]}>{CITY.name}</Text>
-            </View>
+          <Card title="מזג אוויר" aside={settings.city.name}>
             {weather && current ? (
               <>
                 <View style={styles.now}>
                   <Text style={styles.bigIcon}>{current.icon}</Text>
-                  <View style={styles.nowText}>
+                  <View style={styles.flex}>
                     <Text style={[styles.temp, { color: c.text }]}>{Math.round(weather.temp)}°</Text>
-                    <Text style={[styles.muted, { color: c.muted }]}>
+                    <Muted>
                       {current.text} · מרגיש כמו {Math.round(weather.feels)}°
-                    </Text>
+                    </Muted>
                   </View>
                 </View>
                 {weather.days.map((d, i) => (
-                  <View key={d.date} style={[styles.day, { borderTopColor: c.line }]}>
+                  <View key={d.date} style={[styles.row, { borderTopColor: c.line }]}>
                     <Text style={[styles.dayName, { color: c.text }]}>
                       {i === 0 ? 'היום' : dayFmt.format(new Date(`${d.date}T12:00:00`))}
                     </Text>
-                    <Text style={styles.dayIcon}>{describe(d.code).icon}</Text>
+                    <Text style={styles.dayIcon}>{describeWeather(d.code).icon}</Text>
                     <Text style={[styles.dayTemp, { color: c.muted }]}>{Math.round(d.min)}°</Text>
                     <View style={[styles.bar, { backgroundColor: c.line }]}>
                       <View
@@ -230,22 +185,75 @@ function Dashboard() {
                 ))}
               </>
             ) : (
-              <Text style={[styles.muted, { color: c.muted }]}>{weatherError ? 'אין נתוני מזג אוויר כרגע' : 'טוען…'}</Text>
+              <Muted>{weatherError ? 'אין נתוני מזג אוויר כרגע' : 'טוען…'}</Muted>
             )}
-          </View>
+          </Card>
 
-          {/* news */}
-          <View style={[styles.card, { backgroundColor: c.card }]}>
-            <View style={styles.head}>
-              <Text style={[styles.label, { color: c.accent }]}>חדשות</Text>
-              <Text style={[styles.muted, { color: c.muted }]}>משיכה למטה לרענון</Text>
-            </View>
-            {news.length === 0 && (
-              <Text style={[styles.muted, { color: c.muted }]}>
-                {newsLoaded ? 'לא הצלחתי לטעון כותרות כרגע' : 'טוען כותרות…'}
-              </Text>
+          {/* stocks and exchange rates */}
+          <Card title="מניות ומטבע">
+            {settings.finnhubKey ? (
+              quotes.length ? (
+                quotes.map((q) => (
+                  <View key={q.symbol} style={[styles.row, { borderTopColor: c.line }]}>
+                    <Text style={[styles.symbol, { color: c.text }]}>{q.symbol}</Text>
+                    <View style={styles.flex} />
+                    <Text style={[styles.price, { color: c.text }]}>
+                      {q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.pct,
+                        { color: q.pct < 0 ? c.down : c.up, backgroundColor: q.pct < 0 ? c.downBg : c.upBg },
+                      ]}>
+                      {`${q.pct > 0 ? '+' : ''}${q.pct.toFixed(2)}%`}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Muted>טוען מחירים… אם זה נשאר ככה, כדאי לבדוק את המפתח בהגדרות.</Muted>
+              )
+            ) : (
+              <Link href="/settings" asChild>
+                <Pressable>
+                  <Text style={[styles.hint, { color: c.accent }]}>
+                    כדי לראות מחירי מניות צריך מפתח חינמי של Finnhub. מוסיפים אותו בלשונית ההגדרות ›
+                  </Text>
+                </Pressable>
+              </Link>
             )}
-            {news.map((n) => (
+            {rates.length > 0 && (
+              <View style={styles.rates}>
+                {rates.map((r) => (
+                  <View key={r.code} style={[styles.rate, { backgroundColor: c.soft }]}>
+                    <Muted>{r.name}</Muted>
+                    <Text style={[styles.rateValue, { color: c.text }]}>₪{r.value.toFixed(3)}</Text>
+                    <Text style={{ color: r.pct < 0 ? c.down : c.up, textAlign: 'right', fontSize: 13 }}>
+                      {`${r.pct > 0 ? '+' : ''}${r.pct.toFixed(2)}%`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* news, flashes and sport */}
+          <Card
+            title="חדשות"
+            aside={newsAt[tab] ? `עודכן ${timeFmt.format(newsAt[tab] as Date)}` : undefined}>
+            <View style={[styles.segment, { backgroundColor: c.soft }]}>
+              {NEWS_TABS.map((t) => (
+                <Pressable
+                  key={t.id}
+                  onPress={() => setTab(t.id)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: tab === t.id }}
+                  style={[styles.segmentItem, tab === t.id && { backgroundColor: c.accent }]}>
+                  <Text style={[styles.segmentText, { color: tab === t.id ? '#FFFFFF' : c.muted }]}>{t.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {headlines.length === 0 && <Muted>טוען כותרות…</Muted>}
+            {headlines.map((n) => (
               <Pressable
                 key={n.link}
                 accessibilityRole="link"
@@ -259,7 +267,7 @@ function Dashboard() {
                 <Text style={[styles.title, { color: c.text }]}>{n.title}</Text>
               </Pressable>
             ))}
-          </View>
+          </Card>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -268,38 +276,40 @@ function Dashboard() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  flex: { flex: 1 },
   content: {
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 88 : 16, // the web tab bar floats over the top of the page
+    paddingTop: topInset,
     paddingBottom: BottomTabInset + 24,
     gap: 14,
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
-  clock: { backgroundColor: '#0284C7', borderRadius: 28, paddingVertical: 28, alignItems: 'center' },
+  clock: { backgroundColor: '#0284C7', borderRadius: 28, paddingVertical: 24, alignItems: 'center', gap: 2 },
   time: { color: '#FFFFFF', fontSize: 72, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  date: { color: '#E0F2FE', fontSize: 22, fontWeight: '500', marginTop: 2 },
-  card: { borderRadius: 24, padding: 18, gap: 8 },
-  head: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: 14, fontWeight: '700' },
-  muted: { fontSize: 14, textAlign: 'right' },
+  date: { color: '#E0F2FE', fontSize: 22, fontWeight: '500' },
+  nowPlaying: { marginTop: 10, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  nowPlayingText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
   now: { flexDirection: 'row-reverse', alignItems: 'center', gap: 14, paddingVertical: 4 },
-  nowText: { flex: 1 },
   bigIcon: { fontSize: 52 },
   temp: { fontSize: 52, fontWeight: '600', textAlign: 'right' },
-  day: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 8,
-  },
+  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
   dayName: { width: 52, fontSize: 15, textAlign: 'right' },
   dayIcon: { width: 26, fontSize: 18, textAlign: 'center' },
   dayTemp: { width: 34, fontSize: 15, textAlign: 'center' },
   bar: { flex: 1, height: 6, borderRadius: 3 },
   barFill: { position: 'absolute', top: 0, bottom: 0, borderRadius: 3 },
+  symbol: { fontSize: 16, fontWeight: '700' },
+  price: { fontSize: 16, fontVariant: ['tabular-nums'] },
+  pct: { width: 72, textAlign: 'center', fontSize: 14, fontWeight: '600', borderRadius: 8, paddingVertical: 3, overflow: 'hidden' },
+  hint: { fontSize: 15, lineHeight: 22, textAlign: 'right' },
+  rates: { flexDirection: 'row-reverse', gap: 8, marginTop: 4 },
+  rate: { flex: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8 },
+  rateValue: { fontSize: 18, fontWeight: '600', textAlign: 'right' },
+  segment: { flexDirection: 'row-reverse', borderRadius: 999, padding: 3, gap: 3, alignSelf: 'flex-end' },
+  segmentItem: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  segmentText: { fontSize: 14, fontWeight: '600' },
   item: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 10, gap: 2 },
   meta: { fontSize: 12, textAlign: 'right' },
   title: { fontSize: 16, lineHeight: 22, textAlign: 'right', writingDirection: 'rtl' },

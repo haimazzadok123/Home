@@ -14,18 +14,17 @@ export default function AppTabs() {
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>לוח</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
+      <NativeTabs.Trigger name="radio">
+        <NativeTabs.Trigger.Label>רדיו</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="radio" md="radio" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Label>הגדרות</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="gearshape" md="settings" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
