@@ -452,6 +452,11 @@ dialog.drawer[open] { display: flex; flex-direction: column; gap: 12px; }
 .terms a { color: var(--accent); text-decoration: underline; }
 .terms .btn { justify-self: end; margin-top: 8px; }
 #terms { width: min(560px, calc(100vw - 32px)); }
+.brand { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.brand img { width: 44px; height: 44px; flex: none; }
+.brand b { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1; }
+.brand span { font-size: 13px; letter-spacing: .3em; color: var(--muted); }
+dialog.drawer h2 { font-size: 18px; color: var(--muted); margin: 4px 0 0; }
 dialog h2 { font-family: var(--display); font-weight: 500; font-size: 24px; margin-bottom: 6px; }
 dialog form { display: grid; gap: 8px; }
 dialog label { font-size: 14px; color: var(--muted); margin-top: 8px; }
