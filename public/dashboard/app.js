@@ -157,8 +157,10 @@ function updateNight() {
   if (on === nightActive) return;
   nightActive = on;
   $('night').hidden = !on;
+  if (!on) $('night-flash').hidden = true;
   if (on) {
     stopFrame();
+    nightFlashKey = '';
     renderNightTicker();
     document.querySelectorAll('dialog[open]').forEach((d) => d.close());
     $('night-hint').classList.remove('gone');
@@ -167,27 +169,49 @@ function updateNight() {
   }
 }
 
-// The latest flashes scroll along the bottom of the night screen.
+// The latest flashes: a column on the right of wide screens, a ticker along the bottom of narrow ones.
+// Tapping a flash shows it large, with a link to the article.
+let nightFlashKey = '';
 function renderNightTicker() {
   const hidden = hiddenSources();
   const items = Object.values(news).flat()
     .filter((n) => SOURCE_INFO[n.source].group === 'flash' && !hidden.has(n.source))
     .sort((a, b) => b.date - a.date)
     .slice(0, 10);
+  const at = newsUpdated.flash;
+  $('night-updated').textContent = at ? `מבזקים · עודכן ${hhmm.format(new Date(at))}` : '';
   $('night-ticker').hidden = !items.length;
   $('night-list').hidden = !items.length;
-  if (!items.length) return;
-  // column on the right (wide screens): newest first
-  $('night-list').replaceChildren(...items.slice(0, 8).map((n) => el('div', null,
-    el('small', null, el('b', { text: SOURCE_INFO[n.source].label }), ` · ${hhmm.format(n.date)}`),
-    el('p', { text: n.title }))));
-  const copy = () => items.map((n) => el('span', null, el('b', { text: `${hhmm.format(n.date)} ${SOURCE_INFO[n.source].label}` }), n.title));
+  // redraw only when the flashes changed, so the ticker does not jump back on every refresh
+  const key = items.map((n) => n.link).join('|');
+  if (!items.length || key === nightFlashKey) return;
+  nightFlashKey = key;
+  const open = (n) => () => showNightFlash(n);
+  $('night-list').replaceChildren(...items.slice(0, 8).map((n) => {
+    const b = el('button', { type: 'button' },
+      el('small', null, el('b', { text: SOURCE_INFO[n.source].label }), ` · ${hhmm.format(n.date)}`),
+      el('p', { text: n.title }));
+    b.addEventListener('click', open(n));
+    return b;
+  }));
+  const copy = () => items.map((n) => {
+    const span = el('span', null, el('b', { text: `${hhmm.format(n.date)} ${SOURCE_INFO[n.source].label}` }), n.title);
+    span.addEventListener('click', open(n));
+    return span;
+  });
   const track = $('night-track');
   track.replaceChildren(...copy(), ...copy()); // two copies make the loop seamless
   requestAnimationFrame(() => {
     const half = track.scrollWidth / 2;
     track.style.setProperty('--ticker-time', `${Math.max(40, Math.round(half / 45))}s`); // about 45px a second
   });
+}
+
+function showNightFlash(n) {
+  $('nf-meta').textContent = `${SOURCE_INFO[n.source].label} · ${hhmm.format(n.date)}`;
+  $('nf-title').textContent = n.title;
+  $('nf-link').href = n.link;
+  $('night-flash').hidden = false;
 }
 
 function driftNightClock() {
@@ -198,15 +222,19 @@ function driftNightClock() {
 }
 
 function setupNight() {
-  // a tap shows the dashboard for a minute; one switched on from the menu stays off until asked again
+  // "show the dashboard" shows it for a minute; one switched on from the menu stays off until asked again
   const peek = () => {
     if (!nightActive) return;
     manualNight = false;
     peekUntil = Date.now() + MIN;
     updateNight();
   };
-  $('night').addEventListener('pointerdown', peek);
-  addEventListener('keydown', peek);
+  $('night-show').addEventListener('click', peek);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('night-flash').hidden) peek(); });
+  const closeFlash = () => { $('night-flash').hidden = true; };
+  $('nf-close').addEventListener('click', closeFlash);
+  $('night-flash').addEventListener('click', (e) => { if (e.target === $('night-flash')) closeFlash(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFlash(); });
   const nightNow = () => {
     $('sites').close();
     manualNight = true;
@@ -566,7 +594,12 @@ const SITES = [
   ['globes', 'גלובס', ['globes']], ['inn', 'ערוץ 7', ['inn']], ['rotter', 'רוטר', ['rotter']], ['one', 'ONE', ['one']], ['sport5', 'ספורט 5', ['sport5']],
 ];
 const hiddenSources = () => new Set(SITES.filter(([id]) => settings.hiddenSites.includes(id)).flatMap((site) => site[2]));
-const viaRelay = (source) => async () => parseRss(await get(`https://api.allorigins.win/raw?url=${encodeURIComponent(FEEDS[source])}`, { type: 'text', timeout: 9000 }), source);
+// Relays may hand back a stored copy; flashes ask for a new one every 30 seconds with a changing parameter.
+const feedUrl = (source) => {
+  if (SOURCE_INFO[source].group !== 'flash') return FEEDS[source];
+  return `${FEEDS[source]}${FEEDS[source].includes('?') ? '&' : '?'}_=${Math.floor(Date.now() / 30000)}`;
+};
+const viaRelay = (source) => async () => parseRss(await get(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl(source))}`, { type: 'text', timeout: 9000 }), source);
 const htmlParser = new DOMParser();
 // Titles arrive with HTML entities, sometimes escaped twice (Rotter), so decode until stable.
 function plain(text) {
@@ -602,7 +635,7 @@ function viaRss2Json(source) {
 }
 
 async function readRss2Json(source) {
-  const data = await get(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(FEEDS[source])}`);
+  const data = await get(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl(source))}`);
   if (data.status !== 'ok') throw new Error('rss2json failed');
   return data.items.map((i) => {
     const inDescription = /<img[^>]+src=['"]([^'"]+)['"]/i.exec(i.description || '');
@@ -1218,7 +1251,7 @@ const TASKS = {
   weather: { fn: loadWeather, every: 15 * MIN },
   shabbat: { fn: loadShabbat, every: 180 * MIN },
   news: { fn: () => loadNews(), every: 5 * MIN },
-  flash: { fn: () => loadNews('flash'), every: 1.5 * MIN },
+  flash: { fn: () => loadNews('flash'), every: 0.5 * MIN }, // as close to live as the free relays allow
   stocks: { fn: loadStocks, every: 2 * MIN },
   fx: { fn: loadFx, every: 180 * MIN },
   ping: { fn: samplePing, every: 0.25 * MIN },
@@ -1264,4 +1297,4 @@ addEventListener('offline', () => setStatus(false));
 document.addEventListener('visibilitychange', () => { keepAwake(); refresh(); });
 
 refresh();
-setInterval(refresh, 20 * 1000);
+setInterval(refresh, 10 * 1000);

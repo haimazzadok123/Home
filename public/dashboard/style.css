@@ -538,6 +538,37 @@ dialog::backdrop { background: rgba(6, 11, 24, .45); }
 .night-list small { display: block; font-size: 13px; color: #6F7E9E; margin-bottom: 2px; }
 .night-list small b { color: #7FA6E6; font-weight: 600; }
 .night-list p { margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.35; color: #9AAACB; text-wrap: pretty; }
+.night { cursor: default; }
+.night-list > button, .night-track span { cursor: pointer; }
+.night-list > button { all: unset; display: block; cursor: pointer; border-radius: 8px; }
+.night-list > button:focus-visible { outline: 1px solid #52607E; outline-offset: 4px; }
+.night-show {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  inset-inline-end: max(16px, env(safe-area-inset-left));
+  background: transparent;
+  color: #8494B5;
+  border: 1px solid #2A3550;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  min-height: 40px;
+  z-index: 2;
+}
+.night-show:active { background: #111827; }
+.night-updated { position: absolute; top: max(24px, env(safe-area-inset-top)); inset-inline-start: max(20px, env(safe-area-inset-right)); margin: 0; font-size: 13px; color: #6F7E9E; }
+@media (orientation: landscape) and (min-width: 700px) {
+  /* above the flashes column on wide screens */
+  .night-updated { top: max(16px, env(safe-area-inset-top)); inset-inline-start: 2.5vw; }
+}
+.night-flash { position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, .78); display: grid; place-items: center; padding: 24px; }
+.night-flash[hidden] { display: none; }
+.nf-card { max-width: 760px; width: 100%; background: #0B1220; border: 1px solid #1C2536; border-radius: 22px; padding: clamp(20px, 4vw, 36px); display: grid; gap: 14px; }
+.nf-card small { color: #7FA6E6; font-size: 15px; }
+.nf-card p { margin: 0; color: #C9D3E6; font-size: clamp(22px, 3.4vw, 34px); line-height: 1.35; text-wrap: pretty; }
+.nf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.nf-actions .btn { background: #15203A; color: #9EC2FF; text-decoration: none; display: inline-flex; align-items: center; }
+.nf-actions .btn.ghost { background: transparent; color: #8494B5; }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(50%); } }
 @media (prefers-reduced-motion: reduce) { .night-track { animation-duration: calc(var(--ticker-time, 120s) * 3); } }
 

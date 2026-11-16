@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=22" />
+<link rel="stylesheet" href="style.css?v=23" />
 </head>
 <body>
 <!-- Intro screen: the logo builds itself while the page loads, then opens onto the board (style.css "intro", app.js "intro"). -->
@@ -124,12 +124,24 @@
 
 <div class="night" id="night" hidden>
   <aside class="night-list" id="night-list" aria-label="מבזקים אחרונים" hidden></aside>
+  <button type="button" class="night-show" id="night-show">הצגת הלוח</button>
+  <p class="night-updated" id="night-updated"></p>
   <div class="night-box" id="night-box">
     <div class="night-time" id="night-time" dir="ltr">--:--</div>
     <div class="night-date" id="night-date"></div>
     <div class="night-temp" id="night-temp"></div>
   </div>
-  <p class="night-hint" id="night-hint">נגיעה במסך מציגה את הלוח לדקה</p>
+  <p class="night-hint" id="night-hint">נגיעה במבזק מגדילה אותו · "הצגת הלוח" מציג את הלוח לדקה</p>
+  <div class="night-flash" id="night-flash" hidden>
+    <div class="nf-card" role="dialog" aria-modal="true" aria-labelledby="nf-title">
+      <small id="nf-meta"></small>
+      <p id="nf-title"></p>
+      <div class="nf-actions">
+        <a class="btn" id="nf-link" target="_blank" rel="noopener noreferrer">לכתבה המלאה</a>
+        <button type="button" class="btn ghost" id="nf-close">סגירה</button>
+      </div>
+    </div>
+  </div>
   <div class="night-ticker" id="night-ticker" hidden><div class="night-track" id="night-track"></div></div>
 </div>
 
@@ -240,8 +252,8 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=22" defer></script>
-<script src="vendor/kubai.js?v=22" defer></script>
-<script src="app.js?v=22" defer></script>
+<script src="vendor/liveline.js?v=23" defer></script>
+<script src="vendor/kubai.js?v=23" defer></script>
+<script src="app.js?v=23" defer></script>
 </body>
 </html>
