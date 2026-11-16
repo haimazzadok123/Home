@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=5" />
+<link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
 <main class="grid" id="grid">
@@ -72,6 +72,7 @@
     <div class="n-speed"><span id="n-down" dir="ltr">--</span><small>Mbps הורדה</small><button type="button" class="btn" id="n-run">בדיקה</button></div>
     <div class="n-quality" id="n-quality"></div>
     <svg class="spark" id="n-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <div class="n-chart" id="n-chart" aria-hidden="true"></div>
     <dl class="n-facts">
       <div><dt>העלאה</dt><dd id="n-up" dir="ltr">--</dd></div>
       <div><dt>זמן תגובה</dt><dd id="n-ping" dir="ltr">--</dd></div>
@@ -134,6 +135,7 @@
       <li>חדשות וספורט: פידי ה־RSS הפומביים של ynet, mako, וואלה, ישראל היום, הארץ, מעריב, גלובס, ערוץ 7, רוטר ו־ONE (רובם דרך rss2json או allorigins)</li>
       <li>רדיו: שידורי האינטרנט הרשמיים של התחנות</li>
       <li>בדיקת מהירות: Cloudflare</li>
+      <li>גרף זמן התגובה: <a href="https://github.com/benjitaylor/liveline" target="_blank" rel="noopener">Liveline</a> מאת Benji Taylor (רישיון MIT)</li>
     </ul>
     <p>השימוש בכל מקור כפוף לתנאי השימוש שלו. בעל תוכן שמבקש להסיר את התוכן שלו מהדף מוזמן לפנות ונסיר אותו.</p>
     <button type="button" class="btn primary" id="terms-close">סגירה</button>
@@ -172,6 +174,7 @@
   </form>
 </dialog>
 
-<script src="app.js?v=5" defer></script>
+<script src="vendor/liveline.js?v=6" defer></script>
+<script src="app.js?v=6" defer></script>
 </body>
 </html>

@@ -320,6 +320,9 @@ dl, dd, dt, p, h2 { margin: 0; }
 .n-speed .btn { margin-inline-start: auto; align-self: center; min-height: 34px; padding: 6px 14px; font-size: 14px; }
 .n-quality { font-size: 13px; color: var(--accent); min-height: 1.3em; }
 .spark { width: 100%; flex: 1 0 24px; max-height: 48px; }
+.n-chart { display: none; flex: 1 1 96px; min-height: 72px; margin-inline: -6px; direction: ltr; }
+.net.has-chart .n-chart { display: block; }
+.net.has-chart .spark { display: none; }
 .spark path { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
 .n-facts { display: flex; gap: 8px; }
 .n-facts div { flex: 1; }

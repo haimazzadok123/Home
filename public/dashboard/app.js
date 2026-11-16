@@ -471,7 +471,9 @@ async function samplePing() {
     const samples = [await pingOnce(), await pingOnce(), await pingOnce()];
     const best = Math.min(...samples);
     pings.push(best);
-    if (pings.length > 40) pings.shift();
+    if (pings.length > 80) pings.shift();
+    pingPoints.push({ time: Date.now() / 1000, value: best });
+    if (pingPoints.length > 80) pingPoints.shift();
     setStatus(true);
     $('n-ping').textContent = `${Math.round(best)} ms`;
     $('n-jitter').textContent = `±${Math.round(Math.max(...samples) - best)} ms`;
@@ -482,7 +484,43 @@ async function samplePing() {
   }
 }
 
+// Latency chart: Liveline (vendor/liveline.js) when it loaded, otherwise the small SVG line below.
+const pingPoints = [];
+let liveChart = null;
+const isDark = () => settings.theme === 'dark' || (settings.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+const chartLook = () => ({ theme: isDark() ? 'dark' : 'light', color: isDark() ? '#38BDF8' : '#0284C7' });
+
+function setupLatencyChart() {
+  if (typeof window.mountLiveline !== 'function') return;
+  try {
+    liveChart = window.mountLiveline($('n-chart'), {
+      data: [],
+      value: 0,
+      ...chartLook(),
+      loading: true,
+      window: 5 * 60,
+      grid: true,
+      fill: true,
+      pulse: true,
+      momentum: false,
+      badgeVariant: 'minimal',
+      lineWidth: 2,
+      formatValue: (v) => `${Math.round(v)} ms`,
+      formatTime: (t) => hhmm.format(new Date(t * 1000)),
+      emptyText: 'מודד…',
+    });
+    $('n-chart').closest('.net').classList.add('has-chart');
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => liveChart.update(chartLook()));
+  } catch {
+    liveChart = null;
+  }
+}
+
 function drawSpark() {
+  if (liveChart) {
+    liveChart.update({ data: pingPoints.slice(), value: pingPoints.at(-1)?.value ?? 0, loading: pingPoints.length < 2 });
+    return;
+  }
   const svg = $('n-spark');
   if (pings.length < 2) { svg.replaceChildren(); return; }
   const max = Math.max(...pings) * 1.15;
@@ -657,6 +695,7 @@ function setupRadio() {
 function applyTheme() {
   if (settings.theme === 'auto') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', settings.theme);
+  if (liveChart) liveChart.update(chartLook());
 }
 
 let wakeLock = null;
@@ -793,7 +832,7 @@ const TASKS = {
   flash: { fn: () => loadNews('flash'), every: 1.5 * MIN },
   stocks: { fn: loadStocks, every: 2 * MIN },
   fx: { fn: loadFx, every: 180 * MIN },
-  ping: { fn: samplePing, every: 0.5 * MIN },
+  ping: { fn: samplePing, every: 0.25 * MIN },
   speed: { fn: () => (settings.autoSpeed ? speedTest() : null), every: 30 * MIN },
   version: { fn: checkVersion, every: 5 * MIN },
 };
@@ -816,6 +855,7 @@ setInterval(tickClock, 1000);
 setupScreen();
 setupSettings();
 setupRadio();
+setupLatencyChart();
 
 $('news-chips').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
