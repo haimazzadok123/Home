@@ -46,17 +46,11 @@
   margin-inline-start: 0.25em;
 }
 
-.brand::before {
-  content: '';
+.brand-logo {
   flex: none;
-  width: 10px;
-  height: 10px;
-  margin-inline-end: 12px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    0 0 0 4px var(--accent-soft),
-    0 0 14px 2px rgba(14, 165, 233, 0.45);
+  width: 40px;
+  height: 40px;
+  margin-inline-end: 10px;
 }
 
 .mobile-menu-toggle {
@@ -873,8 +867,10 @@
     text-overflow: ellipsis;
   }
 
-  .brand::before {
-    display: none;
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    margin-inline-end: 8px;
   }
 
   .mobile-menu-toggle {

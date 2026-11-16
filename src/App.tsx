@@ -389,6 +389,7 @@ function App() {
             ☰
           </button>
           <h1 className="brand">
+            <img className="brand-logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="" width="40" height="40" />
             מטיילים עם <span>דוד חיים</span>
           </h1>
         </div>
