@@ -207,6 +207,8 @@ async function loadWeather() {
   const now = wmo(c.weather_code, c.is_day);
   $('w-icon').replaceChildren(weatherIcon(c.weather_code, c.is_day, 58));
   $('w-temp').textContent = deg(c.temperature_2m);
+  $('ht-temp').textContent = deg(c.temperature_2m);
+  $('ht-temp-label').textContent = `${now.text} ב${settings.city}`;
   $('w-desc').textContent = `${now.text} · מרגיש כמו ${deg(c.apparent_temperature)}`;
 
   const facts = [['לחות', `${c.relative_humidity_2m}%`], ['רוח', `${Math.round(c.wind_speed_10m)} קמ״ש`], ['UV', String(Math.round(w.daily.uv_index_max[0]))]];
@@ -262,7 +264,11 @@ function renderToday() {
   const clock = (item) => hhmm.format(new Date(item.date));
   if (shabbat) {
     $('t-parasha').textContent = shabbat.parasha ? shabbat.parasha.hebrew : (shabbat.holiday ? shabbat.holiday.hebrew : '');
-    if (shabbat.candles) rows.push(['כניסה', clock(shabbat.candles)]);
+    if (shabbat.candles) {
+      rows.push(['כניסה', clock(shabbat.candles)]);
+      const day = new Date(shabbat.candles.date);
+      $('ht-shabbat').textContent = day.toDateString() === new Date().toDateString() ? clock(shabbat.candles) : `${new Intl.DateTimeFormat('he-IL', { weekday: 'short' }).format(day)} ${clock(shabbat.candles)}`;
+    }
     if (shabbat.havdalah) rows.push(['יציאה', clock(shabbat.havdalah)]);
   }
   if (sunTimes) rows.push(['זריחה', sunTimes.rise], ['שקיעה', sunTimes.set]);

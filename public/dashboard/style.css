@@ -1,14 +1,14 @@
 :root {
-  --bg: linear-gradient(160deg, #BAE6FD 0%, #E0F2FE 30%, #F0F9FF 62%, #F8FAFC 100%);
-  --card: rgba(255, 255, 255, .72);
-  --card-line: rgba(255, 255, 255, .9);
-  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px rgba(2, 132, 199, .12);
+  --bg: #F5F6F8;
+  --card: #FFFFFF;
+  --card-line: rgba(17, 24, 39, .05);
+  --shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 8px 24px rgba(17, 24, 39, .06);
   --text: #1E293B;
   --muted: #64748B;
   --line: rgba(100, 116, 139, .16);
   --accent: #0284C7;
   --accent-soft: #E0F2FE;
-  --hero: linear-gradient(150deg, #0369A1 0%, #0284C7 45%, #38BDF8 100%);
+  --hero: #2F5BEA; /* the logo's blue */
   --up: #15803D;
   --up-bg: #DCFCE7;
   --down: #B91C1C;
@@ -60,7 +60,7 @@ body {
   margin: 0;
   min-height: calc(100dvh / var(--z)); /* zoom multiplies it back to one screen */
   background: var(--bg) fixed;
-  background-color: #F0F9FF;
+  background-color: #F5F6F8;
   color: var(--text);
   font-family: "Fredoka", "Varela Round", -apple-system, system-ui, sans-serif;
   font-size: 15px;
@@ -127,6 +127,17 @@ dl, dd, dt, p, h2 { margin: 0; }
 /* phones in portrait: keep the long lists bounded */
 @media (max-width: 639.9px) {
   .clock { order: -2; } .news { order: -1; } /* news right under the clock */
+  .clock {
+    --edge-top: max(var(--gap), env(safe-area-inset-top));
+    margin: calc(-1 * var(--edge-top)) calc(-1 * max(var(--gap), env(safe-area-inset-right))) 4px calc(-1 * max(var(--gap), env(safe-area-inset-left)));
+    padding: calc(var(--edge-top) + 22px) 20px 22px;
+    border: 0;
+    border-radius: 0 0 32px 32px;
+    box-shadow: none;
+    align-items: stretch;
+  }
+  .clock .dock { top: calc(var(--edge-top) + 8px); }
+  .clock .hero-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
   .news .list { max-height: 420px; }
   .stocks .list { max-height: 330px; }
 }
@@ -185,16 +196,11 @@ dl, dd, dt, p, h2 { margin: 0; }
   container-type: inline-size;
   padding-block: 14px;
 }
-.clock::before {
-  content: "";
-  position: absolute;
-  inset: -40% -20% auto auto;
-  width: 70%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, .28), transparent);
-  pointer-events: none;
-}
+.clock::before { content: none; } /* flat header, no glow */
+.hero-tiles { display: none; }
+.hero-tiles > div { background: rgba(255, 255, 255, .12); border-radius: 16px; padding: 10px 14px; text-align: start; min-width: 0; }
+.hero-tiles small { display: block; font-size: 12px; color: #D6E2FB; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-tiles b { display: block; font-family: var(--display); font-size: 22px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
 .clock-time {
   font-family: var(--display);
   font-weight: 500;

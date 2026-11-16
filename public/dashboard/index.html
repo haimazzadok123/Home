@@ -6,7 +6,7 @@
 <title>לוח הבית</title>
 <meta name="description" content="לוח בית לאייפד ולאייפון: שעון, מזג אוויר, חדשות, מניות ומצב הרשת." />
 <meta name="color-scheme" content="light dark" />
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#E0F2FE" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F6F8" />
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#060B18" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Varela+Round&display=swap" />
-<link rel="stylesheet" href="style.css?v=12" />
+<link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
 <!-- Intro screen: the logo builds itself while the page loads, then opens onto the board (style.css "intro", app.js "intro"). -->
@@ -46,6 +46,10 @@
     <div class="clock-time" dir="ltr"><span id="time">--:--</span><span class="clock-sec" id="sec"></span></div>
     <div class="clock-date" id="date"></div>
     <div class="clock-heb" id="hebdate"></div>
+    <div class="hero-tiles">
+      <div><small id="ht-temp-label">מזג אוויר</small><b id="ht-temp" dir="ltr">--°</b></div>
+      <div><small>כניסת שבת</small><b id="ht-shabbat">--:--</b></div>
+    </div>
     <button type="button" class="dock" id="b-sites" title="תפריט" aria-label="תפריט">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -193,8 +197,8 @@
   </form>
 </dialog>
 
-<script src="vendor/liveline.js?v=12" defer></script>
-<script src="vendor/kubai.js?v=12" defer></script>
-<script src="app.js?v=12" defer></script>
+<script src="vendor/liveline.js?v=13" defer></script>
+<script src="vendor/kubai.js?v=13" defer></script>
+<script src="app.js?v=13" defer></script>
 </body>
 </html>
