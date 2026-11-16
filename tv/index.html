@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="טלוויזיה">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#171a22">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<link rel="icon" type="image/svg+xml" href="icons/logo.svg">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" integrity="sha384-9v3HcdYrO3D+OPDTjZ40RXocgE4GtXVCd3/mCS62JsM93JXgI1afJVuwjFvsu6ni" crossorigin="anonymous"></script>
 <style>
   :root {
@@ -127,11 +127,12 @@
     .screen { flex: none; aspect-ratio: 16/9; }
     .bar select { max-width: 70%; font-size: 16px; }
   }
+h1 .logo { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-inline-end: .25em; }
 </style>
 </head>
 <body>
 <header>
-  <h1>📺 טלוויזיה ישראלית</h1>
+  <h1><img class="logo" src="icons/logo.svg" alt="" width="28" height="28"> טלוויזיה ישראלית</h1>
   <label class="ctrl">מסכים
     <select id="layout">
       <option value="2">2</option>
