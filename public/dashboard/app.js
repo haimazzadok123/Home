@@ -75,6 +75,7 @@ const DEFAULTS = {
   symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
   finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true, hiddenSites: [],
   night: true, nightFrom: '20:00', nightTo: '06:30',
+  alerts: true, alertSound: true,
   frame: true, frameIdle: 10,
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
@@ -219,6 +220,72 @@ function renderNightTicker() {
     const half = track.scrollWidth / 2;
     track.style.setProperty('--ticker-time', `${Math.max(40, Math.round(half / 45))}s`); // about 45px a second
   });
+}
+
+// ---------- new-flash alert ----------
+// The first load of each flash feed only records what is there; later loads raise an alert for
+// flashes not seen before (and less than 30 minutes old, so a feed that answers late doesn't
+// replay old items).
+const seenFlashes = new Set();
+const seededFlashSources = new Set();
+const alertQueue = [];
+let alertTimer = 0;
+let audioCtx = null;
+
+function noticeNewFlashes(source, items) {
+  if (!seededFlashSources.has(source)) {
+    seededFlashSources.add(source);
+    items.forEach((n) => seenFlashes.add(n.link));
+    return;
+  }
+  const fresh = items.filter((n) => !seenFlashes.has(n.link) && Date.now() - n.date < 30 * MIN);
+  items.forEach((n) => seenFlashes.add(n.link));
+  if (!fresh.length || !settings.alerts || hiddenSources().has(source)) return;
+  alertQueue.push(...fresh.sort((a, b) => a.date - b.date));
+  if ($('flash-alert').hidden) showNextAlert(true);
+}
+
+function showNextAlert(withSound) {
+  clearTimeout(alertTimer);
+  const n = alertQueue.shift();
+  if (!n) { $('flash-alert').hidden = true; return; }
+  const more = alertQueue.length ? ` · ועוד ${alertQueue.length}` : '';
+  $('fa-meta').textContent = `מבזק · ${SOURCE_INFO[n.source].label} · ${hhmm.format(n.date)}${more}`;
+  $('fa-title').textContent = n.title;
+  $('fa-open').onclick = () => { showNightFlash(n); showNextAlert(false); };
+  $('flash-alert').classList.toggle('dim', nightActive);
+  $('flash-alert').hidden = false;
+  if (withSound && settings.alertSound && !nightActive && !(settings.night && inNightHours())) chime();
+  alertTimer = setTimeout(() => showNextAlert(false), nightActive ? 20000 : 12000);
+}
+
+// A short soft two-note chime. Browsers allow sound only after a first tap on the page.
+function chime() {
+  try {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const t = audioCtx.currentTime;
+    [[880, 0], [1320, 0.16]].forEach(([f, d]) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0, t + d);
+      g.gain.linearRampToValueAtTime(0.18, t + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.5);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t + d);
+      o.stop(t + d + 0.55);
+    });
+  } catch { /* no sound */ }
+}
+
+function setupFlashAlert() {
+  $('fa-close').addEventListener('click', () => { alertQueue.length = 0; showNextAlert(false); });
+  addEventListener('pointerdown', () => {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch { /* no audio */ }
+  }, { passive: true });
 }
 
 function showNightFlash(n) {
@@ -696,6 +763,7 @@ async function loadNews(group) {
         // mako publishes Sport5's articles under /news-sport/, so they belong to the sport tab
         for (const i of items) if (i.source === 'mako' && i.link.includes('/news-sport')) i.source = 'sport5';
         if (items.length) {
+          if (SOURCE_INFO[source].group === 'flash') noticeNewFlashes(source, items);
           news[source] = items;
           newsUpdated[SOURCE_INFO[source].group] = Date.now();
           renderNews();
@@ -1199,6 +1267,8 @@ function setupSettings() {
     $('set-wake').checked = settings.wake;
     $('set-speed').checked = settings.autoSpeed;
     $('set-night').checked = settings.night;
+    $('set-alerts').checked = settings.alerts;
+    $('set-alert-sound').checked = settings.alertSound;
     $('set-frame').checked = settings.frame;
     $('set-frame-idle').value = String(settings.frameIdle);
     $('set-night-from').value = settings.nightFrom;
@@ -1247,6 +1317,8 @@ function setupSettings() {
     settings.wake = $('set-wake').checked;
     settings.autoSpeed = $('set-speed').checked;
     settings.night = $('set-night').checked;
+    settings.alerts = $('set-alerts').checked;
+    settings.alertSound = $('set-alert-sound').checked;
     settings.frame = $('set-frame').checked;
     settings.frameIdle = Number($('set-frame-idle').value) || 10;
     if (toMinutes($('set-night-from').value) != null) settings.nightFrom = $('set-night-from').value;
@@ -1298,6 +1370,7 @@ setupRadio();
 setupIcons();
 setupNight();
 setupFrame();
+setupFlashAlert();
 setupLatencyChart();
 
 $('news-chips').addEventListener('click', (e) => {
