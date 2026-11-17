@@ -230,7 +230,7 @@ export async function checkFlashes(env, now = Date.now()) {
   });
   if (changed) {
     // KV allows about 1000 writes a day on the free plan, so write only when something changed
-    await env.SUBS.put('state', JSON.stringify({ seeded: [...seeded], seen: [...seen].slice(-MAX_SEEN) }));
+    await env.SUBS.put('state', JSON.stringify({ seeded: [...seeded], seen: [...seen].slice(-MAX_SEEN), lastRun: new Date(now).toISOString() }));
   }
   if (!fresh.length) return { fresh: 0, sent: 0 };
   fresh.sort((a, b) => a.date - b.date);
@@ -278,6 +278,19 @@ export default {
     try {
       if (request.method === 'GET' && pathname === '/config') {
         return json({ publicKey: (await vapidKeys(env)).publicKey }, headers);
+      }
+      if (request.method === 'GET' && pathname === '/check') {
+        // diagnostics: what each feed returns right now (changes nothing)
+        const results = await Promise.allSettled(FEEDS.map(readFeed));
+        const state = (await env.SUBS.get('state', 'json')) || { seeded: [], seen: [] };
+        return json({
+          feeds: results.map((r, i) => (r.status === 'fulfilled'
+            ? { source: FEEDS[i].source, items: r.value.length, newest: r.value[0] && new Date(r.value[0].date).toISOString() }
+            : { source: FEEDS[i].source, error: String(r.reason && r.reason.message || r.reason) })),
+          seeded: state.seeded,
+          seen: state.seen.length,
+          lastRun: state.lastRun || null,
+        }, headers);
       }
       if (request.method === 'GET' && pathname === '/') {
         return json({ ok: true, service: 'home dashboard flash push' }, headers);

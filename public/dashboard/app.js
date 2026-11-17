@@ -260,7 +260,7 @@ function showNextAlert() {
 // ---------- phone push (Cloudflare Worker in push-worker/) ----------
 // The worker checks the flash feeds every minute and pushes new ones to signed-up devices.
 // On iPhone and iPad this needs the dashboard added to the home screen and opened from there.
-const PUSH_SERVER = '';
+const PUSH_SERVER = 'https://home-flash-push.haimazzadok.workers.dev';
 const FLASH_SOURCES = ['flash', 'maarivflash', 'rotter'];
 const urlKey = (b64) => {
   const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b64.length + 3) % 4));

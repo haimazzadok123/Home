@@ -13,7 +13,9 @@
 5. **Settings → Trigger events (או Triggers) → Add → Cron trigger:** כל דקה, `* * * * *`. שומרים.
 6. מעתיקים את כתובת ה-Worker (נראית כמו `https://home-flash-push.<שם>.workers.dev`). פתיחה שלה בדפדפן צריכה להראות `{"ok":true,...}`.
 
-את הכתובת מכניסים לקבוע `PUSH_SERVER` ב-`public/dashboard/app.js`.
+את הכתובת מכניסים לקבוע `PUSH_SERVER` ב-`public/dashboard/app.js` וגם ל-`connect-src` שב-`index.html`.
+
+השרת הנוכחי: `https://home-flash-push.haimazzadok.workers.dev`. בדיקה: `/check` מראה מה מתקבל מכל פיד ומתי הייתה הבדיקה המתוזמנת האחרונה, בלי לשנות כלום.
 
 ## פריסה עם wrangler (למי שיש Node.js)
 

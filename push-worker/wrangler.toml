@@ -10,7 +10,7 @@ crons = ["* * * * *"]
 # Create it with:  npx wrangler kv namespace create SUBS   and put its id here.
 [[kv_namespaces]]
 binding = "SUBS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "0964a47fdd2f4316b4ceb6756ef7d51e"
 
 [vars]
 ALLOWED_ORIGINS = "https://haimazzadok123.github.io"
