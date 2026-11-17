@@ -442,6 +442,13 @@ dl, dd, dt, p, h2 { margin: 0; }
 }
 .dock:active { background: rgba(255, 255, 255, .28); }
 .dock.dock-night { inset-inline-start: 54px; }
+/* One-screen layouts (unfolded phone, tablet, desktop): the buttons sit at the far (left) corner of the
+   clock card. The card is in the right column, and on the right the Dynamic Island covered them while
+   audio played (iOS widens it over the page then, beyond the safe area). */
+@media (min-width: 960px) and (min-height: 600px), (orientation: landscape) and (min-width: 700px) and (min-height: 521px), (orientation: portrait) and (min-width: 600px) and (min-height: 740px) {
+  .clock .dock { inset-inline-start: auto; inset-inline-end: 8px; }
+  .clock .dock.dock-night { inset-inline-end: 54px; }
+}
 .dock:focus-visible { outline-color: #fff; }
 .dock svg:not(.kb) { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .menu-actions { display: grid; gap: 8px; }
