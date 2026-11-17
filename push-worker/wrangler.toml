@@ -1,0 +1,16 @@
+name = "home-flash-push"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# Check the flash feeds every minute
+[triggers]
+crons = ["* * * * *"]
+
+# One KV namespace holds the keys, what was already seen and the subscriptions.
+# Create it with:  npx wrangler kv namespace create SUBS   and put its id here.
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+ALLOWED_ORIGINS = "https://haimazzadok123.github.io"

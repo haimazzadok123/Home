@@ -75,7 +75,7 @@ const DEFAULTS = {
   symbols: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'TEVA', 'QQQ'],
   finnhubKey: '', theme: 'auto', wake: true, autoSpeed: true, hiddenSites: [],
   night: true, nightFrom: '20:00', nightTo: '06:30',
-  alerts: true, alertSound: true,
+  alerts: true,
   frame: true, frameIdle: 10,
 };
 const settings = { ...DEFAULTS, ...(store('dash.settings') || {}) };
@@ -230,7 +230,6 @@ const seenFlashes = new Set();
 const seededFlashSources = new Set();
 const alertQueue = [];
 let alertTimer = 0;
-let audioCtx = null;
 
 function noticeNewFlashes(source, items) {
   if (!seededFlashSources.has(source)) {
@@ -242,50 +241,102 @@ function noticeNewFlashes(source, items) {
   items.forEach((n) => seenFlashes.add(n.link));
   if (!fresh.length || !settings.alerts || hiddenSources().has(source)) return;
   alertQueue.push(...fresh.sort((a, b) => a.date - b.date));
-  if ($('flash-alert').hidden) showNextAlert(true);
+  if ($('flash-alert').hidden) showNextAlert();
 }
 
-function showNextAlert(withSound) {
+function showNextAlert() {
   clearTimeout(alertTimer);
   const n = alertQueue.shift();
   if (!n) { $('flash-alert').hidden = true; return; }
   const more = alertQueue.length ? ` · ועוד ${alertQueue.length}` : '';
   $('fa-meta').textContent = `מבזק · ${SOURCE_INFO[n.source].label} · ${hhmm.format(n.date)}${more}`;
   $('fa-title').textContent = n.title;
-  $('fa-open').onclick = () => { showNightFlash(n); showNextAlert(false); };
+  $('fa-open').onclick = () => { showNightFlash(n); showNextAlert(); };
   $('flash-alert').classList.toggle('dim', nightActive);
   $('flash-alert').hidden = false;
-  if (withSound && settings.alertSound && !nightActive && !(settings.night && inNightHours())) chime();
-  alertTimer = setTimeout(() => showNextAlert(false), nightActive ? 20000 : 12000);
+  alertTimer = setTimeout(showNextAlert, 30000); // each alert stays 30 seconds, silently
 }
 
-// A short soft two-note chime. Browsers allow sound only after a first tap on the page.
-function chime() {
+// ---------- phone push (Cloudflare Worker in push-worker/) ----------
+// The worker checks the flash feeds every minute and pushes new ones to signed-up devices.
+// On iPhone and iPad this needs the dashboard added to the home screen and opened from there.
+const PUSH_SERVER = '';
+const FLASH_SOURCES = ['flash', 'maarivflash', 'rotter'];
+const urlKey = (b64) => {
+  const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b64.length + 3) % 4));
+  return Uint8Array.from(s, (c) => c.charCodeAt(0));
+};
+const pushPrefs = () => ({
+  sources: FLASH_SOURCES.filter((src) => !hiddenSources().has(src)),
+  quiet: settings.night ? { from: settings.nightFrom, to: settings.nightTo } : null,
+});
+const postPush = (path, body) => fetch(`${PUSH_SERVER}${path}`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
+});
+
+async function currentPushSubscription() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  const reg = await navigator.serviceWorker.getRegistration();
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+
+async function showPushState() {
+  const btn = $('set-push');
+  const status = $('set-push-status');
+  if (!PUSH_SERVER) { btn.disabled = true; status.textContent = 'שרת ההתראות עוד לא הוגדר.'; return; }
+  btn.disabled = false;
+  const sub = await currentPushSubscription().catch(() => null);
+  btn.textContent = sub ? 'כיבוי התראות לטלפון' : 'הפעלת התראות לטלפון';
+  status.textContent = sub ? 'פעיל במכשיר הזה. בשעות מצב הלילה לא נשלחות התראות.' : '';
+}
+
+async function togglePush() {
+  const status = $('set-push-status');
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    status.textContent = ios && !standalone
+      ? 'באייפון ובאייפד: קודם מוסיפים את הלוח למסך הבית (שיתוף ← הוספה למסך הבית), פותחים אותו משם ולוחצים כאן שוב.'
+      : 'הדפדפן הזה לא תומך בהתראות.';
+    return;
+  }
+  $('set-push').disabled = true;
   try {
-    if (!audioCtx || audioCtx.state !== 'running') return;
-    const t = audioCtx.currentTime;
-    [[880, 0], [1320, 0.16]].forEach(([f, d]) => {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.frequency.value = f;
-      g.gain.setValueAtTime(0, t + d);
-      g.gain.linearRampToValueAtTime(0.18, t + d + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.5);
-      o.connect(g).connect(audioCtx.destination);
-      o.start(t + d);
-      o.stop(t + d + 0.55);
-    });
-  } catch { /* no sound */ }
+    const existing = await currentPushSubscription();
+    if (existing) {
+      await postPush('/unsubscribe', { endpoint: existing.endpoint }).catch(() => {});
+      await existing.unsubscribe();
+    } else {
+      // ask first, straight from the tap: iOS refuses the request after other awaits
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { status.textContent = 'לא התקבלה הרשאה להתראות. אפשר לאשר בהגדרות המכשיר.'; return; }
+      const reg = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      const { publicKey } = await (await fetch(`${PUSH_SERVER}/config`, { signal: AbortSignal.timeout(15000) })).json();
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlKey(publicKey) });
+      const res = await postPush('/subscribe', { subscription: sub.toJSON(), ...pushPrefs() });
+      if (!res.ok) throw new Error('subscribe failed');
+      await postPush('/test', { endpoint: sub.endpoint }).catch(() => {});
+    }
+  } catch {
+    status.textContent = 'לא הצלחתי להפעיל את ההתראות. כדאי לנסות שוב בעוד רגע.';
+    $('set-push').disabled = false;
+    return;
+  }
+  await showPushState();
+  if (await currentPushSubscription()) status.textContent = 'הופעל. נשלחה התראת בדיקה למכשיר.';
+}
+
+// keep the worker's copy of the chosen sites and night hours in step with the settings
+async function syncPushPrefs() {
+  if (!PUSH_SERVER) return;
+  const sub = await currentPushSubscription().catch(() => null);
+  if (sub) postPush('/subscribe', { subscription: sub.toJSON(), ...pushPrefs() }).catch(() => {});
 }
 
 function setupFlashAlert() {
-  $('fa-close').addEventListener('click', () => { alertQueue.length = 0; showNextAlert(false); });
-  addEventListener('pointerdown', () => {
-    try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    } catch { /* no audio */ }
-  }, { passive: true });
+  $('set-push').addEventListener('click', togglePush);
+  $('fa-close').addEventListener('click', () => { alertQueue.length = 0; showNextAlert(); });
 }
 
 function showNightFlash(n) {
@@ -1268,7 +1319,7 @@ function setupSettings() {
     $('set-speed').checked = settings.autoSpeed;
     $('set-night').checked = settings.night;
     $('set-alerts').checked = settings.alerts;
-    $('set-alert-sound').checked = settings.alertSound;
+    showPushState();
     $('set-frame').checked = settings.frame;
     $('set-frame-idle').value = String(settings.frameIdle);
     $('set-night-from').value = settings.nightFrom;
@@ -1318,7 +1369,7 @@ function setupSettings() {
     settings.autoSpeed = $('set-speed').checked;
     settings.night = $('set-night').checked;
     settings.alerts = $('set-alerts').checked;
-    settings.alertSound = $('set-alert-sound').checked;
+    setTimeout(syncPushPrefs, 0);
     settings.frame = $('set-frame').checked;
     settings.frameIdle = Number($('set-frame-idle').value) || 10;
     if (toMinutes($('set-night-from').value) != null) settings.nightFrom = $('set-night-from').value;
