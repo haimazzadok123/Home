@@ -993,6 +993,7 @@ async function samplePing() {
     pingPoints.push({ time: Date.now() / 1000, value: best });
     if (pingPoints.length > 80) pingPoints.shift();
     setStatus(true);
+    if (pingPoints.length === 1) setTimeout(samplePing, 3000); // a second point right away, so the chart draws a line
     $('n-ping').textContent = `${Math.round(best)} ms`;
     $('n-jitter').textContent = `±${Math.round(Math.max(...samples) - best)} ms`;
     drawSpark();
@@ -1049,14 +1050,33 @@ function drawSpark() {
   svg.replaceChildren(path);
 }
 
+const testDay = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'numeric' });
+
 function renderQuality() {
   const ping = pings.at(-1);
-  let text = '';
-  if (lastDown != null && ping != null) {
-    text = lastDown >= 50 && ping < 80 ? 'חיבור מצוין' : lastDown >= 15 ? 'חיבור טוב' : lastDown >= 5 ? 'חיבור בינוני' : 'חיבור חלש';
-    text += ` · נבדק ב־${hhmm.format(new Date(lastDownAt))}`;
+  if (lastDown == null) {
+    $('n-quality').textContent = testing ? '' : 'עוד לא נבדק';
+    return;
   }
-  $('n-quality').textContent = text;
+  const at = new Date(lastDownAt);
+  const when = at.toDateString() === new Date().toDateString() ? hhmm.format(at) : `${testDay.format(at)} בשעה ${hhmm.format(at)}`;
+  const grade = ping == null ? '' : lastDown >= 50 && ping < 80 ? 'חיבור מצוין · ' : lastDown >= 15 ? 'חיבור טוב · ' : lastDown >= 5 ? 'חיבור בינוני · ' : 'חיבור חלש · ';
+  $('n-quality').textContent = `${grade}נבדק ב־${when}`;
+}
+
+// The last speed test is kept on the device, so a reload (like the automatic update) still shows it
+// and does not start a new test before the two hours are up.
+const SPEED_KEY = 'dash.speedResult';
+let lastUp = null;
+
+function loadSpeedResult() {
+  const saved = store(SPEED_KEY);
+  if (!saved || !(saved.down > 0) || !saved.at) return;
+  lastDown = saved.down;
+  lastDownAt = saved.at;
+  $('n-down').textContent = fmtMbps(saved.down);
+  if (saved.up > 0) { lastUp = saved.up; $('n-up').textContent = `${fmtMbps(saved.up)} Mbps`; }
+  TASKS.speed.last = saved.at;
 }
 
 // A page cannot watch an upload's progress without extra permission from the server, so this
@@ -1124,7 +1144,9 @@ async function uploadTest({ upStreams, maxUp }) {
   t = performance.now();
   await Promise.all(Array.from({ length: upStreams }, () => send(each)));
   const secs = Math.max(0.05, (performance.now() - t) / 1000 - lag);
-  $('n-up').textContent = `${fmtMbps((each * upStreams * 8) / secs / 1e6)} Mbps`;
+  const mbps = (each * upStreams * 8) / secs / 1e6;
+  $('n-up').textContent = `${fmtMbps(mbps)} Mbps`;
+  return mbps;
 }
 
 async function speedTest(full = false) {
@@ -1134,18 +1156,23 @@ async function speedTest(full = false) {
   const btn = $('n-run');
   btn.disabled = true;
   btn.textContent = 'בודק…';
+  renderQuality();
   try {
     const mbps = await downloadTest(plan);
     if (mbps) {
       lastDown = mbps;
       lastDownAt = Date.now();
-      renderQuality();
+    } else if (lastDown != null) {
+      $('n-down').textContent = fmtMbps(lastDown); // the test got no reading: show the last one again
     }
   } catch { /* leave the previous reading */ }
   try {
-    await uploadTest(plan);
+    const up = await uploadTest(plan);
+    if (up) lastUp = up;
   } catch { /* leave the previous upload reading */ }
   testing = false;
+  renderQuality();
+  if (lastDown != null) store(SPEED_KEY, { down: lastDown, up: lastUp, at: lastDownAt });
   btn.disabled = false;
   btn.textContent = 'בדיקה';
 }
@@ -1423,6 +1450,8 @@ setupNight();
 setupFrame();
 setupFlashAlert();
 setupLatencyChart();
+loadSpeedResult();
+renderQuality();
 
 $('news-chips').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
