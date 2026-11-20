@@ -1,5 +1,14 @@
 'use strict';
 
+// Inside Safari (not the home-screen app) don't ask to draw under the screen edges: on some screens,
+// like the iPhone Duo's outer screen, Safari's toolbar sits on the side and would cover the page.
+// The home-screen app keeps drawing edge to edge.
+(() => {
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!standalone && meta) meta.setAttribute('content', meta.getAttribute('content').replace(/,\s*viewport-fit=cover/, ''));
+})();
+
 // ---------- small helpers ----------
 const $ = (id) => document.getElementById(id);
 const MIN = 60 * 1000;
