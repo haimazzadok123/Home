@@ -847,3 +847,8 @@ body.enter .grid > :nth-child(n+8) { animation-delay: .8s; }
 @keyframes fa-in { from { opacity: 0; transform: translate(-50%, -12px); } }
 @media (prefers-reduced-motion: reduce) { .flash-alert { animation: none; } }
 .push-row { align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* phones held upright: the latency chart has a fixed height, so the network card doesn't stretch */
+@media (max-width: 599.9px), (max-width: 639.9px) and (max-height: 739.9px) {
+  .net .n-chart, .net .spark { flex: none; height: 96px; min-height: 0; }
+}
